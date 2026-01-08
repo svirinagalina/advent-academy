@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel - Users</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #4CAF50; color: white; }
+        .header { display: flex; justify-content: space-between; align-items: center; }
+        .btn { padding: 5px 10px; margin: 2px; text-decoration: none; }
+        .btn-add { background-color: #4CAF50; color: white; }
+        .btn-edit { background-color: #2196F3; color: white; }
+        .btn-delete { background-color: #f44336; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>Admin Panel - User Management</h1>
+    <div>
+        <span>Logged in as: <strong sec:authentication="name"></strong></span>
+        <form th:action="@{/logout}" method="post" style="display: inline; margin-left: 20px;">
+            <button type="submit" class="btn btn-delete">Logout</button>
+        </form>
+    </div>
+</div>
+
+<a th:href="@{/admin/new}" class="btn btn-add">Add New User</a>
+
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Surname</th>
+        <th>Username</th>
+        <th>Roles</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="user : ${users}">
+        <td th:text="${user.id}"></td>
+        <td th:text="${user.name}"></td>
+        <td th:text="${user.surname}"></td>
+        <td th:text="${user.username}"></td>
+        <td>
+            <span th:each="role : ${user.roles}" th:text="${role.name} + ' '"></span>
+        </td>
+        <td>
+            <a th:href="@{/admin/edit/{id}(id=${user.id})}" class="btn btn-edit">Edit</a>
+            <form th:action="@{/admin/delete/{id}(id=${user.id})}" method="post" style="display: inline;">
+                <button type="submit" class="btn btn-delete" onclick="return confirm('Are you sure?')">Delete</button>
+            </form>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

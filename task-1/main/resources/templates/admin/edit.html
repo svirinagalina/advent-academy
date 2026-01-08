@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit User</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: inline-block; width: 120px; font-weight: bold; }
+        input[type="text"], input[type="password"] { width: 300px; padding: 5px; }
+        .checkbox-group { margin-left: 120px; }
+        .btn { padding: 10px 20px; margin: 5px; text-decoration: none; }
+        .btn-save { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        .btn-cancel { background-color: #f44336; color: white; }
+        .hint { font-size: 12px; color: #666; margin-left: 5px; }
+    </style>
+</head>
+<body>
+<h1>Edit User</h1>
+
+<form th:action="@{/admin/edit/{id}(id=${user.id})}" th:object="${user}" method="post">
+    <input type="hidden" th:field="*{id}"/>
+
+    <div class="form-group">
+        <label for="name">Name:</label>
+        <input type="text" id="name" th:field="*{name}" required/>
+    </div>
+
+    <div class="form-group">
+        <label for="surname">Surname:</label>
+        <input type="text" id="surname" th:field="*{surname}" required/>
+    </div>
+
+    <div class="form-group">
+        <label for="username">Username:</label>
+        <input type="text" id="username" th:field="*{username}" required/>
+    </div>
+
+    <div class="form-group">
+        <label for="password">Password:</label>
+        <input type="password" id="password" th:field="*{password}"/>
+        <span class="hint">(leave empty to keep current)</span>
+    </div>
+
+    <div class="form-group">
+        <label>Roles:</label>
+        <div class="checkbox-group">
+            <div th:each="role : ${allRoles}">
+                <input type="checkbox"
+                       th:value="${role.id}"
+                       name="roleIds"
+                       th:id="${'role' + role.id}"
+                       th:checked="${user.roles.contains(role)}"/>
+                <label th:for="${'role' + role.id}" th:text="${role.name}" style="width: auto; font-weight: normal;"></label>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-left: 120px;">
+        <button type="submit" class="btn btn-save">Update User</button>
+        <a th:href="@{/admin}" class="btn btn-cancel">Cancel</a>
+    </div>
+</form>
+</body>
+</html>

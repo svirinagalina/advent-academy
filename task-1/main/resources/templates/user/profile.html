@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>User Profile</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .profile-card { border: 1px solid #ddd; padding: 20px; max-width: 500px; border-radius: 5px; }
+        .profile-row { margin: 10px 0; }
+        .profile-label { font-weight: bold; display: inline-block; width: 120px; }
+        .btn { padding: 10px 20px; margin: 10px 5px 0 0; text-decoration: none; display: inline-block; }
+        .btn-admin { background-color: #2196F3; color: white; }
+        .btn-logout { background-color: #f44336; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+<h1>User Profile</h1>
+
+<div class="profile-card">
+    <div class="profile-row">
+        <span class="profile-label">ID:</span>
+        <span th:text="${user.id}"></span>
+    </div>
+    <div class="profile-row">
+        <span class="profile-label">Name:</span>
+        <span th:text="${user.name}"></span>
+    </div>
+    <div class="profile-row">
+        <span class="profile-label">Surname:</span>
+        <span th:text="${user.surname}"></span>
+    </div>
+    <div class="profile-row">
+        <span class="profile-label">Username:</span>
+        <span th:text="${user.username}"></span>
+    </div>
+    <div class="profile-row">
+        <span class="profile-label">Roles:</span>
+        <span th:each="role, iterStat : ${user.roles}">
+                <span th:text="${role.name}"></span>
+                <span th:if="${!iterStat.last}">, </span>
+            </span>
+    </div>
+</div>
+
+<div>
+    <div sec:authorize="hasRole('ADMIN')">
+        <a th:href="@{/admin}" class="btn btn-admin">Go to Admin Panel</a>
+    </div>
+
+    <form th:action="@{/logout}" method="post" style="display: inline;">
+        <button type="submit" class="btn btn-logout">Logout</button>
+    </form>
+</div>
+</body>
+</html>
