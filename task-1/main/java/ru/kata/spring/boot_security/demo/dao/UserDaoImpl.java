@@ -1,11 +1,11 @@
-package com.svirina.project.dao;
+package ru.kata.spring.boot_security.demo.dao;
 
-import jakarta.transaction.Transactional;
+import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
+import javax.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;
-import com.svirina.project.model.User;
+import ru.kata.spring.boot_security.demo.model.User;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import java.util.List;
 
 @Repository
@@ -15,19 +15,31 @@ public class UserDaoImpl implements UserDao {
     private EntityManager entityManager;
 
     @Override
-    public List<User> listUsers() {
-        return entityManager.createQuery("from User", User.class)
+    public User findByUsername(String username) {
+        try {
+            return entityManager.createQuery(
+                            "SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.username = :username", User.class)
+                    .setParameter("username", username)
+                    .getSingleResult();
+        } catch (NoResultException e) {
+            return null;
+        }
+    }
+
+    @Override
+    public List<User> getAllUsers() {
+        return entityManager.createQuery("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.roles", User.class)
                 .getResultList();
     }
 
     @Override
-    public void add(User user) {
-        entityManager.persist(user);
+    public User getUserById(Long id) {
+        return entityManager.find(User.class, id);
     }
 
     @Override
-    public User getById(int id) {
-        return entityManager.find(User.class, id);
+    public void save(User user) {
+        entityManager.persist(user);
     }
 
     @Override
@@ -36,8 +48,8 @@ public class UserDaoImpl implements UserDao {
     }
 
     @Override
-    public void delete(int id) {
-        User user = getById(id);
+    public void delete(Long id) {
+        User user = getUserById(id);
         if (user != null) {
             entityManager.remove(user);
         }

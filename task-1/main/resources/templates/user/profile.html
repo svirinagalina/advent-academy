@@ -44,7 +44,7 @@
 
 <div>
     <div sec:authorize="hasRole('ADMIN')">
-        <a th:href="@{/admin}" class="btn btn-admin">Go to Admin Panel</a>
+        <a th:href="@{/templates/admin}" class="btn btn-admin">Go to Admin Panel</a>
     </div>
 
     <form th:action="@{/logout}" method="post" style="display: inline;">
