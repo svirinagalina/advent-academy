@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import ru.kata.spring.boot_security.demo.model.User;
 
 import java.util.List;
+import java.util.Optional;  // ← ДОБАВИТЬ этот импорт
 
 @Repository
 public class UserDaoImpl implements UserDao {
@@ -15,14 +16,15 @@ public class UserDaoImpl implements UserDao {
     private EntityManager entityManager;
 
     @Override
-    public User findByUsername(String username) {
+    public Optional<User> findByUsername(String username) {  // ← ИЗМЕНЕНО: возвращаем Optional<User>
         try {
-            return entityManager.createQuery(
+            User user = entityManager.createQuery(
                             "SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.username = :username", User.class)
                     .setParameter("username", username)
                     .getSingleResult();
+            return Optional.of(user);
         } catch (NoResultException e) {
-            return null;
+            return Optional.empty();
         }
     }
 
