@@ -69,24 +69,28 @@ public class UserServiceImpl implements UserService {
     public void saveWithRoles(User user, List<Long> roleIds) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-        if (roleIds != null && !roleIds.isEmpty()) {
-            Set<Role> roles = new HashSet<>();
-            for (Long roleId : roleIds) {
-                Role role = roleService.getRoleById(roleId);
-                roles.add(role);
-            }
-            user.setRoles(roles);
-        }
+    setRoles(roleIds, user);
+
         userDao.save(user);
     }
 
     @Override
     @Transactional
     public void updateWithRoles(User user, List<Long> roleIds) {
-        if (!user.getPassword().isEmpty()) {
+        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         } else {
             user.setPassword(userDao.getUserById(user.getId()).getPassword());
+        }
+
+        setRoles(roleIds, user);
+
+        userDao.update(user);
+    }
+
+    private void setRoles(List<Long> roleIds, User user){
+        if (user == null) {
+            return;
         }
         if (roleIds != null && !roleIds.isEmpty()) {
             Set<Role> roles = new HashSet<>();
@@ -96,6 +100,5 @@ public class UserServiceImpl implements UserService {
             }
             user.setRoles(roles);
         }
-        userDao.update(user);
     }
 }
