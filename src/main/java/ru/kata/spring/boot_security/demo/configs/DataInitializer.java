@@ -9,6 +9,7 @@ import ru.kata.spring.boot_security.demo.service.RoleService;
 import ru.kata.spring.boot_security.demo.service.UserService;
 
 import java.util.List;
+import java.util.Set;
 
 @Component
 public class DataInitializer {
@@ -34,12 +35,10 @@ public class DataInitializer {
         roleService.save(roleAdmin);
         roleService.save(roleUser);
 
-        User admin = new User("Admin", "Adminov", "admin", "admin");
-        userService.saveWithRoles(admin,
-                List.of(roleAdmin.getId(), roleUser.getId()));
+        User admin = new User("Admin", "Adminov", "admin", "admin", Set.of(new Role(roleUser.getId()), new Role(roleAdmin.getId())));
+        userService.save(admin);
+        User user = new User("User", "Userov", "user", "user", Set.of(new Role(roleUser.getId())));
+        userService.save(user);
 
-        User user = new User("User", "Userov", "user", "user");
-        userService.saveWithRoles(user,
-                List.of(roleUser.getId()));
     }
 }

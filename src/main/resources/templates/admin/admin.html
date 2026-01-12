@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin panel</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+    <!-- Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</head>
+<body>
+
+<!-- НАВИГАЦИОННАЯ ПАНЕЛЬ -->
+<nav class="navbar navbar-dark bg-dark">
+    <span class="navbar-brand mb-0 h1" sec:authentication="name">admin</span>
+    <span class="navbar-text text-white">with roles:
+        <span sec:authentication="principal.authorities">ADMIN USER</span>
+    </span>
+    <form th:action="@{/logout}" method="post" class="form-inline">
+        <button class="btn btn-dark text-secondary" type="submit">Logout</button>
+    </form>
+</nav>
+
+<!-- ОСНОВНОЙ КОНТЕЙНЕР -->
+<div class="container-fluid">
+    <div class="row">
+
+        <!-- БОКОВОЕ МЕНЮ (слева) -->
+        <div class="col-md-2 bg-white pt-3">
+            <div class="nav flex-column nav-pills">
+                <a class="nav-link active" href="/admin">Admin</a>
+                <a class="nav-link" href="/user">User</a>
+            </div>
+        </div>
+
+        <!-- ПРАВАЯ ЧАСТЬ С КОНТЕНТОМ -->
+        <div class="col-md-10 bg-light pt-3">
+            <h1>Admin panel</h1>
+
+            <!-- ВКЛАДКИ -->
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="users-tab" data-toggle="tab"
+                       href="#users" role="tab">Users table</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="new-tab" data-toggle="tab"
+                       href="#new" role="tab">New User</a>
+                </li>
+            </ul>
+
+            <!-- СОДЕРЖИМОЕ ВКЛАДОК -->
+            <div class="tab-content" id="myTabContent">
+
+                <!-- ВКЛАДКА 1: ТАБЛИЦА ПОЛЬЗОВАТЕЛЕЙ -->
+                <div class="tab-pane fade show active" id="users" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>All users</h5>
+                        </div>
+                        <div class="card-body">
+
+                            <!-- ТАБЛИЦА -->
+                            <table id="usersTable" class="table table-striped">
+                                <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>First Name</th>
+                                    <th>Last Name</th>
+                                    <th>Role</th>
+                                    <th>Edit</th>
+                                    <th>Delete</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <!-- Данные загрузятся через JavaScript -->
+                                </tbody>
+                            </table>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ВКЛАДКА 2: ФОРМА ДОБАВЛЕНИЯ -->
+                <div class="tab-pane fade" id="new" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Add new user</h5>
+                        </div>
+                        <div class="card-body">
+
+                            <!-- ФОРМА ДОБАВЛЕНИЯ -->
+                            <form id="newUserForm" class="col-md-6">
+
+                                <div class="form-group">
+                                    <label for="newName"><strong>First name</strong></label>
+                                    <input type="text" class="form-control" id="newName"
+                                           name="name" placeholder="First name" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="newSurname"><strong>Last name</strong></label>
+                                    <input type="text" class="form-control" id="newSurname"
+                                           name="surname" placeholder="Last name" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="newUsername"><strong>Username</strong></label>
+                                    <input type="text" class="form-control" id="newUsername"
+                                           name="username" placeholder="Username" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="newPassword"><strong>Password</strong></label>
+                                    <input type="password" class="form-control" id="newPassword"
+                                           name="password" placeholder="Password" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label><strong>Role</strong></label>
+                                    <div id="newRolesContainer">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="roleUser" name="roleIds" value="2">
+                                            <label class="form-check-label" for="roleUser">ROLE_USER</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="roleAdmin" name="roleIds" value="1">
+                                            <label class="form-check-label" for="roleAdmin">ROLE_ADMIN</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-success">Add new user</button>
+
+                            </form>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Модальное окно редактирования -->
+<div class="modal fade" id="editModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit user</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="editUserForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editUserId">
+                    <div class="form-group text-center">
+                        <label><strong>First name</strong></label>
+                        <input type="text" class="form-control" id="editName" required>
+                    </div>
+                    <div class="form-group text-center">
+                        <label><strong>Last name</strong></label>
+                        <input type="text" class="form-control" id="editSurname" required>
+                    </div>
+                    <div class="form-group text-center">
+                        <label><strong>Username</strong></label>
+                        <input type="text" class="form-control" id="editUsername" required>
+                    </div>
+                    <div class="form-group text-center">
+                        <label><strong>Password</strong></label>
+                        <input type="password" class="form-control" id="editPassword"
+                               placeholder="Leave blank to keep current">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Edit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно удаления -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete user</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="deleteUserForm">
+                <div class="modal-body">
+                    <input type="hidden" id="deleteUserId">
+                    <div id="deleteUserInfo"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="/js/admin.js"></script>
+
+</body>
+</html>

@@ -1,92 +1,101 @@
 package ru.kata.spring.boot_security.demo.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.kata.spring.boot_security.demo.dao.RoleDao;
 import ru.kata.spring.boot_security.demo.dao.UserDao;
-import ru.kata.spring.boot_security.demo.model.User;
 import ru.kata.spring.boot_security.demo.model.Role;
+import ru.kata.spring.boot_security.demo.model.User;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 @Service
-public class UserServiceImpl implements UserService {
+@Transactional
+public class UserServiceImpl implements UserService, UserDetailsService {
 
     private final UserDao userDao;
-    private final RoleService roleService;
+    private final RoleDao roleDao;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public UserServiceImpl(UserDao userDao, RoleService roleService, PasswordEncoder passwordEncoder) {
-        this.userDao = userDao;
-        this.roleService = roleService;
+    public UserServiceImpl(UserDao userRepository,
+                           RoleDao roleRepository,
+                           PasswordEncoder passwordEncoder) {
+        this.userDao = userRepository;
+        this.roleDao = roleRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
     @Override
-    @Transactional(readOnly = true)
     public User findByUsername(String username) {
         return userDao.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Пользователь с именем " + username + " не найден"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<User> getAllUsers() {
         return userDao.getAllUsers();
     }
 
     @Override
-    @Transactional(readOnly = true)
     public User getUserById(Long id) {
         return userDao.getUserById(id);
     }
 
     @Override
-    @Transactional
-    public void delete(Long id) {
-        userDao.delete(id);
-    }
-
-    @Override
-    @Transactional
-    public void saveWithRoles(User user, List<Long> roleIds) {
+    public void save(User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-    setRoles(roleIds, user);
+        Set<Role> roles = new HashSet<>();
+        if (user.getRoles() != null && !user.getRoles().isEmpty()) {
+            for (Role role : user.getRoles()) {
+                Role existingRole = roleDao.getRoleById(role.getId());
+                roles.add(existingRole);
+            }
+        }
+        user.setRoles(roles);
 
         userDao.save(user);
     }
 
     @Override
-    @Transactional
-    public void updateWithRoles(User user, List<Long> roleIds) {
+    public void update(User user) {
+        User existingUser = getUserById(user.getId());
+
+        existingUser.setUsername(user.getUsername());
+        existingUser.setName(user.getName());
+        existingUser.setSurname(user.getSurname());
+
         if (user.getPassword() != null && !user.getPassword().isEmpty()) {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-        } else {
-            user.setPassword(userDao.getUserById(user.getId()).getPassword());
+            existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
         }
 
-        setRoles(roleIds, user);
+        Set<Role> roles = new HashSet<>();
+        if (user.getRoles() != null && !user.getRoles().isEmpty()) {
+            for (Role role : user.getRoles()) {
+                Role existingRole = roleDao.getRoleById(role.getId());
+                roles.add(existingRole);
+            }
+        }
+        existingUser.setRoles(roles);
 
-        userDao.update(user);
+        userDao.save(existingUser);
     }
 
-    private void setRoles(List<Long> roleIds, User user){
-        if (user == null) {
-            return;
-        }
-        if (roleIds != null && !roleIds.isEmpty()) {
-            Set<Role> roles = new HashSet<>();
-            for (Long roleId : roleIds) {
-                Role role = roleService.getRoleById(roleId);
-                roles.add(role);
-            }
-            user.setRoles(roles);
-        }
+    @Override
+    public void delete(Long id) {
+        userDao.delete(id);
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return findByUsername(username);
     }
 }

@@ -16,7 +16,7 @@ public class UserDaoImpl implements UserDao {
     private EntityManager entityManager;
 
     @Override
-    public Optional<User> findByUsername(String username) {  // ← ИЗМЕНЕНО: возвращаем Optional<User>
+    public Optional<User> findByUsername(String username) {
         try {
             User user = entityManager.createQuery(
                             "SELECT u FROM User u LEFT JOIN FETCH u.roles WHERE u.username = :username", User.class)
