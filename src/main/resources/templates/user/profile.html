@@ -19,10 +19,8 @@
 <!-- НАВИГАЦИОННАЯ ПАНЕЛЬ -->
 <nav class="navbar navbar-dark bg-dark">
     <span class="navbar-brand mb-0 h1" sec:authentication="name">user</span>
-    <span class="navbar-text text-white">with roles:
-        <span sec:authentication="principal.authorities">USER</span>
-    </span>
-    <form th:action="@{/logout}" method="post" class="form-inline">
+
+    <form th:action="@{/logout}" method="post" class="form-inline ml-auto">
         <button class="btn btn-dark text-secondary" type="submit">Logout</button>
     </form>
 </nav>
@@ -34,8 +32,13 @@
         <!-- БОКОВОЕ МЕНЮ (слева) -->
         <div class="col-md-2 bg-white pt-3">
             <div class="nav flex-column nav-pills">
-                <a class="nav-link" href="/admin"
-                   sec:authorize="hasRole('ADMIN')">Admin</a>
+                <!-- ССЫЛКА ВИДНА ТОЛЬКО ADMIN -->
+                <a class="nav-link"
+                   href="/admin"
+                   sec:authorize="${hasRole('ROLE_ADMIN')}">
+                    ADMIN
+                </a>
+
                 <a class="nav-link active" href="/user">User</a>
             </div>
         </div>
@@ -67,9 +70,9 @@
                             <td th:text="${user.name}">User</td>
                             <td th:text="${user.surname}">Userov</td>
                             <td>
-                                    <span th:each="role : ${user.roles}">
-                                        <span th:text="${role.name}">USER</span>
-                                    </span>
+                                <span th:each="role : ${user.roles}">
+                                    <span th:text="${role.name}">USER</span>
+                                </span>
                             </td>
                         </tr>
                         </tbody>
