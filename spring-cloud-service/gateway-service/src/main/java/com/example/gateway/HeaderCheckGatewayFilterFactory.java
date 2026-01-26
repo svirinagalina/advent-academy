@@ -26,10 +26,8 @@ public class HeaderCheckGatewayFilterFactory extends AbstractGatewayFilterFactor
                 return exchange.getResponse().setComplete();
             }
 
-            // есть заголовок → удаляем и пробрасываем дальше
-            ServerHttpRequest modifiedRequest = request.mutate()22.build();
-
-            return chain.filter(exchange.mutate().request(modifiedRequest).build());
+            // есть заголовок → пробрасываем дальше
+            return chain.filter(exchange);
         };
     }
 }
