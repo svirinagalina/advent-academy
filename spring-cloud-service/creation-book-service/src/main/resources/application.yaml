@@ -1,0 +1,17 @@
+spring:
+  cloud:
+    function:
+      definition: bookSupplier
+    stream:
+      kafka:
+        binder:
+          brokers: localhost:9092
+      bindings:
+        bookSupplier-out-0:
+          destination: new-books
+          content-type: application/json
+      poller:
+        fixed-delay: 10000
+
+server:
+  port: 8081
