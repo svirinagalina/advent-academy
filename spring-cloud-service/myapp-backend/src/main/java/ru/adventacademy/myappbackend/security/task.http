@@ -1,0 +1,173 @@
+# ====================================
+# Authentication API
+# ====================================
+
+### 1. Register new user
+POST http://localhost:8050/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "test123",
+  "email": "test@example.com"
+}
+
+### 2. Login (получите токен из ответа!)
+POST http://localhost:8050/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "test123"
+}
+
+### 3. Register admin (первый пользователь автоматически ADMIN)
+POST http://localhost:8050/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123",
+  "email": "admin@example.com"
+}
+
+### 4. Login as admin
+POST http://localhost:8050/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+# ====================================
+# Tasks API
+# ====================================
+
+@token = eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0dXNlciIsInVzZXJJZCI6MSwicm9sZSI6IlJPTEVfVVNFUiIsImlhdCI6MTc3MDU3ODExNywiZXhwIjoxNzcwNTgxNzE3fQ.21HDNvg5Iot1lvgw33UJu_gXtfwaljsskaIlwDFJvwU
+# ВАЖНО: Замените токен выше на реальный из ответа логина!
+
+### 5. Get all tasks
+GET http://localhost:8050/api/tasks
+Authorization: Bearer {{token}}
+
+### 6. Get task by ID
+GET http://localhost:8050/api/tasks/1
+Authorization: Bearer {{token}}
+
+### 7. Get tasks by difficulty
+GET http://localhost:8050/api/tasks/difficulty/EASY
+Authorization: Bearer {{token}}
+
+### 8. Create new task (только ADMIN)
+POST http://localhost:8050/api/tasks
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Hello World",
+  "shortDescription": "Выведите Hello World",
+  "fullDescription": "Напишите программу, которая выводит 'Hello World'",
+  "languageId": 71,
+  "difficulty": "EASY"
+}
+
+# ====================================
+# Code Submission API
+# ====================================
+
+### 9. Submit Python solution (Hello World)
+POST http://localhost:8050/api/tasks/1/submit
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "sourceCode": "print('Hello World')",
+  "languageId": 71
+}
+
+### 10. Submit Java solution
+POST http://localhost:8050/api/tasks/1/submit
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "sourceCode": "public class Main { public static void main(String[] args) { System.out.println(\"Hello World\"); } }",
+  "languageId": 62
+}
+
+### 11. Submit JavaScript solution
+POST http://localhost:8050/api/tasks/1/submit
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "sourceCode": "console.log('Hello World')",
+  "languageId": 63
+}
+
+### 12. Submit Python solution with input (сумма двух чисел)
+POST http://localhost:8050/api/tasks/2/submit
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "sourceCode": "a, b = map(int, input().split())\nprint(a + b)",
+  "languageId": 71
+}
+
+# ====================================
+# Submission History API (NEW!)
+# ====================================
+
+### 13. Get my submission history for specific task
+GET http://localhost:8050/api/tasks/1/submissions?page=0&size=10
+Authorization: Bearer {{token}}
+
+### 14. Get all my submissions
+GET http://localhost:8050/api/tasks/submissions/my?page=0&size=10
+Authorization: Bearer {{token}}
+
+### 15. Get statistics for task
+GET http://localhost:8050/api/tasks/1/stats
+Authorization: Bearer {{token}}
+
+# ====================================
+# Admin API
+# ====================================
+
+@adminToken = YOUR_ADMIN_TOKEN_HERE
+
+### 16. Delete task (только ADMIN)
+DELETE http://localhost:8050/api/tasks/1
+Authorization: Bearer {{adminToken}}
+
+# ====================================
+# Testing Without Auth (should fail)
+# ====================================
+
+### 17. Try to get tasks without token (should return 401)
+GET http://localhost:8050/api/tasks
+
+### 18. Try to submit without token (should return 401)
+POST http://localhost:8050/api/tasks/1/submit
+Content-Type: application/json
+
+{
+  "sourceCode": "print('Hello')",
+  "languageId": 71
+}
+
+# ====================================
+# Language IDs Reference
+# ====================================
+# Java: 62
+# Python 3: 71
+# JavaScript (Node.js): 63
+# C++: 54
+# C: 50
+# C#: 51
+# Go: 60
+# Rust: 73
+# Ruby: 72
+# PHP: 68

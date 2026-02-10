@@ -1,0 +1,65 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:16
+    container_name: myapp-postgres
+    environment:
+      POSTGRES_DB: myappdb
+      POSTGRES_USER: myapp
+      POSTGRES_PASSWORD: myapp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - myapp-network
+
+  judge0:
+    image: judge0/judge0:1.13.0
+    container_name: myapp-judge0
+    ports:
+      - "2358:2358"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=judge0-db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=judge0
+      - POSTGRES_USER=judge0
+      - POSTGRES_PASSWORD=judge0
+    depends_on:
+      - judge0-db
+      - redis
+    networks:
+      - myapp-network
+    restart: unless-stopped
+
+  judge0-db:
+    image: postgres:16
+    container_name: judge0-postgres
+    environment:
+      POSTGRES_DB: judge0
+      POSTGRES_USER: judge0
+      POSTGRES_PASSWORD: judge0
+    volumes:
+      - judge0_data:/var/lib/postgresql/data
+    networks:
+      - myapp-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: myapp-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - myapp-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  judge0_data:
+
+networks:
+  myapp-network:
+    driver: bridge
