@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: advent-postgres
+    environment:
+      POSTGRES_DB: advent_academy
+      POSTGRES_USER: advent_user
+      POSTGRES_PASSWORD: advent_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U advent_user -d advent_academy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - advent-network
+
+  user-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: advent-user-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/advent_academy
+      SPRING_DATASOURCE_USERNAME: advent_user
+      SPRING_DATASOURCE_PASSWORD: advent_password
+      JWT_SECRET: your-production-secret-key-at-least-32-characters-long
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - advent-network
+
+volumes:
+  postgres_data:
+
+networks:
+  advent-network:
+    driver: bridge
