@@ -1,10 +1,10 @@
 # Spring Cloud Microservices Project
 
-Учебный проект по Spring Cloud, демонстрирующий работу микросервисной архитектуры с Eureka Server, Spring Cloud Gateway и балансировкой нагрузки.
+Учебный проект по Spring Cloud, демонстрирующий работу микросервисной архитектуры с Eureka Server, Spring Cloud Gateway, балансировкой нагрузки, а также User Service с RBAC.
 
 ## Архитектура
 
-Проект состоит из трех компонентов:
+Проект состоит из нескольких компонентов:
 
 ### 1. Eureka Server (порт 8761)
 - Service Discovery сервер
@@ -24,56 +24,73 @@
 - REST контроллер с эндпоинтом `/client/test`
 - Регистрируются в Eureka под именем `CLIENT-SERVICE`
 
+### 4. User Service / adventAcademy (порт 8080)
+- Сервис управления пользователями с RBAC
+- JWT аутентификация и авторизация
+- Роли и права доступа
+- Swagger UI: http://localhost:8080/swagger-ui.html
+
 ## Технологии
 
-- Java 11+
-- Spring Boot
+- Java 21
+- Spring Boot 4
 - Spring Cloud Netflix Eureka
 - Spring Cloud Gateway
-- Maven
+- Gradle
+- PostgreSQL
+- Docker / Docker Compose
 
 ## Запуск проекта
 
-### 1. Запустить Eureka Server
+### Запуск через Docker Compose (рекомендуется)
+
+```bash
+docker-compose up --build
+```
+
+Запустит PostgreSQL и User Service автоматически.
+
+### Ручной запуск микросервисов Eureka/Gateway/Client
+
+#### 1. Запустить Eureka Server
 ```bash
 cd eureka-server
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
 
-### 2. Запустить Gateway Service
+#### 2. Запустить Gateway Service
 ```bash
 cd gateway-service
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
 
-### 3. Запустить Client Service (оба экземпляра)
+#### 3. Запустить Client Service (оба экземпляра)
 
 **Первый экземпляр (порт 8081):**
 ```bash
 cd client-service
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
 
 **Второй экземпляр (порт 8082):**
 ```bash
 cd client-service-2
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
 
-## Проверка работы
+#### 4. Запустить User Service локально
+```bash
+cd adventAcademy
+./gradlew bootRun
+```
+
+> Требует локально запущенный PostgreSQL на порту 5432 с базой `advent_academy`.
+
+## Проверка работы Gateway
 
 ### Успешный запрос (с заголовком)
 ```bash
 curl -H "spring-cloud-course: test" http://localhost:8080/client/test
-```
-
-Ответ (с балансировкой нагрузки):
-```
-Response from CLIENT-SERVICE on port 8081
-```
-или
-```
-Response from CLIENT-SERVICE on port 8082
 ```
 
 ### Запрос без заголовка (403 Forbidden)
@@ -81,34 +98,20 @@ Response from CLIENT-SERVICE on port 8082
 curl -i http://localhost:8080/client/test
 ```
 
-Ответ:
-```
-HTTP/1.1 403 Forbidden
-```
-
-## Балансировка нагрузки
-
-Gateway автоматически распределяет запросы между двумя экземплярами client-service (8081 и 8082) используя алгоритм Round Robin через Eureka.
-
 ## Структура проекта
 
 ```
-spring-cloud-course/
+spring-cloud-service/
 ├── eureka-server/          # Service Discovery
 ├── gateway-service/        # API Gateway с кастомными фильтрами
 ├── client-service/         # Микросервис (экземпляр 1, порт 8081)
-└── client-service-2/       # Микросервис (экземпляр 2, порт 8082)
+├── client-service-2/       # Микросервис (экземпляр 2, порт 8082)
+├── adventAcademy/          # User Service с RBAC (Gradle, Java 21)
+└── docker-compose.yml      # Общий файл для запуска всех сервисов через Docker
 ```
 
 ## Конфигурация
 
-Все сервисы сконфигурированы через `application.yaml`:
 - Eureka Server: не регистрируется сам в себе
 - Gateway & Client Services: регистрируются в Eureka на `http://localhost:8761/eureka/`
-
-## Особенности реализации
-
-1. **Кастомный фильтр Gateway** - проверка заголовка на уровне API Gateway
-2. **Service Discovery** - динамическое обнаружение сервисов через Eureka
-3. **Load Balancing** - автоматическая балансировка через `lb://CLIENT-SERVICE`
-4. **Декларативная конфигурация** - роуты настроены через YAML вместо Java конфигурации
+- User Service: при запуске через Docker использует профиль `docker` (datasource указывает на контейнер postgres)
