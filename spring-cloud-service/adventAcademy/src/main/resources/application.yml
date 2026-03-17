@@ -3,11 +3,6 @@ spring:
     name: user-service
   profiles:
     active: docker
-  datasource:
-    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB:advent_academy}
-    username: ${POSTGRES_USER:advent_user}
-    password: ${POSTGRES_PASSWORD:advent_password}
-    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
@@ -16,10 +11,6 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
-  security:
-    user:
-      name: ${SPRING_SECURITY_USER_NAME:admin}
-      password: ${SPRING_SECURITY_USER_PASSWORD:admin}
 
 springdoc:
   api-docs:
