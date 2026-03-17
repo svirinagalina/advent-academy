@@ -17,6 +17,13 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * REST controller for RBAC role management.
+ * <p>
+ * Provides endpoints for creating roles, retrieving roles by ID or listing all roles,
+ * and assigning or revoking roles from users.
+ * </p>
+ */
 @RestController
 @RequestMapping("/api/roles")
 @Tag(name = "Roles", description = "Role management endpoints")

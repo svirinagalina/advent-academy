@@ -11,6 +11,14 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Use case service for retrieving user data.
+ * <p>
+ * Provides read-only access to a single user by ID or to the full list of users.
+ * Throws {@link com.adventacademy.userservice.domain.exception.UserNotFoundException}
+ * when the requested user does not exist.
+ * </p>
+ */
 @Service
 public class GetUserService {
 

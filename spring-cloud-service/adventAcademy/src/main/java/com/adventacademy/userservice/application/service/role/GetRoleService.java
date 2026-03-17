@@ -11,6 +11,13 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Use case service for retrieving RBAC roles.
+ * <p>
+ * Provides read-only access to a role by its ID or to the full list of roles,
+ * including the set of permissions attached to each role.
+ * </p>
+ */
 @Service
 public class GetRoleService {
 

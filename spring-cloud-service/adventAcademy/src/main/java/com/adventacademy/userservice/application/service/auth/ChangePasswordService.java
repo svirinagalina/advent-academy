@@ -12,6 +12,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+/**
+ * Use case service for changing a user's password.
+ * <p>
+ * Verifies the current password before replacing it with the new encoded value.
+ * Throws {@link com.adventacademy.userservice.domain.exception.InvalidCredentialsException}
+ * if the old password does not match.
+ * </p>
+ */
 @Service
 public class ChangePasswordService {
 

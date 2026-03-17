@@ -11,6 +11,13 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Use case service for retrieving RBAC permissions.
+ * <p>
+ * Provides read-only access to a permission by its ID or to the complete
+ * list of permissions defined in the system.
+ * </p>
+ */
 @Service
 public class GetPermissionService {
 

@@ -10,6 +10,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.stream.Collectors;
 
+/**
+ * Use case service for creating new RBAC roles.
+ * <p>
+ * Validates that the role name is unique, then persists a new non-system role.
+ * System roles (e.g. ADMIN, USER) are seeded separately and cannot be created
+ * through this service.
+ * </p>
+ */
 @Service
 public class CreateRoleService {
 

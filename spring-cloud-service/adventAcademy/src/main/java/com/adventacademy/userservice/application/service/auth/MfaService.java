@@ -12,6 +12,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+/**
+ * Use case service for TOTP-based multi-factor authentication lifecycle.
+ * <p>
+ * Handles three stages: enabling MFA (generating a TOTP secret and QR-code URL),
+ * confirming MFA setup (validating the first code from the authenticator app),
+ * and disabling MFA (validating the current code before removing the secret).
+ * </p>
+ */
 @Service
 public class MfaService {
 

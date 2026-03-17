@@ -13,6 +13,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Use case service for new user registration.
+ * <p>
+ * Creates a user account in PENDING status, encodes the password, and generates
+ * an email verification token. The account remains inactive until the token is
+ * confirmed via {@link ConfirmEmailService}.
+ * </p>
+ */
 @Service
 public class RegisterUserService {
 

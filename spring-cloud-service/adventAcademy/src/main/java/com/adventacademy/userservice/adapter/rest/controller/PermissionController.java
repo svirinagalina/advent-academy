@@ -15,6 +15,13 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * REST controller for RBAC permission management.
+ * <p>
+ * Provides endpoints for creating atomic permissions and retrieving them
+ * by ID or as a full list. Permissions are assigned to roles, not directly to users.
+ * </p>
+ */
 @RestController
 @RequestMapping("/api/permissions")
 @Tag(name = "Permissions", description = "Permission management endpoints")

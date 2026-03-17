@@ -8,6 +8,13 @@ import com.adventacademy.userservice.domain.repository.PermissionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Use case service for creating atomic RBAC permissions.
+ * <p>
+ * Validates uniqueness of the permission name and persists the new permission.
+ * Permissions are then assigned to roles, not directly to users.
+ * </p>
+ */
 @Service
 public class CreatePermissionService {
 

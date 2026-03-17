@@ -18,6 +18,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+/**
+ * Use case service for user authentication.
+ * <p>
+ * Validates credentials, checks account state (active, not locked), handles
+ * optional MFA code verification, tracks failed attempts via {@link AccountLockService},
+ * and issues JWT access and refresh tokens on success.
+ * </p>
+ */
 @Service
 public class LoginService {
 

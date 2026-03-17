@@ -7,6 +7,13 @@ import com.adventacademy.userservice.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Use case service for email address verification.
+ * <p>
+ * Looks up the user by the one-time verification token, marks the email as verified,
+ * transitions the account from PENDING to ACTIVE, and invalidates the token.
+ * </p>
+ */
 @Service
 public class ConfirmEmailService {
 

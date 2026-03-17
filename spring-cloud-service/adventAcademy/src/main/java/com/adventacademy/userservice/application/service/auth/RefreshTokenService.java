@@ -13,6 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+/**
+ * Use case service for JWT access token renewal.
+ * <p>
+ * Validates the provided refresh token, verifies the user is still active,
+ * and issues a new short-lived access token while reusing the existing refresh token.
+ * </p>
+ */
 @Service
 public class RefreshTokenService {
 

@@ -15,6 +15,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * REST controller for user management operations.
+ * <p>
+ * Provides endpoints for retrieving users by ID or listing all users,
+ * soft-deleting users, and unlocking locked accounts.
+ * Intended for use by administrators with appropriate authorization.
+ * </p>
+ */
 @RestController
 @RequestMapping("/api/users")
 @Tag(name = "Users", description = "User management endpoints")

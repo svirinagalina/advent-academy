@@ -10,6 +10,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Service for managing automatic account locking after repeated failed login attempts.
+ * <p>
+ * Increments the failed-attempt counter on each bad credential submission and locks
+ * the account for a configurable duration once the maximum threshold is reached.
+ * Also provides manual unlock functionality for administrators.
+ * </p>
+ */
 @Service
 public class AccountLockService {
 

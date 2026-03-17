@@ -13,6 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Use case service for managing role assignments on users.
+ * <p>
+ * Allows granting a role to a user and revoking it. Both operations
+ * validate that the user and role exist before modifying the relationship.
+ * </p>
+ */
 @Service
 public class AssignRoleService {
 

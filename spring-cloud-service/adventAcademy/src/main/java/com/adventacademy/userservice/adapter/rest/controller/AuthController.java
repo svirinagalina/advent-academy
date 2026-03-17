@@ -19,6 +19,14 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+/**
+ * REST controller handling user authentication and registration.
+ * <p>
+ * Provides endpoints for user registration, login with optional MFA, JWT token refresh,
+ * email confirmation, password change, and MFA setup/teardown.
+ * All endpoints are public and do not require prior authentication.
+ * </p>
+ */
 @RestController
 @RequestMapping("/api/auth")
 @Tag(name = "Authentication", description = "Authentication and registration endpoints")
