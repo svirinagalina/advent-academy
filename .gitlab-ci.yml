@@ -55,3 +55,30 @@ static-checks:
       - 'reports/spotbugs.html'
       - '**/build/reports/tests/test/'
     expire_in: 1 week
+docker-build:
+  stage: docker-build
+  image: docker:24.0.7
+  services:
+    - name: docker:24.0.7-dind
+      command: ["--tls=false"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  needs: ["static-checks"]
+  before_script:
+    - apk add --no-cache bash findutils
+  script:
+    - echo "Searching for Dockerfiles..."
+    - DOCKERFILES=$(find . -mindepth 2 -maxdepth 4 -name 'Dockerfile')
+    - |
+      if [ -z "$DOCKERFILES" ]; then
+        echo "No Dockerfiles found, failing docker-build stage."
+        exit 1
+      fi
+    - |
+      for FILE in $DOCKERFILES; do
+        SERVICE_DIR=$(dirname "$FILE")
+        IMAGE_NAME="${CI_PROJECT_PATH_SLUG}-$(basename "$SERVICE_DIR"):${CI_COMMIT_SHORT_SHA}"
+        echo "Building image: $IMAGE_NAME from $FILE (context: $SERVICE_DIR)"
+        docker build -f "$FILE" -t "$IMAGE_NAME" "$SERVICE_DIR"
+      done
