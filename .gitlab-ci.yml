@@ -17,10 +17,6 @@ default:
       - .gradle/caches
     policy: pull-push
 
-workflow:
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '$CI_COMMIT_BRANCH =~ /^(main|master|develop)$/'
 build:
   stage: build
   script:
@@ -30,6 +26,3 @@ build:
     paths:
       - '**/build/libs/*.jar'
     expire_in: 1 week
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '$CI_COMMIT_BRANCH =~ /^(main|master|develop)$/'
