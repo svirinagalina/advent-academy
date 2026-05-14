@@ -21,3 +21,15 @@ workflow:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH =~ /^(main|master|develop)$/'
+build:
+  stage: build
+  script:
+    - ./gradlew clean assemble --no-daemon --stacktrace
+  artifacts:
+    when: always
+    paths:
+      - '**/build/libs/*.jar'
+    expire_in: 1 week
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master|develop)$/'
