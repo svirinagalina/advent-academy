@@ -26,3 +26,17 @@ build:
     paths:
       - '**/build/libs/*.jar'
     expire_in: 1 week
+test:
+  stage: test
+  needs: ["build"]
+  script:
+    - ./gradlew test --no-daemon --stacktrace
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - '**/build/test-results/test/*.xml'
+    paths:
+      - '**/build/test-results/test/'
+      - '**/build/reports/tests/test/'
+    expire_in: 1 week
