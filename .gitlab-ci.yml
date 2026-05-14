@@ -40,3 +40,18 @@ test:
       - '**/build/test-results/test/'
       - '**/build/reports/tests/test/'
     expire_in: 1 week
+static-checks:
+  stage: static-checks
+  needs: ["test"]
+  script:
+    # Явно запустим задачи качества, если они есть
+    - ./gradlew checkstyleMain checkstyleTest spotbugsMain spotbugsTest --no-daemon --stacktrace
+    # А затем общую проверку, которая обычно включает и тесты, и проверки
+    - ./gradlew check --no-daemon --stacktrace
+  artifacts:
+    when: always
+    paths:
+      - '**/build/reports/checkstyle/'
+      - 'reports/spotbugs.html'
+      - '**/build/reports/tests/test/'
+    expire_in: 1 week
