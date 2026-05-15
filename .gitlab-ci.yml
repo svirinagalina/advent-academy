@@ -78,7 +78,7 @@ docker-build:
         SERVICE_DIR=$(dirname "$FILE")
         IMAGE_NAME="${CI_PROJECT_PATH_SLUG}-$(basename "$SERVICE_DIR"):${CI_COMMIT_SHORT_SHA}"
         echo "Building image: $IMAGE_NAME from $FILE (context: $SERVICE_DIR)"
-        docker build -f "$FILE" -t "$IMAGE_NAME" "$SERVICE_DIR"
+        docker build -f "$FILE" -t "$IMAGE_NAME" .
       done
 workflow:
   rules:
