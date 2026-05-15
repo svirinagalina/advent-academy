@@ -1,35 +1,11 @@
 spring:
-  application:
-    name: user-service
   profiles:
-    active: docker
+    active: local
+
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+      ddl-auto: validate
 
-springdoc:
-  api-docs:
+  flyway:
     enabled: true
-    path: /v3/api-docs
-  swagger-ui:
-    enabled: true
-    path: /swagger-ui.html
-
-security:
-  jwt:
-    secret: ${JWT_SECRET:your-256-bit-secret-key-change-this-in-production-use-at-least-32-characters}
-    access-token-expiration-minutes: 15
-    refresh-token-expiration-days: 7
-  account-lock:
-    max-failed-attempts: 5
-    lock-duration-minutes: 30
-
-logging:
-  level:
-    com.adventacademy: DEBUG
-    org.springframework.security: DEBUG
+    locations: classpath:db/migration
