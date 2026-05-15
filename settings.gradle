@@ -1,2 +1,1 @@
 rootProject.name = 'advent-academy'
-include 'user-service'
