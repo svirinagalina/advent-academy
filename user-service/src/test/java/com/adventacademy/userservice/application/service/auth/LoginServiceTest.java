@@ -113,7 +113,8 @@ class LoginServiceTest {
 
     @Test
     void login_LockedAccount_ThrowsAccountLockedException() {
-        user.lock(LocalDateTime.now(FIXED_CLOCK).plusMinutes(30));
+        // Lock until far future to ensure isLocked() returns true regardless of system clock
+        user.lock(LocalDateTime.now().plusYears(1));
         LoginRequest request = new LoginRequest("user@example.com", "password", null);
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
 
