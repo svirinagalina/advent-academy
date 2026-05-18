@@ -122,8 +122,8 @@ class LoginServiceTest {
     }
 
     @Test
-    void login_InactiveUser_ThrowsInvalidUserStateException() {
-        user.setStatus(UserStatus.INACTIVE);
+    void login_SuspendedUser_ThrowsInvalidUserStateException() {
+        user.setStatus(UserStatus.SUSPENDED);
         LoginRequest request = new LoginRequest("user@example.com", "password", null);
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
 
