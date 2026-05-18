@@ -1,11 +1,14 @@
 # Build stage
-FROM gradle:8-jdk21 AS build
+FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
-COPY settings.gradle build.gradle ./
+
+COPY gradlew ./
 COPY gradle gradle
+COPY settings.gradle build.gradle ./
 COPY user-service/build.gradle user-service/build.gradle
 COPY user-service/src user-service/src
-RUN gradle :user-service:bootJar --no-daemon
+
+RUN chmod +x gradlew && ./gradlew :user-service:bootJar --no-daemon
 
 # Runtime stage
 FROM eclipse-temurin:21-jre-alpine
