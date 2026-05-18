@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -24,21 +25,24 @@ public class AccountLockService {
     private final UserRepository userRepository;
     private final int maxAttempts;
     private final int lockDurationMinutes;
+    private final Clock clock;
 
     public AccountLockService(
             UserRepository userRepository,
             @Value("${security.account-lock.max-failed-attempts:5}") int maxAttempts,
-            @Value("${security.account-lock.lock-duration-minutes:30}") int lockDurationMinutes) {
+            @Value("${security.account-lock.lock-duration-minutes:30}") int lockDurationMinutes,
+            Clock clock) {
         this.userRepository = userRepository;
         this.maxAttempts = maxAttempts;
         this.lockDurationMinutes = lockDurationMinutes;
+        this.clock = clock;
     }
 
     @Transactional
     public void handleFailedLogin(User user) {
         user.incrementFailedAttempts();
         if (user.getFailedLoginAttempts() >= maxAttempts) {
-            user.lock(LocalDateTime.now().plusMinutes(lockDurationMinutes));
+            user.lock(LocalDateTime.now(clock).plusMinutes(lockDurationMinutes));
         }
         userRepository.save(user);
     }

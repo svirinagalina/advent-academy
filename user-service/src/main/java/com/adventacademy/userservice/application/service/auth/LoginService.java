@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 /**
@@ -35,6 +36,7 @@ public class LoginService {
     private final MfaProvider mfaProvider;
     private final AccountLockService accountLockService;
     private final long accessTokenExpirationMinutes;
+    private final Clock clock;
 
     public LoginService(
             UserRepository userRepository,
@@ -42,13 +44,15 @@ public class LoginService {
             JwtProvider jwtProvider,
             MfaProvider mfaProvider,
             AccountLockService accountLockService,
-            @Value("${security.jwt.access-token-expiration-minutes:15}") long accessTokenExpirationMinutes) {
+            @Value("${security.jwt.access-token-expiration-minutes:15}") long accessTokenExpirationMinutes,
+            Clock clock) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtProvider = jwtProvider;
         this.mfaProvider = mfaProvider;
         this.accountLockService = accountLockService;
         this.accessTokenExpirationMinutes = accessTokenExpirationMinutes;
+        this.clock = clock;
     }
 
     @Transactional
@@ -79,7 +83,7 @@ public class LoginService {
         }
 
         user.resetFailedAttempts();
-        user.setLastLoginAt(LocalDateTime.now());
+        user.setLastLoginAt(LocalDateTime.now(clock));
         userRepository.save(user);
 
         String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getEmail());
