@@ -9,6 +9,7 @@ import com.adventacademy.userservice.application.service.role.GetRoleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -74,8 +75,11 @@ public class RoleController {
     @ApiResponse(responseCode = "404", description = "User or role not found")
     public ResponseEntity<UserResponse> assignRoleToUser(
             @PathVariable UUID userId,
-            @PathVariable UUID roleId) {
-        UserResponse response = assignRoleService.assignRoleToUser(userId, roleId);
+            @PathVariable UUID roleId,
+            HttpServletRequest httpRequest) {
+        String ipAddress = httpRequest.getRemoteAddr();
+        String userAgent = httpRequest.getHeader("User-Agent");
+        UserResponse response = assignRoleService.assignRoleToUser(userId, roleId, ipAddress, userAgent);
         return ResponseEntity.ok(response);
     }
 
@@ -85,8 +89,11 @@ public class RoleController {
     @ApiResponse(responseCode = "404", description = "User or role not found")
     public ResponseEntity<UserResponse> removeRoleFromUser(
             @PathVariable UUID userId,
-            @PathVariable UUID roleId) {
-        UserResponse response = assignRoleService.removeRoleFromUser(userId, roleId);
+            @PathVariable UUID roleId,
+            HttpServletRequest httpRequest) {
+        String ipAddress = httpRequest.getRemoteAddr();
+        String userAgent = httpRequest.getHeader("User-Agent");
+        UserResponse response = assignRoleService.removeRoleFromUser(userId, roleId, ipAddress, userAgent);
         return ResponseEntity.ok(response);
     }
 }

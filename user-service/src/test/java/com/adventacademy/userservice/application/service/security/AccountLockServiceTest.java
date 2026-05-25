@@ -1,15 +1,18 @@
 package com.adventacademy.userservice.application.service.security;
 
+import com.adventacademy.userservice.application.port.AuditTrailPort;
 import com.adventacademy.userservice.domain.model.User;
 import com.adventacademy.userservice.domain.model.UserStatus;
 import com.adventacademy.userservice.domain.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,13 +26,16 @@ class AccountLockServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private AuditTrailPort auditTrailPort;
+
     private AccountLockService accountLockService;
     private User user;
 
     @BeforeEach
     void setUp() {
-        accountLockService = new AccountLockService(userRepository, 5, 30);
-
+        Clock fixedClock = Clock.fixed(Instant.parse("2024-01-01T10:00:00Z"), ZoneOffset.UTC);
+        accountLockService = new AccountLockService(userRepository, auditTrailPort, 5, 30, fixedClock);
         user = new User();
         user.setId(UUID.randomUUID());
         user.setEmail("test@example.com");
@@ -68,7 +74,7 @@ class AccountLockServiceTest {
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenReturn(user);
 
-        accountLockService.unlockAccount(user.getId());
+        accountLockService.unlockAccount(user.getId(), "127.0.0.1", "Mozilla");
 
         assertEquals(UserStatus.ACTIVE, user.getStatus());
         assertEquals(0, user.getFailedLoginAttempts());

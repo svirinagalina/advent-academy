@@ -1,4 +1,7 @@
 package com.adventacademy.userservice.application.port;
 
-public class AuditTrailPort {
+import com.adventacademy.userservice.domain.model.AuditEvent;
+
+public interface AuditTrailPort {
+    void record(AuditEvent event);
 }

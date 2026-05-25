@@ -11,5 +11,9 @@ public record LoginRequest(
         @NotBlank(message = "Password is required")
         String password,
 
-        String mfaCode
+        String mfaCode,
+
+        String ipAddress,
+
+        String userAgent
 ) {}
