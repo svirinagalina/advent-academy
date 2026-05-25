@@ -75,7 +75,7 @@ class LoginServiceTest {
 
     @Test
     void login_SuccessfulLogin_ReturnsAuthResponse() {
-        LoginRequest request = new LoginRequest("user@example.com", "password", null);
+        LoginRequest request = new LoginRequest("user@example.com", "password", null, null, null);
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password", "hashed-password")).thenReturn(true);
         when(jwtProvider.generateAccessToken(any(UUID.class), anyString())).thenReturn("access-token");
@@ -94,7 +94,7 @@ class LoginServiceTest {
 
     @Test
     void login_UserNotFound_ThrowsUserNotFoundException() {
-        LoginRequest request = new LoginRequest("unknown@example.com", "password", null);
+        LoginRequest request = new LoginRequest("unknown@example.com", "password", null, null, null);
         when(userRepository.findByEmail("unknown@example.com")).thenReturn(Optional.empty());
 
         assertThrows(UserNotFoundException.class, () -> loginService.login(request));
@@ -103,7 +103,7 @@ class LoginServiceTest {
 
     @Test
     void login_WrongPassword_CallsHandleFailedLoginAndThrows() {
-        LoginRequest request = new LoginRequest("user@example.com", "wrong-password", null);
+        LoginRequest request = new LoginRequest("user@example.com", "wrong-password", null, null, null);
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("wrong-password", "hashed-password")).thenReturn(false);
 
@@ -115,7 +115,7 @@ class LoginServiceTest {
     void login_LockedAccount_ThrowsAccountLockedException() {
         // Lock until far future to ensure isLocked() returns true regardless of system clock
         user.lock(LocalDateTime.now().plusYears(1));
-        LoginRequest request = new LoginRequest("user@example.com", "password", null);
+        LoginRequest request = new LoginRequest("user@example.com", "password", null, null, null);
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
 
         assertThrows(AccountLockedException.class, () -> loginService.login(request));
@@ -125,7 +125,7 @@ class LoginServiceTest {
     @Test
     void login_SuspendedUser_ThrowsInvalidUserStateException() {
         user.setStatus(UserStatus.SUSPENDED);
-        LoginRequest request = new LoginRequest("user@example.com", "password", null);
+        LoginRequest request = new LoginRequest("user@example.com", "password", null, null, null);
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
 
         assertThrows(InvalidUserStateException.class, () -> loginService.login(request));
@@ -136,7 +136,7 @@ class LoginServiceTest {
     void login_MfaEnabledNoCode_ReturnsMfaRequiredResponse() {
         user.setMfaEnabled(true);
         user.setMfaSecret("mfa-secret");
-        LoginRequest request = new LoginRequest("user@example.com", "password", null);
+        LoginRequest request = new LoginRequest("user@example.com", "password", null, null, null);
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password", "hashed-password")).thenReturn(true);
 
@@ -152,7 +152,7 @@ class LoginServiceTest {
     void login_MfaEnabledInvalidCode_ThrowsInvalidCredentialsException() {
         user.setMfaEnabled(true);
         user.setMfaSecret("mfa-secret");
-        LoginRequest request = new LoginRequest("user@example.com", "password", "wrong-code");
+        LoginRequest request = new LoginRequest("user@example.com", "password", "wrong-code", null, null);
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password", "hashed-password")).thenReturn(true);
         when(mfaProvider.validateCode("mfa-secret", "wrong-code")).thenReturn(false);
@@ -165,7 +165,7 @@ class LoginServiceTest {
     void login_MfaEnabledValidCode_ReturnsAuthResponse() {
         user.setMfaEnabled(true);
         user.setMfaSecret("mfa-secret");
-        LoginRequest request = new LoginRequest("user@example.com", "password", "123456");
+        LoginRequest request = new LoginRequest("user@example.com", "password", "123456", null, null);
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password", "hashed-password")).thenReturn(true);
         when(mfaProvider.validateCode("mfa-secret", "123456")).thenReturn(true);
