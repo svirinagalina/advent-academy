@@ -13,6 +13,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,6 +24,10 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AccountLockServiceTest {
+
+    private static final Instant FIXED_INSTANT = Instant.parse("2025-01-15T10:00:00Z");
+    private static final ZoneId ZONE = ZoneId.of("UTC");
+    private static final Clock FIXED_CLOCK = Clock.fixed(FIXED_INSTANT, ZONE);
 
     @Mock
     private UserRepository userRepository;
@@ -36,6 +42,7 @@ class AccountLockServiceTest {
     void setUp() {
         Clock fixedClock = Clock.fixed(Instant.parse("2024-01-01T10:00:00Z"), ZoneOffset.UTC);
         accountLockService = new AccountLockService(userRepository, auditTrailPort, 5, 30, fixedClock);
+
         user = new User();
         user.setId(UUID.randomUUID());
         user.setEmail("test@example.com");
@@ -62,15 +69,28 @@ class AccountLockServiceTest {
 
         assertEquals(5, user.getFailedLoginAttempts());
         assertEquals(UserStatus.LOCKED, user.getStatus());
-        assertNotNull(user.getLockedUntil());
+        LocalDateTime expectedLockUntil = LocalDateTime.now(FIXED_CLOCK).plusMinutes(30);
+        assertEquals(expectedLockUntil, user.getLockedUntil());
+        verify(userRepository, times(1)).save(user);
+    }
+
+    @Test
+    void handleFailedLogin_DoesNotLockBeforeMaxAttempts() {
+        user.setFailedLoginAttempts(3);
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        accountLockService.handleFailedLogin(user);
+
+        assertEquals(4, user.getFailedLoginAttempts());
+        assertEquals(UserStatus.ACTIVE, user.getStatus());
+        assertNull(user.getLockedUntil());
         verify(userRepository, times(1)).save(user);
     }
 
     @Test
     void unlockAccount_UnlocksUserAndResetsAttempts() {
-        user.lock(user.getLockedUntil());
+        user.lock(LocalDateTime.now(FIXED_CLOCK).plusMinutes(30));
         user.setFailedLoginAttempts(5);
-
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenReturn(user);
 

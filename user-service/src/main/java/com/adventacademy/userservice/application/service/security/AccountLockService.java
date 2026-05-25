@@ -42,6 +42,7 @@ public class AccountLockService {
         user.incrementFailedAttempts();
         if (user.getFailedLoginAttempts() >= maxAttempts) {
             user.lock(LocalDateTime.now(clock).plusMinutes(lockDurationMinutes));
+<<<<<<< user-service/src/main/java/com/adventacademy/userservice/application/service/security/AccountLockService.java
             auditTrailPort.record(new AuditEvent(
                     UUID.randomUUID(),
                     AuditEventType.USER_BLOCKED,
