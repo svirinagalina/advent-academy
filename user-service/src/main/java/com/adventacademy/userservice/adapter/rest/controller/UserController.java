@@ -8,6 +8,7 @@ import com.adventacademy.userservice.application.service.user.GetUserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -71,8 +72,12 @@ public class UserController {
     @Operation(summary = "Unlock user account", description = "Unlock a locked user account")
     @ApiResponse(responseCode = "200", description = "Account unlocked successfully")
     @ApiResponse(responseCode = "404", description = "User not found")
-    public ResponseEntity<MessageResponse> unlockAccount(@PathVariable UUID id) {
-        accountLockService.unlockAccount(id);
+    public ResponseEntity<MessageResponse> unlockAccount(
+            @PathVariable UUID id,
+            HttpServletRequest httpRequest) {
+        String ipAddress = httpRequest.getRemoteAddr();
+        String userAgent = httpRequest.getHeader("User-Agent");
+        accountLockService.unlockAccount(id, ipAddress, userAgent);
         return ResponseEntity.ok(new MessageResponse("Account unlocked successfully"));
     }
 }

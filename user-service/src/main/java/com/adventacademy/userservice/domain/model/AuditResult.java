@@ -1,4 +1,6 @@
 package com.adventacademy.userservice.domain.model;
 
-public class AuditResult {
+public enum AuditResult {
+    SUCCESS,
+    FAILED
 }

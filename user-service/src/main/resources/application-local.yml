@@ -8,3 +8,21 @@ spring:
     user:
       name: ${SPRING_SECURITY_USER_NAME:admin}
       password: ${SPRING_SECURITY_USER_PASSWORD:admin}
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+logging:
+  level:
+    com.adventacademy: DEBUG
+    # Enable on demand when debugging auth or persistence:
+    # org.springframework.security: DEBUG
+    # org.hibernate.SQL: DEBUG
+    # org.hibernate.orm.jdbc.bind: TRACE
+  structured:
+    format:
+      console:
+  pattern:
+    console: "%d{HH:mm:ss} [%thread] %-5level %logger{36} [requestId=%X{requestId}] - %msg%n"

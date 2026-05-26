@@ -12,6 +12,7 @@ import com.adventacademy.userservice.application.service.auth.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -68,8 +69,22 @@ public class AuthController {
     @ApiResponse(responseCode = "200", description = "Login successful")
     @ApiResponse(responseCode = "401", description = "Invalid credentials")
     @ApiResponse(responseCode = "403", description = "Account locked or not verified")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        AuthResponse response = loginService.login(request);
+    public ResponseEntity<AuthResponse> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest) {
+
+        String ipAddress = httpRequest.getRemoteAddr();
+        String userAgent = httpRequest.getHeader("User-Agent");
+
+        LoginRequest enrichedRequest = new LoginRequest(
+                request.email(),
+                request.password(),
+                request.mfaCode(),
+                ipAddress,
+                userAgent
+        );
+
+        AuthResponse response = loginService.login(enrichedRequest);
         return ResponseEntity.ok(response);
     }
 
@@ -86,8 +101,12 @@ public class AuthController {
     @Operation(summary = "Confirm email", description = "Confirm user email address with verification token")
     @ApiResponse(responseCode = "200", description = "Email confirmed successfully")
     @ApiResponse(responseCode = "404", description = "Invalid verification token")
-    public ResponseEntity<MessageResponse> confirmEmail(@RequestParam String token) {
-        MessageResponse response = confirmEmailService.confirmEmail(token);
+    public ResponseEntity<MessageResponse> confirmEmail(
+            @RequestParam String token,
+            HttpServletRequest httpRequest) {
+        String ipAddress = httpRequest.getRemoteAddr();
+        String userAgent = httpRequest.getHeader("User-Agent");
+        MessageResponse response = confirmEmailService.confirmEmail(token, ipAddress, userAgent);
         return ResponseEntity.ok(response);
     }
 
@@ -95,10 +114,23 @@ public class AuthController {
     @Operation(summary = "Change password", description = "Change user password")
     @ApiResponse(responseCode = "200", description = "Password changed successfully")
     @ApiResponse(responseCode = "401", description = "Invalid old password")
+
     public ResponseEntity<MessageResponse> changePassword(
             @RequestParam UUID userId,
-            @Valid @RequestBody ChangePasswordRequest request) {
-        MessageResponse response = changePasswordService.changePassword(userId, request);
+            @Valid @RequestBody ChangePasswordRequest request,
+            HttpServletRequest httpRequest) {
+
+        String ipAddress = httpRequest.getRemoteAddr();
+        String userAgent = httpRequest.getHeader("User-Agent");
+
+        ChangePasswordRequest enrichedRequest = new ChangePasswordRequest(
+                request.oldPassword(),
+                request.newPassword(),
+                ipAddress,
+                userAgent
+        );
+
+        MessageResponse response = changePasswordService.changePassword(userId, enrichedRequest);
         return ResponseEntity.ok(response);
     }
 

@@ -5,11 +5,11 @@ spring:
     active: docker
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: validate
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 springdoc:
@@ -29,7 +29,37 @@ security:
     max-failed-attempts: 5
     lock-duration-minutes: 30
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus, info, metrics
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: db, diskSpace
+        liveness:
+          include: ping
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
+    tags:
+      application: ${spring.application.name}
+
 logging:
   level:
-    com.adventacademy: DEBUG
-    org.springframework.security: DEBUG
+    com.adventacademy: INFO
+    org.springframework.security: WARN
+  structured:
+    format:
+      console: logstash
+  include-application-name: true
+  pattern:
+    correlation: "[requestId=%mdc{requestId:-}] "
