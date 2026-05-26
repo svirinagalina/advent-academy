@@ -24,6 +24,12 @@ repositories {
     mavenCentral()
 }
 
+dependencyManagement {
+    dependencies {
+        dependency 'net.logstash.logback:logstash-logback-encoder:7.4'
+    }
+}
+
 dependencies {
     // Spring Boot Starters
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -33,7 +39,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     // Micrometer Prometheus
     implementation 'io.micrometer:micrometer-registry-prometheus'
-    implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+    implementation 'net.logstash.logback:logstash-logback-encoder'
 
     // PostgreSQL
     runtimeOnly 'org.postgresql:postgresql'
