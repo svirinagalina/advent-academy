@@ -21,3 +21,8 @@ logging:
     # org.springframework.security: DEBUG
     # org.hibernate.SQL: DEBUG
     # org.hibernate.orm.jdbc.bind: TRACE
+  structured:
+    format:
+      console:
+  pattern:
+    console: "%d{HH:mm:ss} [%thread] %-5level %logger{36} [requestId=%X{requestId}] - %msg%n"

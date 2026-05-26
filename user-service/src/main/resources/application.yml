@@ -57,3 +57,9 @@ logging:
   level:
     com.adventacademy: INFO
     org.springframework.security: WARN
+  structured:
+    format:
+      console: logstash
+  include-application-name: true
+  pattern:
+    correlation: "[requestId=%mdc{requestId:-}] "
