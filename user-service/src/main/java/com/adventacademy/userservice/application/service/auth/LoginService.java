@@ -24,6 +24,16 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Use case service for user authentication.
+ * <p>
+ * Validates credentials, checks account state (active, not locked), handles
+ * optional MFA code verification, tracks failed attempts via {@link AccountLockService},
+ * and issues JWT access and refresh tokens on success. Every outcome (success,
+ * invalid credentials, locked account, MFA challenge) is recorded through
+ * {@link AuditTrailPort} for security auditing.
+ * </p>
+ */
 @Service
 public class LoginService {
 

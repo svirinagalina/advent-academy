@@ -12,6 +12,16 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.UUID;
 
+/**
+ * Servlet filter that assigns a correlation id to every incoming HTTP request.
+ * <p>
+ * Reads the inbound {@code X-Request-Id} header if present, otherwise generates
+ * a random UUID. The id is placed into the SLF4J {@link MDC} under key
+ * {@code requestId} so that downstream log statements (including the Logstash
+ * JSON encoder) automatically include it, and echoed back to the client in the
+ * response header for end-to-end request tracing.
+ * </p>
+ */
 @Component
 @Order(1)
 public class RequestIdFilter extends OncePerRequestFilter {

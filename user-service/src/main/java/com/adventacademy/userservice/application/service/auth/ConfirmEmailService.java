@@ -15,6 +15,14 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Use case service for email address verification.
+ * <p>
+ * Looks up the user by the one-time verification token, marks the email as verified,
+ * transitions the account from PENDING to ACTIVE, and invalidates the token.
+ * Emits an {@link AuditEventType#EMAIL_CONFIRMED} audit event via {@link AuditTrailPort}.
+ * </p>
+ */
 @Service
 public class ConfirmEmailService {
 

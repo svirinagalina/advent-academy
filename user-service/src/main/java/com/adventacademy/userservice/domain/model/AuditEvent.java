@@ -4,6 +4,15 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Immutable record of a security-sensitive action captured by the audit trail.
+ * <p>
+ * Carries the event type, the actor and target user identifiers, the outcome
+ * (success or failure with optional reason), the request context (IP address,
+ * user agent), the moment it occurred, and an optional metadata map for
+ * event-specific details.
+ * </p>
+ */
 public class AuditEvent {
 
     private final UUID id;
