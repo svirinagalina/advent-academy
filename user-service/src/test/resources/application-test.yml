@@ -22,5 +22,10 @@ security:
     lock-duration-minutes: 30
 
 logging:
+  structured:
+    format:
+      console:
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n"
   level:
     com.adventacademy: INFO

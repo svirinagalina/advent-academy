@@ -47,7 +47,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
         "spring.jpa.properties.hibernate.generate_statistics=true",
-        "spring.flyway.enabled=false"
+        "spring.flyway.enabled=false",
+        "spring.jpa.show-sql=true",
+        "spring.jpa.properties.hibernate.format_sql=true",
+        "logging.level.org.hibernate.SQL=DEBUG"
 })
 @Transactional
 class FetchStrategyDiagnosticIT {
@@ -96,6 +99,14 @@ class FetchStrategyDiagnosticIT {
 
         em.flush();
         em.clear();
+
+        System.out.println();
+        System.out.println("################################################################");
+        System.out.println("# Seeded: " + USERS + " users, " + ROLES_PER_USER
+                + " roles, " + (ROLES_PER_USER * PERMS_PER_ROLE) + " permissions");
+        System.out.println("# Each user has all " + ROLES_PER_USER + " roles assigned");
+        System.out.println("# Each role has " + PERMS_PER_ROLE + " permissions assigned");
+        System.out.println("################################################################");
     }
 
     @Test
