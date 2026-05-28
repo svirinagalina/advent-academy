@@ -29,14 +29,14 @@ public class GetRoleService {
 
     @Transactional(readOnly = true)
     public RoleResponse getRoleById(UUID roleId) {
-        Role role = roleRepository.findById(roleId)
+        Role role = roleRepository.findByIdWithPermissions(roleId)
                 .orElseThrow(() -> new RoleNotFoundException(roleId));
         return mapToRoleResponse(role);
     }
 
     @Transactional(readOnly = true)
     public List<RoleResponse> getAllRoles() {
-        return roleRepository.findAll().stream()
+        return roleRepository.findAllWithPermissions().stream()
                 .map(this::mapToRoleResponse)
                 .collect(Collectors.toList());
     }

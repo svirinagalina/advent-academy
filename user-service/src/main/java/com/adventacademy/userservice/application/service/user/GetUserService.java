@@ -30,14 +30,14 @@ public class GetUserService {
 
     @Transactional(readOnly = true)
     public UserResponse getUserById(UUID userId) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdWithRoles(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
         return mapToUserResponse(user);
     }
 
     @Transactional(readOnly = true)
     public List<UserResponse> getAllUsers() {
-        return userRepository.findAll().stream()
+        return userRepository.findAllWithRoles().stream()
                 .map(this::mapToUserResponse)
                 .collect(Collectors.toList());
     }

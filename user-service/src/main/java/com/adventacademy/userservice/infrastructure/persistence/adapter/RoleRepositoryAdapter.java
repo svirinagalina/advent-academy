@@ -37,6 +37,12 @@ public class RoleRepositoryAdapter implements RoleRepository {
     }
 
     @Override
+    public Optional<Role> findByIdWithPermissions(UUID id) {
+        return jpaRepository.findWithPermissionsById(id)
+                .map(mapper::toDomain);
+    }
+
+    @Override
     public Optional<Role> findByName(String name) {
         return jpaRepository.findByName(name)
                 .map(mapper::toDomain);
@@ -45,6 +51,13 @@ public class RoleRepositoryAdapter implements RoleRepository {
     @Override
     public List<Role> findAll() {
         return jpaRepository.findAll().stream()
+                .map(mapper::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Role> findAllWithPermissions() {
+        return jpaRepository.findAllWithPermissions().stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }

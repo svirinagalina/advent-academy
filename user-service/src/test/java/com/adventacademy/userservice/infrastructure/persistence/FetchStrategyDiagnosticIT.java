@@ -33,15 +33,18 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Diagnostic test that proves the N+1 / overfetching problem caused by
- * {@code FetchType.EAGER} on {@code UserEntity.roles} and {@code RoleEntity.permissions}.
+ * Diagnostic test that proves the fix for the N+1 / overfetching problem on the
+ * RBAC graph. Seeds 20 users x 3 roles x 5 permissions and runs the three hot read
+ * paths (list users, list roles, login-style findByEmail), asserting the post-fix
+ * SQL counts after switching to {@code FetchType.LAZY} plus targeted
+ * {@code @EntityGraph} fetch plans.
  * <p>
- * Seeds a representative graph (20 users x 3 roles x 5 permissions) and runs the
- * three hot read paths (list users, list roles, login-style findByEmail), reporting
- * the number of SQL statements executed by Hibernate for each. The pre-fix assertions
- * pin the current bad behaviour so the same test can be re-purposed to prove the fix
- * by tightening the numbers in the next step.
- * </p>
+ * Pre-fix numbers (captured on commit 8a997f8 with EAGER on both relationships):
+ * <ul>
+ *   <li>{@code GET /api/users}     — 21 statements (1 + 20 lazy joins per user)</li>
+ *   <li>{@code GET /api/roles}     — 4 statements (1 + 3 lazy joins per role)</li>
+ *   <li>{@code findByEmail} login  — 2 statements (1 user + 1 eager roles/perms join)</li>
+ * </ul>
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -120,9 +123,9 @@ class FetchStrategyDiagnosticIT {
         printReport("GET /api/users  (getAllUsers)", queryCount, stats);
 
         assertThat(users).hasSize(USERS);
-        // Pre-fix snapshot: 1 SELECT for users + 20 SELECTs (one per user) for roles+permissions join = 21.
-        // After fix with @EntityGraph(roles), this should drop to ~2 statements.
-        assertThat(queryCount).as("getAllUsers BEFORE fix").isBetween(20L, 25L);
+        // Was 21 before the fix (1 + 20 lazy joins on roles+permissions).
+        // After fix: @EntityGraph("roles") + LAZY permissions => 1-2 statements.
+        assertThat(queryCount).as("getAllUsers AFTER fix").isLessThanOrEqualTo(2L);
     }
 
     @Test
@@ -136,9 +139,9 @@ class FetchStrategyDiagnosticIT {
         printReport("GET /api/roles  (getAllRoles)", queryCount, stats);
 
         assertThat(roles).hasSize(ROLES_PER_USER);
-        // Pre-fix snapshot: 1 SELECT for roles + 3 SELECTs (one per role) for permissions = 4.
-        // After fix with @EntityGraph(permissions), this should drop to ~2.
-        assertThat(queryCount).as("getAllRoles BEFORE fix").isBetween(4L, 6L);
+        // Was 4 before the fix (1 + 3 lazy joins on permissions).
+        // After fix: @EntityGraph("permissions") => 1-2 statements.
+        assertThat(queryCount).as("getAllRoles AFTER fix").isLessThanOrEqualTo(2L);
     }
 
     @Test
@@ -152,9 +155,9 @@ class FetchStrategyDiagnosticIT {
         printReport("POST /api/auth/login  (findByEmail)", queryCount, stats);
 
         assertThat(user).isPresent();
-        // Pre-fix snapshot: 1 SELECT user + 1 SELECT roles+permissions (eager) = 2.
-        // After fix (no fetch of roles for login), this should drop to 1.
-        assertThat(queryCount).as("findByEmail BEFORE fix").isBetween(2L, 3L);
+        // Was 2 before the fix (1 user + 1 eager roles/permissions join).
+        // After fix (LAZY + lazy-safe mapper, login path never touches roles) => 1.
+        assertThat(queryCount).as("findByEmail AFTER fix").isEqualTo(1L);
     }
 
     private Statistics stats() {
