@@ -13,6 +13,13 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         generate_statistics: true
 
+# DataSource decoration (p6spy) is off by default — only the local profile
+# turns it on, so production runs with a plain HikariDataSource and zero
+# proxy overhead.
+decorator:
+  datasource:
+    enabled: false
+
 springdoc:
   api-docs:
     enabled: true

@@ -53,6 +53,13 @@ dependencies {
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
+    // SQL tracing via slf4j (off by default, enabled in local profile only).
+    // Wraps the DataSource so every JDBC call is logged through slf4j, which
+    // means the requestId MDC entry from RequestIdFilter is attached to each
+    // SQL line — the audit trail / error log / SQL log can all be joined by
+    // X-Request-Id.
+    runtimeOnly 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.2'
+
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
