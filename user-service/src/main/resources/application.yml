@@ -58,8 +58,6 @@ logging:
   level:
     com.adventacademy: INFO
     org.springframework.security: WARN
-    org.hibernate.SQL: DEBUG
-    org.hibernate.stat: DEBUG
   structured:
     format:
       console: logstash
