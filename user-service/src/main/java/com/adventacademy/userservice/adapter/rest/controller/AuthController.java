@@ -2,6 +2,7 @@ package com.adventacademy.userservice.adapter.rest.controller;
 
 import com.adventacademy.userservice.application.dto.request.ChangePasswordRequest;
 import com.adventacademy.userservice.application.dto.request.LoginRequest;
+import com.adventacademy.userservice.application.dto.request.PasswordResetRequest;
 import com.adventacademy.userservice.application.dto.request.RefreshTokenRequest;
 import com.adventacademy.userservice.application.dto.request.RegisterUserRequest;
 import com.adventacademy.userservice.application.dto.response.AuthResponse;
@@ -38,6 +39,7 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
     private final ConfirmEmailService confirmEmailService;
     private final ChangePasswordService changePasswordService;
+    private final PasswordResetService passwordResetService;
     private final MfaService mfaService;
 
     public AuthController(
@@ -46,12 +48,14 @@ public class AuthController {
             RefreshTokenService refreshTokenService,
             ConfirmEmailService confirmEmailService,
             ChangePasswordService changePasswordService,
+            PasswordResetService passwordResetService,
             MfaService mfaService) {
         this.registerUserService = registerUserService;
         this.loginService = loginService;
         this.refreshTokenService = refreshTokenService;
         this.confirmEmailService = confirmEmailService;
         this.changePasswordService = changePasswordService;
+        this.passwordResetService = passwordResetService;
         this.mfaService = mfaService;
     }
 
@@ -131,6 +135,28 @@ public class AuthController {
         );
 
         MessageResponse response = changePasswordService.changePassword(userId, enrichedRequest);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/password-reset")
+    @Operation(summary = "Initiate password reset",
+            description = "Records a password-reset request for audit. The response is identical "
+                    + "regardless of whether the email is known, to avoid leaking account existence.")
+    @ApiResponse(responseCode = "200", description = "Password-reset initiation accepted")
+    public ResponseEntity<MessageResponse> initiatePasswordReset(
+            @Valid @RequestBody PasswordResetRequest request,
+            HttpServletRequest httpRequest) {
+
+        String ipAddress = httpRequest.getRemoteAddr();
+        String userAgent = httpRequest.getHeader("User-Agent");
+
+        PasswordResetRequest enriched = new PasswordResetRequest(
+                request.email(),
+                ipAddress,
+                userAgent
+        );
+
+        MessageResponse response = passwordResetService.initiate(enriched);
         return ResponseEntity.ok(response);
     }
 
