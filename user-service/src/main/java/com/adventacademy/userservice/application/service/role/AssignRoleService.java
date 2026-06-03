@@ -41,7 +41,7 @@ public class AssignRoleService {
 
     @Transactional
     public UserResponse assignRoleToUser(UUID userId, UUID roleId, String ipAddress, String userAgent) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdWithRoles(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new RoleNotFoundException(roleId));
@@ -67,7 +67,7 @@ public class AssignRoleService {
 
     @Transactional
     public UserResponse removeRoleFromUser(UUID userId, UUID roleId, String ipAddress, String userAgent) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdWithRoles(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new RoleNotFoundException(roleId));

@@ -1,9 +1,13 @@
 package com.adventacademy.userservice.infrastructure.persistence.mapper;
 
+import com.adventacademy.userservice.domain.model.Role;
 import com.adventacademy.userservice.domain.model.User;
 import com.adventacademy.userservice.infrastructure.persistence.entity.UserEntity;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
@@ -20,6 +24,12 @@ public class UserMapper {
             return null;
         }
 
+        Set<Role> roles = Hibernate.isInitialized(entity.getRoles())
+                ? entity.getRoles().stream()
+                        .map(roleMapper::toDomain)
+                        .collect(Collectors.toSet())
+                : new HashSet<>();
+
         return new User(
                 entity.getId(),
                 entity.getEmail(),
@@ -27,9 +37,7 @@ public class UserMapper {
                 entity.getFirstName(),
                 entity.getLastName(),
                 entity.getStatus(),
-                entity.getRoles().stream()
-                        .map(roleMapper::toDomain)
-                        .collect(Collectors.toSet()),
+                roles,
                 entity.isEmailVerified(),
                 entity.getEmailVerificationToken(),
                 entity.isMfaEnabled(),

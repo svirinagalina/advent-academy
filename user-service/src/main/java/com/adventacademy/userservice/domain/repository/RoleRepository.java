@@ -9,8 +9,10 @@ import java.util.UUID;
 public interface RoleRepository {
     Role save(Role role);
     Optional<Role> findById(UUID id);
+    Optional<Role> findByIdWithPermissions(UUID id);
     Optional<Role> findByName(String name);
     List<Role> findAll();
+    List<Role> findAllWithPermissions();
     void deleteById(UUID id);
     boolean existsByName(String name);
 }
