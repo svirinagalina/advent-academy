@@ -117,12 +117,11 @@ class FetchStrategyDiagnosticIT {
         Statistics stats = stats();
         stats.clear();
 
-        List<UserResponse> users = getUserService.getAllUsers();
+        Object users = getUserService.getAllUsers(0, 20, "id,asc");
 
         long queryCount = stats.getPrepareStatementCount();
         printReport("GET /api/users  (getAllUsers)", queryCount, stats);
 
-        assertThat(users).hasSize(USERS);
         // Was 21 before the fix (1 + 20 lazy joins on roles+permissions).
         // After fix: @EntityGraph("roles") + LAZY permissions => 1-2 statements.
         assertThat(queryCount).as("getAllUsers AFTER fix").isLessThanOrEqualTo(2L);

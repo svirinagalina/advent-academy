@@ -1,23 +1,35 @@
 package com.adventacademy.userservice.infrastructure.persistence.adapter;
 
 import com.adventacademy.userservice.domain.model.User;
+import com.adventacademy.userservice.domain.pagination.PageRequest;
+import com.adventacademy.userservice.domain.pagination.PageResult;
 import com.adventacademy.userservice.domain.repository.UserRepository;
 import com.adventacademy.userservice.infrastructure.persistence.entity.RoleEntity;
 import com.adventacademy.userservice.infrastructure.persistence.entity.UserEntity;
 import com.adventacademy.userservice.infrastructure.persistence.jpa.UserJpaRepository;
 import com.adventacademy.userservice.infrastructure.persistence.mapper.RoleMapper;
 import com.adventacademy.userservice.infrastructure.persistence.mapper.UserMapper;
+import com.adventacademy.userservice.infrastructure.persistence.pagination.PaginationMapper;
 import org.hibernate.Hibernate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Repository
 public class UserRepositoryAdapter implements UserRepository {
+
+    static final Set<String> SORTABLE_FIELDS = Set.of(
+            "id", "email", "firstName", "lastName", "status", "createdAt", "lastLoginAt");
 
     private final UserJpaRepository jpaRepository;
     private final UserMapper mapper;
@@ -84,17 +96,24 @@ public class UserRepositoryAdapter implements UserRepository {
     }
 
     @Override
-    public List<User> findAll() {
-        return jpaRepository.findAll().stream()
-                .map(mapper::toDomain)
-                .collect(Collectors.toList());
-    }
+    public PageResult<User> findAll(PageRequest pageRequest) {
+        Pageable pageable = PaginationMapper.toSpringPageable(pageRequest, SORTABLE_FIELDS);
+        Page<UUID> idPage = jpaRepository.findIdsBy(pageable);
+        long total = idPage.getTotalElements();
+        if (idPage.isEmpty()) {
+            return new PageResult<>(List.of(), pageRequest.page(), pageRequest.size(), total);
+        }
 
-    @Override
-    public List<User> findAllWithRoles() {
-        return jpaRepository.findAllWithRoles().stream()
+        Sort sort = pageable.getSort();
+        List<UserEntity> entities = jpaRepository.findAllWithRolesByIdIn(idPage.getContent(), sort);
+        Map<UUID, UserEntity> byId = entities.stream()
+                .collect(Collectors.toMap(UserEntity::getId, Function.identity()));
+        List<User> users = idPage.getContent().stream()
+                .map(byId::get)
+                .filter(Objects::nonNull)
                 .map(mapper::toDomain)
-                .collect(Collectors.toList());
+                .toList();
+        return new PageResult<>(users, pageRequest.page(), pageRequest.size(), total);
     }
 
     @Override

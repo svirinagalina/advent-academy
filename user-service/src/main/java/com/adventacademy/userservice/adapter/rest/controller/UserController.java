@@ -5,16 +5,19 @@ import com.adventacademy.userservice.application.dto.response.UserResponse;
 import com.adventacademy.userservice.application.service.security.AccountLockService;
 import com.adventacademy.userservice.application.service.user.DeleteUserService;
 import com.adventacademy.userservice.application.service.user.GetUserService;
+import com.adventacademy.userservice.domain.pagination.PageResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Parameter;
 
-import java.util.List;
 import java.util.UUID;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 
 /**
  * REST controller for user management operations.
@@ -24,6 +27,8 @@ import java.util.UUID;
  * Intended for use by administrators with appropriate authorization.
  * </p>
  */
+
+@Validated
 @RestController
 @RequestMapping("/api/users")
 @Tag(name = "Users", description = "User management endpoints")
@@ -52,10 +57,19 @@ public class UserController {
     }
 
     @GetMapping
-    @Operation(summary = "Get all users", description = "Retrieve list of all users")
+    @Operation(summary = "Get all users", description = "Retrieve a paginated list of users")
     @ApiResponse(responseCode = "200", description = "Users retrieved successfully")
-    public ResponseEntity<List<UserResponse>> getAllUsers() {
-        List<UserResponse> response = getUserService.getAllUsers();
+    public ResponseEntity<PageResult<UserResponse>> getAllUsers(
+            @Parameter(description = "Zero-based page index", example = "0")
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+
+            @Parameter(description = "Number of users per page, maximum 100", example = "20")
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+
+            @Parameter(description = "Sort format: field,direction. Example: id,asc or createdAt,desc", example = "id,asc")
+            @RequestParam(defaultValue = "id,asc") String sort
+    ) {
+        PageResult<UserResponse> response = getUserService.getAllUsers(page, size, sort);
         return ResponseEntity.ok(response);
     }
 
@@ -80,4 +94,5 @@ public class UserController {
         accountLockService.unlockAccount(id, ipAddress, userAgent);
         return ResponseEntity.ok(new MessageResponse("Account unlocked successfully"));
     }
+
 }

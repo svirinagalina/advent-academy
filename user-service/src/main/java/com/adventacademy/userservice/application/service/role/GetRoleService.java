@@ -1,7 +1,6 @@
 package com.adventacademy.userservice.application.service.role;
 
 import com.adventacademy.userservice.application.dto.response.RoleResponse;
-import com.adventacademy.userservice.domain.exception.RoleNotFoundException;
 import com.adventacademy.userservice.domain.model.Role;
 import com.adventacademy.userservice.domain.repository.RoleRepository;
 import org.springframework.stereotype.Service;
@@ -11,13 +10,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Use case service for retrieving RBAC roles.
- * <p>
- * Provides read-only access to a role by its ID or to the full list of roles,
- * including the set of permissions attached to each role.
- * </p>
- */
 @Service
 public class GetRoleService {
 
@@ -28,17 +20,17 @@ public class GetRoleService {
     }
 
     @Transactional(readOnly = true)
-    public RoleResponse getRoleById(UUID roleId) {
-        Role role = roleRepository.findByIdWithPermissions(roleId)
-                .orElseThrow(() -> new RoleNotFoundException(roleId));
-        return mapToRoleResponse(role);
+    public List<RoleResponse> getAllRoles() {
+        return roleRepository.findAll().stream()
+                .map(this::mapToRoleResponse)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<RoleResponse> getAllRoles() {
-        return roleRepository.findAllWithPermissions().stream()
-                .map(this::mapToRoleResponse)
-                .collect(Collectors.toList());
+    public RoleResponse getRoleById(UUID id) {
+        Role role = roleRepository.findByIdWithPermissions(id)
+                .orElseThrow(() -> new RuntimeException("Role not found"));
+        return mapToRoleResponse(role);
     }
 
     private RoleResponse mapToRoleResponse(Role role) {
@@ -47,7 +39,7 @@ public class GetRoleService {
                 role.getName(),
                 role.getDescription(),
                 role.getPermissions().stream()
-                        .map(p -> p.getName())
+                        .map(permission -> permission.getName())
                         .collect(Collectors.toSet()),
                 role.isSystemRole(),
                 role.getCreatedAt()
