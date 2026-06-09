@@ -55,7 +55,7 @@ class AssignRoleServiceTest {
 
     @Test
     void assignRoleToUser_recordsRoleAssignedEventWithRoleMetadata() {
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdWithRoles(userId)).thenReturn(Optional.of(user));
         when(roleRepository.findById(roleId)).thenReturn(Optional.of(role));
         when(userRepository.save(any(User.class))).thenReturn(user);
 
@@ -77,7 +77,7 @@ class AssignRoleServiceTest {
     @Test
     void removeRoleFromUser_recordsRoleRevokedEventWithRoleMetadata() {
         user.addRole(role);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdWithRoles(userId)).thenReturn(Optional.of(user));
         when(roleRepository.findById(roleId)).thenReturn(Optional.of(role));
         when(userRepository.save(any(User.class))).thenReturn(user);
 
