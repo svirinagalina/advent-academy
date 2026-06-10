@@ -1,4 +1,16 @@
-show-sql: false
+spring:
+  application:
+    name: user-service
+  profiles:
+    active: docker
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
 # DataSource decoration (p6spy) is off by default — only the local profile
 # turns it on, so production runs with a plain HikariDataSource and zero
@@ -55,6 +67,6 @@ logging:
   structured:
     format:
       console: logstash
-  include-application-name: true
+    include-application-name: true
   pattern:
     correlation: "[requestId=%mdc{requestId:-}] "

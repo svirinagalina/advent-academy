@@ -8,6 +8,7 @@ COPY settings.gradle build.gradle ./
 COPY user-service/build.gradle user-service/build.gradle
 COPY user-service/src user-service/src
 
+
 RUN chmod +x gradlew && ./gradlew :user-service:bootJar --no-daemon
 
 # Runtime stage

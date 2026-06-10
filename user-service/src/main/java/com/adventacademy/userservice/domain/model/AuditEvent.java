@@ -46,7 +46,7 @@ public class AuditEvent {
         this.userAgent = userAgent;
         this.result = result;
         this.reason = reason;
-        this.metadata = metadata;
+        this.metadata = AuditMetadataSanitizer.sanitize(metadata);
     }
 
     public UUID getId() { return id; }

@@ -1,12 +1,16 @@
 package com.adventacademy.userservice.application.service.security;
 
 import com.adventacademy.userservice.application.port.AuditTrailPort;
+import com.adventacademy.userservice.domain.model.AuditEvent;
+import com.adventacademy.userservice.domain.model.AuditEventType;
+import com.adventacademy.userservice.domain.model.AuditResult;
 import com.adventacademy.userservice.domain.model.User;
 import com.adventacademy.userservice.domain.model.UserStatus;
 import com.adventacademy.userservice.domain.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -17,6 +21,7 @@ import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -70,6 +75,14 @@ class AccountLockServiceTest {
         LocalDateTime expectedLockUntil = LocalDateTime.now(FIXED_CLOCK).plusMinutes(30);
         assertEquals(expectedLockUntil, user.getLockedUntil());
         verify(userRepository, times(1)).save(user);
+
+        ArgumentCaptor<AuditEvent> captor = ArgumentCaptor.forClass(AuditEvent.class);
+        verify(auditTrailPort).record(captor.capture());
+        AuditEvent event = captor.getValue();
+        assertThat(event.getEventType()).isEqualTo(AuditEventType.USER_BLOCKED);
+        assertThat(event.getResult()).isEqualTo(AuditResult.SUCCESS);
+        assertThat(event.getTargetUserId()).isEqualTo(user.getId());
+        assertThat(event.getReason()).contains("Account locked after 5 failed attempts");
     }
 
     @Test
@@ -98,5 +111,15 @@ class AccountLockServiceTest {
         assertEquals(0, user.getFailedLoginAttempts());
         assertNull(user.getLockedUntil());
         verify(userRepository, times(1)).save(user);
+
+        ArgumentCaptor<AuditEvent> captor = ArgumentCaptor.forClass(AuditEvent.class);
+        verify(auditTrailPort).record(captor.capture());
+        AuditEvent event = captor.getValue();
+        assertThat(event.getEventType()).isEqualTo(AuditEventType.USER_UNBLOCKED);
+        assertThat(event.getResult()).isEqualTo(AuditResult.SUCCESS);
+        assertThat(event.getActorUserId()).isEqualTo(user.getId());
+        assertThat(event.getTargetUserId()).isEqualTo(user.getId());
+        assertThat(event.getIpAddress()).isEqualTo("127.0.0.1");
+        assertThat(event.getUserAgent()).isEqualTo("Mozilla");
     }
 }
