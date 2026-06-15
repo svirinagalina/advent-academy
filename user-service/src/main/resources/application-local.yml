@@ -14,13 +14,23 @@ spring:
       hibernate:
         format_sql: true
 
+# Route SQL through slf4j (p6spy) so each statement is tagged with the
+# requestId MDC entry from RequestIdFilter and lines up with the
+# request/error log under the same X-Request-Id.
+decorator:
+  datasource:
+    enabled: true
+    p6spy:
+      enable-logging: true
+      logging: slf4j
+
 logging:
   level:
     com.adventacademy: INFO
-    # Enable on demand when debugging auth or persistence:
+    # p6spy logger — set to DEBUG locally to see each SQL with its requestId.
+    p6spy: DEBUG
+    # Enable on demand when debugging auth:
     # org.springframework.security: DEBUG
-    # org.hibernate.SQL: DEBUG
-    # org.hibernate.orm.jdbc.bind: TRACE
   structured:
     format:
       console:

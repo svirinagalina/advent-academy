@@ -144,10 +144,10 @@ public class User {
     }
 
     public void removeRole(Role role) {
-        if (role == null) {
-            throw new IllegalArgumentException("Role cannot be null");
+        if (role == null || role.getId() == null) {
+            throw new IllegalArgumentException("Role cannot be null and must have id");
         }
-        this.roles.remove(role);
+        this.roles.removeIf(r -> role.getId().equals(r.getId()));
         this.updatedAt = LocalDateTime.now();
     }
 
