@@ -68,6 +68,14 @@ public class RoleRepositoryAdapter implements RoleRepository {
                 .toList();
     }
 
+    // список всех ролей с загруженными permissions
+    @Override
+    public List<Role> findAllWithPermissions() {
+        return jpaRepository.findAllWithPermissions().stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
     // пагинированный метод из интерфейса
     @Override
     public PageResult<Role> findAll(PageRequest pageRequest) {

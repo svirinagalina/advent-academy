@@ -78,6 +78,14 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse("PERMISSION_NOT_FOUND", ex.getMessage()));
     }
 
+    @ExceptionHandler(InvalidSortFieldException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidSortField(InvalidSortFieldException ex) {
+        logger.warn("Invalid sort field: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("INVALID_SORT_FIELD", ex.getMessage()));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors().stream()

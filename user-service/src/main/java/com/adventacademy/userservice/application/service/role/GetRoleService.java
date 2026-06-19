@@ -1,6 +1,7 @@
 package com.adventacademy.userservice.application.service.role;
 
 import com.adventacademy.userservice.application.dto.response.RoleResponse;
+import com.adventacademy.userservice.domain.exception.RoleNotFoundException;
 import com.adventacademy.userservice.domain.model.Role;
 import com.adventacademy.userservice.domain.repository.RoleRepository;
 import org.springframework.stereotype.Service;
@@ -21,7 +22,7 @@ public class GetRoleService {
 
     @Transactional(readOnly = true)
     public List<RoleResponse> getAllRoles() {
-        return roleRepository.findAll().stream()
+        return roleRepository.findAllWithPermissions().stream()
                 .map(this::mapToRoleResponse)
                 .collect(Collectors.toList());
     }
@@ -29,7 +30,7 @@ public class GetRoleService {
     @Transactional(readOnly = true)
     public RoleResponse getRoleById(UUID id) {
         Role role = roleRepository.findByIdWithPermissions(id)
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+                .orElseThrow(() -> new RoleNotFoundException(id));
         return mapToRoleResponse(role);
     }
 

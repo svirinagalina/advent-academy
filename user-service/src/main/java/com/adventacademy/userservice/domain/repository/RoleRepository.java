@@ -13,6 +13,9 @@ public interface RoleRepository {
     // простой список всех ролей
     List<Role> findAll();
 
+    // список всех ролей с загруженными permissions
+    List<Role> findAllWithPermissions();
+
     // пагинированный поиск (дополнительно)
     PageResult<Role> findAll(PageRequest pageRequest);
 

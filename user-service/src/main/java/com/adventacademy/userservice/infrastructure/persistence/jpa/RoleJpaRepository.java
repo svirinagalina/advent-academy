@@ -23,6 +23,10 @@ public interface RoleJpaRepository extends JpaRepository<RoleEntity, UUID> {
     @EntityGraph(attributePaths = "permissions")
     Optional<RoleEntity> findWithPermissionsById(UUID id);
 
+    @EntityGraph(attributePaths = "permissions")
+    @Query("select distinct r from RoleEntity r")
+    List<RoleEntity> findAllWithPermissions();
+
     // Two-step pagination so the permissions collection fetch doesn't trigger
     // Hibernate in-memory pagination (see UserJpaRepository for the rationale).
     @Query("select r.id from RoleEntity r")
