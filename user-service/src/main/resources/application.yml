@@ -12,6 +12,13 @@ spring:
         format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+# DataSource decoration (p6spy) is off by default — only the local profile
+# turns it on, so production runs with a plain HikariDataSource and zero
+# proxy overhead.
+decorator:
+  datasource:
+    enabled: false
+
 springdoc:
   api-docs:
     enabled: true
@@ -60,6 +67,6 @@ logging:
   structured:
     format:
       console: logstash
-  include-application-name: true
+    include-application-name: true
   pattern:
     correlation: "[requestId=%mdc{requestId:-}] "
