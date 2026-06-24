@@ -17,6 +17,35 @@ default:
       - .gradle/caches
     policy: pull-push
 
+branch-sync-check:
+  stage: .pre
+  image: alpine:3.20
+  before_script:
+    - apk add --no-cache git
+  cache: []
+  variables:
+    GIT_DEPTH: "0"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  script:
+    - git fetch --no-tags origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+    - TARGET_SHA="$(git rev-parse FETCH_HEAD)"
+    - SOURCE_SHA="${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}"
+    - |
+      if ! git merge-base --is-ancestor "$TARGET_SHA" "$SOURCE_SHA"; then
+        echo "Source branch is behind $CI_MERGE_REQUEST_TARGET_BRANCH_NAME."
+        echo "Rebase it onto the target branch and force-push the result."
+        exit 1
+      fi
+    - |
+      MERGE_COMMITS="$(git rev-list --merges "$TARGET_SHA..$SOURCE_SHA")"
+      if [ -n "$MERGE_COMMITS" ]; then
+        echo "Source branch contains merge commits after $CI_MERGE_REQUEST_TARGET_BRANCH_NAME."
+        echo "Rebase it onto the target branch and force-push the result."
+        git log --oneline --merges "$TARGET_SHA..$SOURCE_SHA"
+        exit 1
+      fi
+
 build:
   stage: build
   script:
