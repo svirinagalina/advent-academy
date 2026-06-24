@@ -3,11 +3,13 @@ package com.adventacademy.userservice.application.service.role;
 import com.adventacademy.userservice.application.dto.response.RoleResponse;
 import com.adventacademy.userservice.domain.exception.RoleNotFoundException;
 import com.adventacademy.userservice.domain.model.Role;
+import com.adventacademy.userservice.domain.pagination.PageRequest;
+import com.adventacademy.userservice.domain.pagination.PageResult;
+import com.adventacademy.userservice.domain.pagination.Sort;
 import com.adventacademy.userservice.domain.repository.RoleRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -21,10 +23,28 @@ public class GetRoleService {
     }
 
     @Transactional(readOnly = true)
-    public List<RoleResponse> getAllRoles() {
-        return roleRepository.findAllWithPermissions().stream()
-                .map(this::mapToRoleResponse)
-                .collect(Collectors.toList());
+    public PageResult<RoleResponse> getAllRoles(int page, int size, String sort) {
+        PageRequest pageRequest = PageRequest.of(page, size, parseSort(sort));
+
+        return roleRepository.findAll(pageRequest)
+                .map(this::mapToRoleResponse);
+    }
+
+    private Sort parseSort(String sortParam) {
+        if (sortParam == null || sortParam.isBlank()) {
+            return Sort.by(Sort.Order.asc("id"));
+        }
+
+        String[] parts = sortParam.split(",");
+        String field = parts[0].trim();
+        String direction = parts.length > 1 ? parts[1].trim().toLowerCase() : "asc";
+
+        Sort.Order order = switch (direction) {
+            case "desc" -> Sort.Order.desc(field);
+            default -> Sort.Order.asc(field);
+        };
+
+        return Sort.by(order);
     }
 
     @Transactional(readOnly = true)
