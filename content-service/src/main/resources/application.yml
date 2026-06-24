@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: content-service
+  profiles:
+    active: docker
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    table: flyway_schema_history_content
+    locations: classpath:db/migration
+
+server:
+  port: 8081
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus, info, metrics
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: db, diskSpace
+        liveness:
+          include: ping
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+logging:
+  level:
+    com.adventacademy: INFO
