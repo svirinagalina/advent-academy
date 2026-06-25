@@ -6,6 +6,7 @@ import com.adventacademy.userservice.application.service.role.GetRoleService;
 import com.adventacademy.userservice.application.service.user.GetUserService;
 import com.adventacademy.userservice.domain.model.User;
 import com.adventacademy.userservice.domain.model.UserStatus;
+import com.adventacademy.userservice.domain.pagination.PageResult;
 import com.adventacademy.userservice.domain.repository.UserRepository;
 import com.adventacademy.userservice.infrastructure.persistence.entity.PermissionEntity;
 import com.adventacademy.userservice.infrastructure.persistence.entity.RoleEntity;
@@ -117,15 +118,20 @@ class FetchStrategyDiagnosticIT {
         Statistics stats = stats();
         stats.clear();
 
-        List<UserResponse> users = getUserService.getAllUsers();
+        PageResult<UserResponse> users = getUserService.getAllUsers(0, 20, "id,asc");
 
         long queryCount = stats.getPrepareStatementCount();
         printReport("GET /api/users  (getAllUsers)", queryCount, stats);
 
-        assertThat(users).hasSize(USERS);
+        assertThat(users).isNotNull();
+        assertThat(users.items()).hasSize(20);
+        assertThat(users.page()).isEqualTo(0);
+        assertThat(users.size()).isEqualTo(20);
+        assertThat(users.totalElements()).isEqualTo(USERS);
+
         // Was 21 before the fix (1 + 20 lazy joins on roles+permissions).
         // After fix: @EntityGraph("roles") + LAZY permissions => 1-2 statements.
-        assertThat(queryCount).as("getAllUsers AFTER fix").isLessThanOrEqualTo(2L);
+        assertThat(queryCount).as("getAllUsers AFTER fix").isLessThanOrEqualTo(3L);
     }
 
     @Test
@@ -133,12 +139,17 @@ class FetchStrategyDiagnosticIT {
         Statistics stats = stats();
         stats.clear();
 
-        List<RoleResponse> roles = getRoleService.getAllRoles();
+        PageResult<RoleResponse> rolesPage = getRoleService.getAllRoles(0, 20, "id,asc");
 
         long queryCount = stats.getPrepareStatementCount();
         printReport("GET /api/roles  (getAllRoles)", queryCount, stats);
 
-        assertThat(roles).hasSize(ROLES_PER_USER);
+        assertThat(rolesPage).isNotNull();
+        assertThat(rolesPage.items()).hasSize(ROLES_PER_USER);
+        assertThat(rolesPage.page()).isEqualTo(0);
+        assertThat(rolesPage.size()).isEqualTo(20);
+        assertThat(rolesPage.totalElements()).isEqualTo(ROLES_PER_USER);
+
         // Was 4 before the fix (1 + 3 lazy joins on permissions).
         // After fix: @EntityGraph("permissions") => 1-2 statements.
         assertThat(queryCount).as("getAllRoles AFTER fix").isLessThanOrEqualTo(2L);
