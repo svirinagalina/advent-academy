@@ -11,7 +11,12 @@ spring:
       hibernate:
         format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: content
   flyway:
+    enabled: true
+    schemas: content
+    default-schema: content
+    create-schemas: true
     table: flyway_schema_history_content
     locations: classpath:db/migration
 

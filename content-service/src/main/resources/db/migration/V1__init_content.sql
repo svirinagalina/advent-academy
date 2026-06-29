@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS courses (
-                                       id          UUID         PRIMARY KEY,
-                                       title       VARCHAR(255) NOT NULL,
+                                       id BIGSERIAL PRIMARY KEY,
+                                       title VARCHAR(255) NOT NULL,
     description TEXT,
-    created_at  TIMESTAMP    NOT NULL,
-    updated_at  TIMESTAMP    NOT NULL
-    );c
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
