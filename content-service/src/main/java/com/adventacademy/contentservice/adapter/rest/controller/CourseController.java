@@ -1,7 +1,9 @@
-package com.adventacademy.contentservice.adapter;
+package com.adventacademy.contentservice.adapter.rest.controller;
 
+import com.adventacademy.contentservice.adapter.rest.dto.CourseRequest;
+import com.adventacademy.contentservice.adapter.rest.dto.CourseResponse;
 import com.adventacademy.contentservice.application.service.CourseService;
-import com.adventacademy.contentservice.domain.Course;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,20 +13,27 @@ import java.util.List;
 @RequestMapping("/api/courses")
 public class CourseController {
 
-    private final CourseService service;
+    private final CourseService courseService;
 
-    public CourseController(CourseService service) {
-        this.service = service;
-    }
-
-    @GetMapping
-    public List<Course> getAll() {
-        return service.findAll();
+    public CourseController(CourseService courseService) {
+        this.courseService = courseService;
     }
 
     @PostMapping
-    public ResponseEntity<Course> create(@RequestBody Course course) {
-        Course saved = service.create(course);
-        return ResponseEntity.ok(saved);
+    public ResponseEntity<CourseResponse> createCourse(@Valid @RequestBody CourseRequest request) {
+        CourseResponse response = courseService.createCourse(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<CourseResponse>> getAllCourses() {
+        List<CourseResponse> courses = courseService.getAllCourses();
+        return ResponseEntity.ok(courses);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<CourseResponse> getCourse(@PathVariable Long id) {
+        CourseResponse course = courseService.getCourse(id);
+        return ResponseEntity.ok(course);
     }
 }
