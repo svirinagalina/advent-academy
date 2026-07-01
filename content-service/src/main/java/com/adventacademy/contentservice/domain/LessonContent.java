@@ -4,7 +4,13 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
-
+/**
+ * Domain model representing the content of a lesson.
+ * <p>
+ * Holds raw markdown and generated HTML, tracks the current content status,
+ * and enforces allowed status transitions according to {@link ContentStatus}.
+ * Instances can only be created with a non-null lessonId and non-blank markdown.
+ */
 public final class LessonContent {
 
     private final UUID id;
