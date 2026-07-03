@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
+
 /**
  * Domain model representing the content of a lesson.
  * <p>
@@ -15,7 +16,7 @@ public final class LessonContent {
 
     private final UUID id;
     private final UUID lessonId;
-    private final String markdown;
+    private String markdown;
     private String html;
     private ContentStatus status;
     private final Instant createdAt;
@@ -59,6 +60,11 @@ public final class LessonContent {
         );
     }
 
+    public static LessonContent restore(UUID id, UUID lessonId, String markdown, String html,
+                                        ContentStatus status, Instant createdAt, Instant updatedAt) {
+        return new LessonContent(id, lessonId, markdown, html, status, createdAt, updatedAt);
+    }
+
     public void changeStatus(ContentStatus target) {
         changeStatus(target, Clock.systemUTC());
     }
@@ -82,7 +88,7 @@ public final class LessonContent {
         if (markdown == null || markdown.isBlank()) {
             throw new IllegalArgumentException("markdown must not be blank");
         }
-
+        this.markdown = markdown;
         this.html = html;
         this.updatedAt = clock.instant();
     }
