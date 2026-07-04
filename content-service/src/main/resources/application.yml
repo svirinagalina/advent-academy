@@ -53,3 +53,7 @@ management:
 logging:
   level:
     com.adventacademy: INFO
+
+content:
+  upload:
+    max-file-size-bytes: 1048576
