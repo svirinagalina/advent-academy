@@ -56,4 +56,4 @@ logging:
 
 content:
   upload:
-    max-file-size-bytes: 1048576
+    max-file-size-bytes: 5242880  # 5 MiB

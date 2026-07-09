@@ -13,6 +13,13 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+/**
+ * MarkdownRenderer implementation based on CommonMark.
+ *
+ * Parses Markdown input to HTML and sanitizes the result using OWASP HTML sanitizer
+ * to prevent XSS and other unsafe HTML constructs.
+ */
+
 @Component
 public class CommonMarkMarkdownRenderer implements MarkdownRenderer {
 
