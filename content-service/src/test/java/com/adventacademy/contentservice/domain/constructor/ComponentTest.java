@@ -7,6 +7,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ class ComponentTest {
 
     private static final Instant FIXED_INSTANT = Instant.parse("2026-06-29T12:00:00Z");
     private static final Clock CLOCK = Clock.fixed(FIXED_INSTANT, ZoneOffset.UTC);
+    private static final ComponentPublicationPolicy ALL_READY = lessonIds -> Set.of();
 
     @Test
     void createShouldInitializeEmptyDraftComponent() {
@@ -61,22 +63,24 @@ class ComponentTest {
     }
 
     @Test
-    void changeStatusShouldFollowLifecycle() {
+    void publishAndArchiveShouldFollowLifecycle() {
         Component component = Component.create("Basics", "About basics", CLOCK);
+        component.addLesson("Lesson 1", CLOCK);
 
-        component.changeStatus(PublicationStatus.PUBLISHED, CLOCK);
+        component.publish(ALL_READY, CLOCK);
         assertThat(component.getStatus()).isEqualTo(PublicationStatus.PUBLISHED);
 
-        component.changeStatus(PublicationStatus.ARCHIVED, CLOCK);
+        component.archive(CLOCK);
         assertThat(component.getStatus()).isEqualTo(PublicationStatus.ARCHIVED);
     }
 
     @Test
-    void changeStatusShouldRejectInvalidTransition() {
+    void publishShouldRejectArchivedComponent() {
         Component component = Component.create("Basics", "About basics", CLOCK);
-        component.changeStatus(PublicationStatus.ARCHIVED, CLOCK);
+        component.addLesson("Lesson 1", CLOCK);
+        component.archive(CLOCK);
 
-        assertThatThrownBy(() -> component.changeStatus(PublicationStatus.PUBLISHED, CLOCK))
+        assertThatThrownBy(() -> component.publish(ALL_READY, CLOCK))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Cannot transition from ARCHIVED to PUBLISHED");
     }
@@ -139,7 +143,7 @@ class ComponentTest {
     void modificationShouldBeRejectedWhenNotDraft() {
         Component component = Component.create("Basics", "About basics", CLOCK);
         Lesson lesson = component.addLesson("Lesson 1", CLOCK);
-        component.changeStatus(PublicationStatus.PUBLISHED, CLOCK);
+        component.publish(ALL_READY, CLOCK);
 
         assertThatThrownBy(() -> component.addLesson("Lesson 2", CLOCK))
                 .isInstanceOf(IllegalStateException.class);
@@ -155,5 +159,28 @@ class ComponentTest {
                 PublicationStatus.DRAFT, null, FIXED_INSTANT, FIXED_INSTANT);
 
         assertThat(component.getLessons()).isEmpty();
+    }
+
+    @Test
+    void publishShouldRejectComponentWithoutLessons() {
+        Component component = Component.create("Basics", "About basics", CLOCK);
+
+        assertThatThrownBy(() -> component.publish(ALL_READY, CLOCK))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Component must have at least one lesson to be published");
+    }
+
+    @Test
+    void publishShouldReportUnpublishableLessons() {
+        Component component = Component.create("Basics", "About basics", CLOCK);
+        Lesson lesson = component.addLesson("Lesson 1", CLOCK);
+        ComponentPublicationPolicy notReady = lessonIds -> Set.of(lesson.getId());
+
+        assertThatThrownBy(() -> component.publish(notReady, CLOCK))
+                .isInstanceOf(ComponentNotReadyForPublicationException.class)
+                .satisfies(e -> assertThat(((ComponentNotReadyForPublicationException) e).getLessonIds())
+                        .containsExactly(lesson.getId()));
+
+        assertThat(component.getStatus()).isEqualTo(PublicationStatus.DRAFT);
     }
 }
