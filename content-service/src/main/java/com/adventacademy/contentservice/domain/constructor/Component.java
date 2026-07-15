@@ -10,6 +10,7 @@ import java.util.UUID;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Aggregate root of the course constructor holding an ordered list of {@link Lesson}s.
@@ -120,16 +121,34 @@ public final class Component {
         this.updatedAt = clock.instant();
     }
 
+    public void publish(ComponentPublicationPolicy policy, Clock clock) {
+        Objects.requireNonNull(policy, "policy must not be null");
+        Objects.requireNonNull(clock, "clock must not be null");
+
+        if (lessons.isEmpty()) {
+            throw new IllegalStateException("Component must have at least one lesson to be published");
+        }
+        List<UUID> lessonIds = lessons.stream().map(Lesson::getId).toList();
+        Set<UUID> unpublishable = policy.findUnpublishableLessons(lessonIds);
+        if (!unpublishable.isEmpty()) {
+            throw new ComponentNotReadyForPublicationException(unpublishable);
+        }
+        changeStatus(PublicationStatus.PUBLISHED, clock);
+    }
+
+    public void archive(Clock clock) {
+        changeStatus(PublicationStatus.ARCHIVED, clock);
+    }
+
     private void renumber(Clock clock) {
         for (int i = 0; i < lessons.size(); i++) {
             lessons.get(i).moveTo(i, clock);
         }
     }
 
-    public void changeStatus(PublicationStatus target, Clock clock) {
+    private void changeStatus(PublicationStatus target, Clock clock) {
         Objects.requireNonNull(target, "target must not be null");
         Objects.requireNonNull(clock, "clock must not be null");
-
         if (!status.canTransitionTo(target)) {
             throw new IllegalStateException(
                     String.format("Cannot transition from %s to %s", status, target));
