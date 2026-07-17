@@ -1,0 +1,75 @@
+package com.adventacademy.contentservice.application.service;
+
+import com.adventacademy.contentservice.domain.constructor.Course;
+import com.adventacademy.contentservice.domain.constructor.CourseNotReadyForPublicationException;
+import com.adventacademy.contentservice.domain.constructor.CoursePublicationPolicy;
+import com.adventacademy.contentservice.domain.constructor.PublicationStatus;
+import com.adventacademy.contentservice.domain.repository.ComponentRepository;
+import com.adventacademy.contentservice.domain.repository.CourseRepository;
+import com.adventacademy.contentservice.domain.repository.DirectionRepository;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
+
+public class CourseAssemblyServiceTest {
+    private final ComponentRepository componentRepository = mock(ComponentRepository.class);
+    private final CourseRepository courseRepository = mock(CourseRepository.class);
+    private final DirectionRepository directionRepository = mock(DirectionRepository.class);
+    private final CoursePublicationPolicy coursePublicationPolicy = mock(CoursePublicationPolicy.class);
+
+    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-17T12:00:00Z"), ZoneOffset.UTC);
+    private final CourseAssemblyService service = new CourseAssemblyService(
+            courseRepository, componentRepository, directionRepository, coursePublicationPolicy);
+
+    @Test
+    void addComponentShouldThrowWhenComponentDoesNotExist() {
+        UUID courseId = UUID.randomUUID();
+        UUID componentId = UUID.randomUUID();
+        when(componentRepository.existsById(componentId)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.addComponent(courseId, componentId))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(courseRepository, never()).save(any());
+    }
+
+    @Test
+    void publishShouldThrowWhenComponentsAreNotPublished() {
+        UUID componentId = UUID.randomUUID();
+        Course course = Course.create("Java course", "About java", CLOCK);
+        course.addComponent(componentId, CLOCK);
+        when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
+        when(coursePublicationPolicy.findUnpublishedComponents(List.of(componentId)))
+                .thenReturn(Set.of(componentId));
+
+        assertThatThrownBy(() -> service.publish(course.getId()))
+                .isInstanceOf(CourseNotReadyForPublicationException.class);
+
+        verify(courseRepository, never()).save(any());
+    }
+    @Test
+    void publishShouldPublishWhenAllComponentsArePublished() {
+        UUID componentId = UUID.randomUUID();
+        Course course = Course.create("Java course", "About java", CLOCK);
+        course.addComponent(componentId, CLOCK);
+        when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
+        when(coursePublicationPolicy.findUnpublishedComponents(List.of(componentId))).thenReturn(Set.of());
+        when(courseRepository.save(any(Course.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Course result = service.publish(course.getId());
+
+        assertThat(result.getStatus()).isEqualTo(PublicationStatus.PUBLISHED);
+        verify(courseRepository).save(course);
+    }
+}
