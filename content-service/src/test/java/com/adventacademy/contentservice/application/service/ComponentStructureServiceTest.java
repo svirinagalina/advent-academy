@@ -1,5 +1,6 @@
 package com.adventacademy.contentservice.application.service;
 
+import com.adventacademy.contentservice.domain.constructor.PublicationStatus;
 import com.adventacademy.contentservice.domain.repository.ComponentRepository;
 import com.adventacademy.contentservice.domain.repository.CourseRepository;
 import com.adventacademy.contentservice.domain.constructor.Component;
@@ -11,7 +12,8 @@ import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 class ComponentStructureServiceTest {
@@ -52,5 +54,40 @@ class ComponentStructureServiceTest {
                 .isInstanceOf(NotFoundException.class);
 
         verify(componentRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void createShouldSaveDraftComponent() {
+        when(componentRepository.save(any(Component.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Component result = service.create("Basics", "About basics");
+
+        assertThat(result.getTitle()).isEqualTo("Basics");
+        assertThat(result.getStatus()).isEqualTo(PublicationStatus.DRAFT);
+        verify(componentRepository).save(result);
+    }
+
+    @Test
+    void renameShouldUpdateTitle() {
+        Component component = Component.create("Basics", "About basics", CLOCK);
+        when(componentRepository.findById(component.getId())).thenReturn(Optional.of(component));
+        when(componentRepository.save(any(Component.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Component result = service.rename(component.getId(), "New title", "New description");
+
+        assertThat(result.getTitle()).isEqualTo("New title");
+        verify(componentRepository).save(component);
+    }
+
+    @Test
+    void addLessonShouldAppendLessonToComponent() {
+        Component component = Component.create("Basics", "About basics", CLOCK);
+        when(componentRepository.findById(component.getId())).thenReturn(Optional.of(component));
+        when(componentRepository.save(any(Component.class))).thenAnswer(inv -> inv.getArgument(0));
+        Component result = service.addLesson(component.getId(), "Lesson");
+        assertThat(result.getLessons()).hasSize(1);
+        assertThat(result.getLessons().get(0).getTitle()).isEqualTo("Lesson");
+        verify(componentRepository).save(component);
+
     }
 }
