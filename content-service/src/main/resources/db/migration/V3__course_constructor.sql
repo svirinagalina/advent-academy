@@ -5,6 +5,7 @@ CREATE TABLE components (
                             title       VARCHAR(255) NOT NULL,
                             description TEXT,
                             status      VARCHAR(20)  NOT NULL CHECK (status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')),
+                            version     BIGINT       NOT NULL DEFAULT 0,
                             created_at  TIMESTAMPTZ  NOT NULL,
                             updated_at  TIMESTAMPTZ  NOT NULL
 );
@@ -22,6 +23,7 @@ CREATE TABLE courses (
                          title       VARCHAR(255) NOT NULL,
                          description TEXT,
                          status      VARCHAR(20)  NOT NULL CHECK (status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')),
+                         version     BIGINT       NOT NULL DEFAULT 0,
                          created_at  TIMESTAMPTZ  NOT NULL,
                          updated_at  TIMESTAMPTZ  NOT NULL
 );
@@ -38,6 +40,7 @@ CREATE TABLE directions (
                             id          UUID PRIMARY KEY,
                             title       VARCHAR(255) NOT NULL,
                             description TEXT,
+                            version     BIGINT       NOT NULL DEFAULT 0,
                             created_at  TIMESTAMPTZ  NOT NULL,
                             updated_at  TIMESTAMPTZ  NOT NULL
 );

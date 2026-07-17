@@ -29,15 +29,18 @@ public final class Direction {
     private final List<CourseRef> courses;
     private final Instant createdAt;
     private Instant updatedAt;
+    /** Optimistic-lock version managed by the persistence layer; null for new instances. */
+    private final Long version;
 
     private Direction(UUID id, String title, String description,
-                      List<CourseRef> courses, Instant createdAt, Instant updatedAt) {
+                      List<CourseRef> courses, Instant createdAt, Instant updatedAt, Long version) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.courses = courses;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.version = version;
     }
 
     public static Direction create(String title, String description, Clock clock) {
@@ -46,14 +49,14 @@ public final class Direction {
 
         Instant now = clock.instant();
         return new Direction(UUID.randomUUID(), title, description,
-                new ArrayList<>(), now, now);
+                new ArrayList<>(), now, now, null);
     }
 
     public static Direction restore(UUID id, String title, String description,
-                                    List<CourseRef> courses, Instant createdAt, Instant updatedAt) {
+                                    List<CourseRef> courses, Instant createdAt, Instant updatedAt, Long version) {
         List<CourseRef> ordered = new ArrayList<>(courses == null ? List.of() : courses);
         ordered.sort(Comparator.comparingInt(CourseRef::getPosition));
-        return new Direction(id, title, description, ordered, createdAt, updatedAt);
+        return new Direction(id, title, description, ordered, createdAt, updatedAt, version);
     }
 
     /**
@@ -154,5 +157,9 @@ public final class Direction {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public Long getVersion() {
+        return version;
     }
 }

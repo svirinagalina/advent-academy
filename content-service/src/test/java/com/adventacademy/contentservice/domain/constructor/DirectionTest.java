@@ -79,7 +79,7 @@ class DirectionTest {
         CourseRef first = CourseRef.restore(UUID.randomUUID(), 0);
 
         Direction direction = Direction.restore(UUID.randomUUID(), "Backend",
-                "About backend", List.of(second, first), FIXED_INSTANT, FIXED_INSTANT);
+                "About backend", List.of(second, first), FIXED_INSTANT, FIXED_INSTANT, 0L);
         assertThat(direction.getCourses()).containsExactly(first, second);
     }
 

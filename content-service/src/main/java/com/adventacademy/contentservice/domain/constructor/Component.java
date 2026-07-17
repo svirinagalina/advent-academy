@@ -30,9 +30,11 @@ public final class Component {
     private final List<Lesson> lessons;
     private final Instant createdAt;
     private Instant updatedAt;
+    /** Optimistic-lock version managed by the persistence layer; null for new instances. */
+    private final Long version;
 
     private Component(UUID id, String title, String description, PublicationStatus status,
-                      List<Lesson> lessons, Instant createdAt, Instant updatedAt) {
+                      List<Lesson> lessons, Instant createdAt, Instant updatedAt, Long version) {
         this.id = id;
         this.title = title;
         this.status = status;
@@ -40,6 +42,7 @@ public final class Component {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.description = description;
+        this.version = version;
     }
 
     public static Component create(String title, String description, Clock clock) {
@@ -48,14 +51,14 @@ public final class Component {
 
         Instant now = clock.instant();
         return new Component(UUID.randomUUID(), title, description, PublicationStatus.DRAFT,
-                new ArrayList<>(), now, now);
+                new ArrayList<>(), now, now, null);
     }
 
     public static Component restore(UUID id, String title, String description, PublicationStatus status,
-                                    List<Lesson> lessons, Instant createdAt, Instant updatedAt) {
+                                    List<Lesson> lessons, Instant createdAt, Instant updatedAt, Long version) {
         List<Lesson> ordered = new ArrayList<>(lessons == null ? List.of() : lessons);
         ordered.sort(Comparator.comparingInt(Lesson::getPosition));
-        return new Component(id, title, description, status, ordered, createdAt, updatedAt);
+        return new Component(id, title, description, status, ordered, createdAt, updatedAt, version);
     }
 
     /**
@@ -207,5 +210,9 @@ public final class Component {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public Long getVersion() {
+        return version;
     }
 }

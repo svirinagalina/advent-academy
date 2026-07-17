@@ -19,6 +19,7 @@ public class DirectionMapper {
         entity.setId(direction.getId());
         entity.setTitle(direction.getTitle());
         entity.setDescription(direction.getDescription());
+        entity.setVersion(direction.getVersion());
         entity.setCreatedAt(direction.getCreatedAt());
         entity.setUpdatedAt(direction.getUpdatedAt());
         for (CourseRef ref : direction.getCourses()) {
@@ -40,6 +41,7 @@ public class DirectionMapper {
                 entity.getDescription(),
                 refs,
                 entity.getCreatedAt(),
-                entity.getUpdatedAt());
+                entity.getUpdatedAt(),
+                entity.getVersion());
     }
 }
