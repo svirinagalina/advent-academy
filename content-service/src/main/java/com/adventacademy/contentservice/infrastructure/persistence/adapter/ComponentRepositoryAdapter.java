@@ -7,6 +7,7 @@ import com.adventacademy.contentservice.infrastructure.persistence.jpa.Component
 import com.adventacademy.contentservice.infrastructure.persistence.mapper.ComponentMapper;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,6 +37,11 @@ public class ComponentRepositoryAdapter implements ComponentRepository {
     @Override
     public List<Component> findAll() {
         return jpaRepository.findAll().stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Component> findAllById(Collection<UUID> ids) {
+        return jpaRepository.findAllById(ids).stream().map(mapper::toDomain).toList();
     }
 
     @Override

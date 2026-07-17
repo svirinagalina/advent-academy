@@ -20,6 +20,7 @@ import java.util.Set;
  * contiguous zero-based {@code position} so ordering is part of the domain model,
  * not a persistence concern.
  */
+
 public final class Component {
 
     private final UUID id;
@@ -167,6 +168,13 @@ public final class Component {
         if (status != PublicationStatus.DRAFT) {
             throw new IllegalStateException(
                     String.format("Component %s is %s and cannot be modified", id, status));
+        }
+    }
+
+    public void ensureDeletable() {
+        if (status != PublicationStatus.DRAFT) {
+            throw new IllegalStateException(
+                    String.format("Component %s is %s and cannot be deleted", id, status));
         }
     }
 

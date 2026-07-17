@@ -164,6 +164,13 @@ public final class Course {
         }
     }
 
+    public void ensureDeletable() {
+        if (status != PublicationStatus.DRAFT) {
+            throw new IllegalStateException(
+                    String.format("Course %s is %s and cannot be deleted", id, status));
+        }
+    }
+
     public UUID getId() {
         return id;
     }
