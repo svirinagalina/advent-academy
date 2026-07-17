@@ -92,7 +92,7 @@ class ComponentTest {
         Lesson first = Lesson.restore(UUID.randomUUID(), "First", 0, FIXED_INSTANT, FIXED_INSTANT);
 
         Component component = Component.restore(id, "Basics", "About basics", PublicationStatus.PUBLISHED,
-                List.of(second, first), FIXED_INSTANT, FIXED_INSTANT);
+                List.of(second, first), FIXED_INSTANT, FIXED_INSTANT, 0L);
 
         assertThat(component.getId()).isEqualTo(id);
         assertThat(component.getStatus()).isEqualTo(PublicationStatus.PUBLISHED);
@@ -156,7 +156,7 @@ class ComponentTest {
     @Test
     void restoreShouldTolerateNullLessons() {
         Component component = Component.restore(UUID.randomUUID(), "Basics", "About basics",
-                PublicationStatus.DRAFT, null, FIXED_INSTANT, FIXED_INSTANT);
+                PublicationStatus.DRAFT, null, FIXED_INSTANT, FIXED_INSTANT, 0L);
 
         assertThat(component.getLessons()).isEmpty();
     }

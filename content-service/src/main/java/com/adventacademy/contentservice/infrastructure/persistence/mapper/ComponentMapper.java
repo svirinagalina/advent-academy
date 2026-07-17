@@ -19,6 +19,7 @@ public class ComponentMapper {
         entity.setTitle(component.getTitle());
         entity.setDescription(component.getDescription());
         entity.setStatus(component.getStatus());
+        entity.setVersion(component.getVersion());
         entity.setCreatedAt(component.getCreatedAt());
         entity.setUpdatedAt(component.getUpdatedAt());
         for (Lesson lesson : component.getLessons()) {
@@ -51,6 +52,7 @@ public class ComponentMapper {
                 entity.getStatus(),
                 lessons,
                 entity.getCreatedAt(),
-                entity.getUpdatedAt());
+                entity.getUpdatedAt(),
+                entity.getVersion());
     }
 }

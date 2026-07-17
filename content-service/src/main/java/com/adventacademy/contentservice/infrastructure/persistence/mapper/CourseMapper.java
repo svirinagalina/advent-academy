@@ -20,6 +20,7 @@ public class CourseMapper {
         entity.setTitle(course.getTitle());
         entity.setDescription(course.getDescription());
         entity.setStatus(course.getStatus());
+        entity.setVersion(course.getVersion());
         entity.setCreatedAt(course.getCreatedAt());
         entity.setUpdatedAt(course.getUpdatedAt());
         for (ComponentRef ref : course.getComponents()) {
@@ -42,6 +43,7 @@ public class CourseMapper {
                 entity.getStatus(),
                 refs,
                 entity.getCreatedAt(),
-                entity.getUpdatedAt());
+                entity.getUpdatedAt(),
+                entity.getVersion());
     }
 }
