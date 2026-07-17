@@ -7,6 +7,7 @@ import com.adventacademy.contentservice.infrastructure.persistence.jpa.CourseJpa
 import com.adventacademy.contentservice.infrastructure.persistence.mapper.CourseMapper;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,6 +37,11 @@ public class CourseRepositoryAdapter implements CourseRepository {
     @Override
     public List<Course> findAll() {
         return jpaRepository.findAll().stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Course> findAllById(Collection<UUID> ids) {
+        return jpaRepository.findAllById(ids).stream().map(mapper::toDomain).toList();
     }
 
     @Override
