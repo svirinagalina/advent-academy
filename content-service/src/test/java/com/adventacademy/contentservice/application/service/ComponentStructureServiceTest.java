@@ -1,5 +1,6 @@
 package com.adventacademy.contentservice.application.service;
 
+import com.adventacademy.contentservice.domain.constructor.Course;
 import com.adventacademy.contentservice.domain.constructor.PublicationStatus;
 import com.adventacademy.contentservice.domain.repository.ComponentRepository;
 import com.adventacademy.contentservice.domain.repository.CourseRepository;

@@ -1,9 +1,6 @@
 package com.adventacademy.contentservice.application.service;
 
-import com.adventacademy.contentservice.domain.constructor.Course;
-import com.adventacademy.contentservice.domain.constructor.CourseNotReadyForPublicationException;
-import com.adventacademy.contentservice.domain.constructor.CoursePublicationPolicy;
-import com.adventacademy.contentservice.domain.constructor.PublicationStatus;
+import com.adventacademy.contentservice.domain.constructor.*;
 import com.adventacademy.contentservice.domain.repository.ComponentRepository;
 import com.adventacademy.contentservice.domain.repository.CourseRepository;
 import com.adventacademy.contentservice.domain.repository.DirectionRepository;
@@ -45,6 +42,29 @@ public class CourseAssemblyServiceTest {
     }
 
     @Test
+    void deleteShouldThrowWhenCourseIsUsedByDirection() {
+        Course course = Course.create("Java course", "About java", CLOCK);
+        when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
+        when(directionRepository.existsByCourseId(course.getId())).thenReturn(true);
+
+        assertThatThrownBy(() -> service.delete(course.getId()))
+                .isInstanceOf(CourseInUseException.class);
+
+        verify(courseRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void deleteShouldDeleteWhenCoursetIsNotUsed() {
+        Course course = Course.create("Basics", "About basics", CLOCK);
+        when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
+        when(directionRepository.existsByCourseId(course.getId())).thenReturn(false);
+
+        service.delete(course.getId());
+
+        verify(courseRepository).deleteById(course.getId());
+    }
+
+    @Test
     void publishShouldThrowWhenComponentsAreNotPublished() {
         UUID componentId = UUID.randomUUID();
         Course course = Course.create("Java course", "About java", CLOCK);
@@ -58,6 +78,7 @@ public class CourseAssemblyServiceTest {
 
         verify(courseRepository, never()).save(any());
     }
+
     @Test
     void publishShouldPublishWhenAllComponentsArePublished() {
         UUID componentId = UUID.randomUUID();
