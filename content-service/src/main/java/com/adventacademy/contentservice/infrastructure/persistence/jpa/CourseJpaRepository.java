@@ -1,0 +1,14 @@
+package com.adventacademy.contentservice.infrastructure.persistence.jpa;
+
+import com.adventacademy.contentservice.infrastructure.persistence.entity.CourseEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.UUID;
+
+public interface CourseJpaRepository extends JpaRepository<CourseEntity, UUID> {
+
+    @Query("select count(c) > 0 from CourseEntity c join c.components r where r.componentId = :componentId")
+    boolean existsByComponentId(@Param("componentId") UUID componentId);
+}

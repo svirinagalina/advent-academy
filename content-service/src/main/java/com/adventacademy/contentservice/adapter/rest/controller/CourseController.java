@@ -1,39 +1,107 @@
 package com.adventacademy.contentservice.adapter.rest.controller;
 
+import com.adventacademy.contentservice.adapter.rest.dto.AddComponentRequest;
 import com.adventacademy.contentservice.adapter.rest.dto.CourseRequest;
 import com.adventacademy.contentservice.adapter.rest.dto.CourseResponse;
-import com.adventacademy.contentservice.application.service.CourseService;
+import com.adventacademy.contentservice.adapter.rest.dto.CourseTreeResponse;
+import com.adventacademy.contentservice.adapter.rest.dto.ReorderRequest;
+import com.adventacademy.contentservice.application.service.CourseAssemblyService;
+import com.adventacademy.contentservice.application.service.GetCatalogService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/courses")
+@Tag(name = "Courses", description = "Assembling courses from components")
 public class CourseController {
 
-    private final CourseService courseService;
+    private final CourseAssemblyService assemblyService;
+    private final GetCatalogService catalogService;
 
-    public CourseController(CourseService courseService) {
-        this.courseService = courseService;
+    public CourseController(CourseAssemblyService assemblyService,
+                            GetCatalogService catalogService) {
+        this.assemblyService = assemblyService;
+        this.catalogService = catalogService;
     }
 
     @PostMapping
-    public ResponseEntity<CourseResponse> createCourse(@Valid @RequestBody CourseRequest request) {
-        CourseResponse response = courseService.createCourse(request);
-        return ResponseEntity.ok(response);
+    @Operation(summary = "Create a course in DRAFT status")
+    public ResponseEntity<CourseResponse> create(@Valid @RequestBody CourseRequest request) {
+        var course = assemblyService.create(request.title(), request.description());
+        return ResponseEntity.status(HttpStatus.CREATED).body(CourseResponse.from(course));
     }
 
     @GetMapping
-    public ResponseEntity<List<CourseResponse>> getAllCourses() {
-        List<CourseResponse> courses = courseService.getAllCourses();
-        return ResponseEntity.ok(courses);
+    @Operation(summary = "List all courses")
+    public List<CourseResponse> findAll() {
+        return assemblyService.findAll().stream().map(CourseResponse::from).toList();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CourseResponse> getCourse(@PathVariable Long id) {
-        CourseResponse course = courseService.getCourse(id);
-        return ResponseEntity.ok(course);
+    @Operation(summary = "Get a course expanded into components and lessons")
+    public CourseTreeResponse get(@PathVariable UUID id) {
+        GetCatalogService.CourseTree tree = catalogService.getCourseTree(id);
+        return CourseTreeResponse.from(tree.course(), tree.componentsById());
+    }
+
+    @PatchMapping("/{id}")
+    @Operation(summary = "Rename a course / update description")
+    public CourseResponse rename(@PathVariable UUID id, @Valid @RequestBody CourseRequest request) {
+        return CourseResponse.from(assemblyService.rename(id, request.title(), request.description()));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete a DRAFT course that is not used by any direction")
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        assemblyService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/components")
+    @Operation(summary = "Add an existing component to the end of the course")
+    public ResponseEntity<CourseResponse> addComponent(@PathVariable UUID id,
+                                                       @Valid @RequestBody AddComponentRequest request) {
+        var course = assemblyService.addComponent(id, request.componentId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(CourseResponse.from(course));
+    }
+
+    @DeleteMapping("/{id}/components/{componentId}")
+    @Operation(summary = "Remove a component from the course (positions are renumbered)")
+    public CourseResponse removeComponent(@PathVariable UUID id, @PathVariable UUID componentId) {
+        return CourseResponse.from(assemblyService.removeComponent(id, componentId));
+    }
+
+    @PutMapping("/{id}/components/order")
+    @Operation(summary = "Reorder components")
+    public CourseResponse reorderComponents(@PathVariable UUID id,
+                                            @Valid @RequestBody ReorderRequest request) {
+        return CourseResponse.from(assemblyService.reorderComponents(id, request.orderedIds()));
+    }
+
+    @PostMapping("/{id}/publish")
+    @Operation(summary = "Publish the course when all its components are published")
+    public CourseResponse publish(@PathVariable UUID id) {
+        return CourseResponse.from(assemblyService.publish(id));
+    }
+
+    @PostMapping("/{id}/archive")
+    @Operation(summary = "Archive the course")
+    public CourseResponse archive(@PathVariable UUID id) {
+        return CourseResponse.from(assemblyService.archive(id));
     }
 }
