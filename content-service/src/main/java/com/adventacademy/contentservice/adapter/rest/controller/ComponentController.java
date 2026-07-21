@@ -25,6 +25,14 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * REST adapter for the reusable-component library.
+ * <p>
+ * Exposes the two component use-cases: structural editing while a component is a draft
+ * (create, rename, delete and shaping its ordered lessons) via {@link ComponentStructureService},
+ * and lifecycle transitions (publish, archive, clone, promote to a course) via
+ * {@link ComponentLifecycleService}.
+ */
 @RestController
 @RequestMapping("/api/components")
 @Tag(name = "Components", description = "Library of reusable course components")

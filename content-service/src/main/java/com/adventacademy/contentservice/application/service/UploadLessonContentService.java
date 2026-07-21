@@ -5,6 +5,7 @@ import com.adventacademy.contentservice.application.port.MarkdownRenderer;
 import com.adventacademy.contentservice.application.validation.MarkdownFileValidator;
 import com.adventacademy.contentservice.domain.LessonContent;
 import com.adventacademy.contentservice.domain.repository.LessonContentRepository;
+import com.adventacademy.contentservice.domain.repository.LessonRepository;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -13,8 +14,9 @@ import java.time.Clock;
 /**
  * Use-case: store the Markdown content of a lesson.
  * <p>
- * Validates the uploaded file, renders it to sanitized HTML and persists a new
- * {@link LessonContent} in DRAFT status, rejecting a second upload for the same lesson.
+ * Validates the uploaded file, ensures the target lesson exists, renders it to sanitized
+ * HTML and persists a new {@link LessonContent} in DRAFT status, rejecting a second upload
+ * for the same lesson.
  */
 @Service
 public class UploadLessonContentService {
@@ -22,17 +24,23 @@ public class UploadLessonContentService {
     private final MarkdownFileValidator markdownFileValidator;
     private final MarkdownRenderer markdownRenderer;
     private final LessonContentRepository repository;
+    private final LessonRepository lessonRepository;
 
     public UploadLessonContentService(MarkdownFileValidator markdownFileValidator,
                                       MarkdownRenderer markdownRenderer,
-                                      LessonContentRepository repository) {
+                                      LessonContentRepository repository,
+                                      LessonRepository lessonRepository) {
         this.markdownFileValidator = markdownFileValidator;
         this.markdownRenderer = markdownRenderer;
         this.repository = repository;
+        this.lessonRepository = lessonRepository;
     }
 
     public LessonContent saveLessonContent(UploadLessonContentCommand command) {
         markdownFileValidator.validate(command);
+        if (!lessonRepository.existsById(command.lessonId())) {
+            throw new NotFoundException("Lesson not found: " + command.lessonId());
+        }
         repository.findByLessonId(command.lessonId()).ifPresent(existing -> {
             throw new LessonContentAlreadyExistsException(
                     "Lesson content already exists for " + existing.getLessonId());

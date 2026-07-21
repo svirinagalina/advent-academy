@@ -34,6 +34,7 @@ public class LessonContentController {
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Content created"),
             @ApiResponse(responseCode = "400", description = "Invalid file"),
+            @ApiResponse(responseCode = "404", description = "Lesson does not exist"),
             @ApiResponse(responseCode = "409", description = "Content already exists for this lesson"),
             @ApiResponse(responseCode = "422", description = "Markdown cannot be rendered")
     })
