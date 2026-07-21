@@ -58,6 +58,13 @@ build:
 test:
   stage: test
   needs: ["build"]
+  services:
+    - name: docker:27-dind
+      command: ["--tls=false"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_API_VERSION: "1.43"
   script:
     - ./gradlew test --no-daemon --stacktrace
   artifacts:

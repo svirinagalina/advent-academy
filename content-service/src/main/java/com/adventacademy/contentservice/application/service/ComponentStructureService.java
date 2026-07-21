@@ -10,6 +10,11 @@ import java.time.Clock;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Structural editing use-cases of a component: create it and shape its ordered
+ * lessons (add, rename, reorder, remove) while it is still a draft, plus deletion
+ * guarded against components already referenced by a course.
+ */
 @Service
 @Transactional
 public class ComponentStructureService {
