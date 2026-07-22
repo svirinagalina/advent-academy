@@ -18,6 +18,7 @@ public enum AuditEventType {
     // Roles
     ROLE_ASSIGNED,
     ROLE_REVOKED,
+    ROLE_REQUEST_SUBMITTED,
 
     // Account status
     USER_BLOCKED,

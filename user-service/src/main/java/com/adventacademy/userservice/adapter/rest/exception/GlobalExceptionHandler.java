@@ -4,6 +4,7 @@ import jakarta.validation.ConstraintViolationException;
 import com.adventacademy.userservice.domain.exception.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -77,6 +78,38 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse("PERMISSION_NOT_FOUND", ex.getMessage()));
+    }
+
+    @ExceptionHandler(RoleRequestNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleRoleRequestNotFound(RoleRequestNotFoundException ex) {
+        logger.warn("Role request not found: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("ROLE_REQUEST_NOT_FOUND", ex.getMessage()));
+    }
+
+    @ExceptionHandler(DuplicateActiveRoleRequestException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateActiveRoleRequest(DuplicateActiveRoleRequestException ex) {
+        logger.warn("Duplicate active role request: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse("DUPLICATE_ACTIVE_ROLE_REQUEST", ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidRoleRequestStateException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidRoleRequestState(InvalidRoleRequestStateException ex) {
+        logger.warn("Invalid role request state: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse("INVALID_ROLE_REQUEST_STATE", ex.getMessage()));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        logger.warn("Data integrity violation: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse("DATA_INTEGRITY_VIOLATION", "Request conflicts with existing data"));
     }
 
     @ExceptionHandler(InvalidSortFieldException.class)
