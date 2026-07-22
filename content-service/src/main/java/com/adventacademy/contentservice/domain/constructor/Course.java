@@ -21,7 +21,7 @@ public final class Course {
     private final List<ComponentRef> components;
     private final Instant createdAt;
     private Instant updatedAt;
-    /** Optimistic-lock version managed by the persistence layer; null for new instances. */
+    /** Revision counter for optimistic concurrency control; guards against lost updates on concurrent edits. Null until first persisted. */
     private final Long version;
 
     private Course(UUID id, String title, String description, PublicationStatus status,

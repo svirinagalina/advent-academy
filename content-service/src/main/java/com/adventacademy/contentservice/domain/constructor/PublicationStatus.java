@@ -1,12 +1,15 @@
 package com.adventacademy.contentservice.domain.constructor;
 
 /**
- * Publication lifecycle shared by the course constructor aggregates
- * ({@link Component}, {@link Course}, {@link Direction}).
+ * Publication lifecycle of the publishable constructor aggregates
+ * ({@link Component} and {@link Course}).
  * <p>
- * Every aggregate starts in {@link #DRAFT} and enforces the allowed transitions
- * through {@link #canTransitionTo(PublicationStatus)}. A transition into the same
- * status is never allowed.
+ * {@link Direction} intentionally has no publication status: it is visible in the
+ * catalog as long as it contains at least one published course.
+ * <p>
+ * Every publishable aggregate starts in {@link #DRAFT} and enforces the allowed
+ * transitions through {@link #canTransitionTo(PublicationStatus)}. A transition into
+ * the same status is never allowed.
  */
 public enum PublicationStatus {
 

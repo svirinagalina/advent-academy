@@ -12,6 +12,7 @@ import java.util.UUID;
 
 /**
  * Catalog: directions with their published courses, ordered by position.
+ * Directions without a single published course are hidden from the catalog.
  */
 public record CatalogResponse(List<DirectionNode> directions) {
 
@@ -30,6 +31,7 @@ public record CatalogResponse(List<DirectionNode> directions) {
             PublicationStatus status
     ) {
     }
+
     public static CatalogResponse from(List<Direction> directions, Map<UUID, Course> coursesById) {
         List<DirectionNode> nodes = new ArrayList<>();
         for (Direction direction : directions) {
@@ -41,6 +43,9 @@ public record CatalogResponse(List<DirectionNode> directions) {
                 }
                 courses.add(new CourseNode(
                         course.getId(), ref.getPosition(), course.getTitle(), course.getStatus()));
+            }
+            if (courses.isEmpty()) {
+                continue;
             }
             nodes.add(new DirectionNode(
                     direction.getId(), direction.getTitle(), direction.getDescription(), courses));

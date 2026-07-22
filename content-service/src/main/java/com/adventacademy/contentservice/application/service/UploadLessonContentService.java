@@ -1,52 +1,56 @@
 package com.adventacademy.contentservice.application.service;
 
+import com.adventacademy.contentservice.application.command.UploadLessonContentCommand;
 import com.adventacademy.contentservice.application.port.MarkdownRenderer;
-import com.adventacademy.contentservice.application.validation.InvalidMarkdownFileException;
 import com.adventacademy.contentservice.application.validation.MarkdownFileValidator;
 import com.adventacademy.contentservice.domain.LessonContent;
 import com.adventacademy.contentservice.domain.repository.LessonContentRepository;
+import com.adventacademy.contentservice.domain.repository.LessonRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
-import java.util.UUID;
 
-
+/**
+ * Use-case: store the Markdown content of a lesson.
+ * <p>
+ * Validates the uploaded file, ensures the target lesson exists, renders it to sanitized
+ * HTML and persists a new {@link LessonContent} in DRAFT status, rejecting a second upload
+ * for the same lesson.
+ */
 @Service
 public class UploadLessonContentService {
+
     private final MarkdownFileValidator markdownFileValidator;
     private final MarkdownRenderer markdownRenderer;
     private final LessonContentRepository repository;
+    private final LessonRepository lessonRepository;
 
-    public UploadLessonContentService(MarkdownFileValidator markdownFileValidator, MarkdownRenderer markdownRenderer, LessonContentRepository repository) {
+    public UploadLessonContentService(MarkdownFileValidator markdownFileValidator,
+                                      MarkdownRenderer markdownRenderer,
+                                      LessonContentRepository repository,
+                                      LessonRepository lessonRepository) {
         this.markdownFileValidator = markdownFileValidator;
         this.markdownRenderer = markdownRenderer;
         this.repository = repository;
+        this.lessonRepository = lessonRepository;
     }
 
-    public LessonContent saveLessonContent(UUID lessonId, MultipartFile file) {
-        markdownFileValidator.validate(file);
-        repository.findByLessonId(lessonId).ifPresent(lessonContent -> {
-            throw new LessonContentAlreadyExistsException(
-                    "Lesson content already exists for " + lessonContent.getLessonId()
-            );
-        });
-        final String markdown;
-        String html = null;
-        try {
-            markdown = new String(file.getBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new InvalidMarkdownFileException("Cannot read file content", e);
-
+    public LessonContent saveLessonContent(UploadLessonContentCommand command) {
+        markdownFileValidator.validate(command);
+        if (!lessonRepository.existsById(command.lessonId())) {
+            throw new NotFoundException("Lesson not found: " + command.lessonId());
         }
-        html = markdownRenderer.render(markdown);
-        LessonContent content = LessonContent.create(lessonId, markdown);
+        repository.findByLessonId(command.lessonId()).ifPresent(existing -> {
+            throw new LessonContentAlreadyExistsException(
+                    "Lesson content already exists for " + existing.getLessonId());
+        });
+
+        String markdown = new String(command.content(), StandardCharsets.UTF_8);
+        String html = markdownRenderer.render(markdown);
+
+        LessonContent content = LessonContent.create(command.lessonId(), markdown);
         content.updateContent(markdown, html, Clock.systemUTC());
         return repository.save(content);
     }
-
-
-
 }

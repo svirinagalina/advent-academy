@@ -1,7 +1,9 @@
 package com.adventacademy.contentservice.adapter.rest.controller;
 
 import com.adventacademy.contentservice.adapter.rest.dto.LessonContentResponse;
+import com.adventacademy.contentservice.application.command.UploadLessonContentCommand;
 import com.adventacademy.contentservice.application.service.UploadLessonContentService;
+import com.adventacademy.contentservice.application.validation.InvalidMarkdownFileException;
 import com.adventacademy.contentservice.domain.LessonContent;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -12,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.UUID;
 
 @RestController
@@ -31,6 +34,7 @@ public class LessonContentController {
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Content created"),
             @ApiResponse(responseCode = "400", description = "Invalid file"),
+            @ApiResponse(responseCode = "404", description = "Lesson does not exist"),
             @ApiResponse(responseCode = "409", description = "Content already exists for this lesson"),
             @ApiResponse(responseCode = "422", description = "Markdown cannot be rendered")
     })
@@ -38,8 +42,20 @@ public class LessonContentController {
     public ResponseEntity<LessonContentResponse> uploadContent(
             @PathVariable UUID lessonId,
             @RequestParam("file") MultipartFile file) {
-        LessonContent content = uploadService.saveLessonContent(lessonId, file);
+        LessonContent content = uploadService.saveLessonContent(toCommand(lessonId, file));
         return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(content));
+    }
+
+    private UploadLessonContentCommand toCommand(UUID lessonId, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new InvalidMarkdownFileException("file must not be empty");
+        }
+        try {
+            return new UploadLessonContentCommand(
+                    lessonId, file.getOriginalFilename(), file.getContentType(), file.getBytes());
+        } catch (IOException e) {
+            throw new InvalidMarkdownFileException("cannot read file content", e);
+        }
     }
 
     private LessonContentResponse toResponse(LessonContent c) {
