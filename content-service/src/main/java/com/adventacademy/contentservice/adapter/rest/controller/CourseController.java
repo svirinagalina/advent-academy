@@ -25,6 +25,13 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * REST adapter for assembling courses out of existing components.
+ * <p>
+ * Covers course assembly (create, rename, delete, add/remove/reorder components and
+ * publish/archive) via {@link CourseAssemblyService}, and reading a course expanded into
+ * its component-and-lesson tree via {@link GetCatalogService}.
+ */
 @RestController
 @RequestMapping("/api/courses")
 @Tag(name = "Courses", description = "Assembling courses from components")
