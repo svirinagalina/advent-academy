@@ -1,10 +1,9 @@
 package com.adventacademy.contentservice.application.service;
 
-import com.adventacademy.contentservice.domain.constructor.Component;
-import com.adventacademy.contentservice.domain.constructor.ComponentRef;
-import com.adventacademy.contentservice.domain.constructor.Course;
+import com.adventacademy.contentservice.domain.constructor.*;
 import com.adventacademy.contentservice.domain.repository.ComponentRepository;
 import com.adventacademy.contentservice.domain.repository.CourseRepository;
+import com.adventacademy.contentservice.domain.repository.DirectionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,13 +23,18 @@ public class GetCatalogService {
     public record CourseTree(Course course, Map<UUID, Component> componentsById) {
     }
 
+    public record Catalog(List<Direction> directions, Map<UUID, Course> coursesById) {
+    }
+
     private final CourseRepository courseRepository;
     private final ComponentRepository componentRepository;
+    private final DirectionRepository directionRepository;
 
     public GetCatalogService(CourseRepository courseRepository,
-                             ComponentRepository componentRepository) {
+                             ComponentRepository componentRepository, DirectionRepository directionRepository) {
         this.courseRepository = courseRepository;
         this.componentRepository = componentRepository;
+        this.directionRepository = directionRepository;
     }
 
     public CourseTree getCourseTree(UUID courseId) {
@@ -44,5 +48,21 @@ public class GetCatalogService {
             componentsById.put(component.getId(), component);
         }
         return new CourseTree(course, componentsById);
+    }
+
+    public Catalog getCatalog() {
+        List<Direction> directions = directionRepository.findAll();
+        List<UUID> courseIds = directions.stream()
+                .flatMap(direction -> direction.getCourses().stream())
+                .map(CourseRef::getCourseId)
+                .distinct()
+                .toList();
+        Map<UUID, Course> coursesById = new HashMap<>();
+        for (Course course : courseRepository.findAllById(courseIds)) {
+            if (course.getStatus() == PublicationStatus.PUBLISHED) {
+                coursesById.put(course.getId(), course);
+            }
+        }
+        return new Catalog(directions, coursesById);
     }
 }
