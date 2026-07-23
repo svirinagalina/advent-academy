@@ -2,10 +2,10 @@ package com.adventacademy.contentservice.domain.repository;
 
 import com.adventacademy.contentservice.domain.constructor.Course;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Collection;
 
 public interface CourseRepository {
 
@@ -15,8 +15,6 @@ public interface CourseRepository {
 
     List<Course> findAll();
 
-    List<Course> findAllById(Collection<UUID> ids);
-
     boolean existsById(UUID id);
 
     /**
@@ -25,4 +23,6 @@ public interface CourseRepository {
     boolean existsByComponentId(UUID componentId);
 
     void deleteById(UUID id);
+
+    List<Course> findAllById(Collection<UUID> ids);
 }

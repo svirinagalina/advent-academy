@@ -30,6 +30,11 @@ public class CourseRepositoryAdapter implements CourseRepository {
     }
 
     @Override
+    public List<Course> findAllById(Collection<UUID> ids) {
+        return jpaRepository.findAllById(ids).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public Optional<Course> findById(UUID id) {
         return jpaRepository.findById(id).map(mapper::toDomain);
     }
@@ -37,11 +42,6 @@ public class CourseRepositoryAdapter implements CourseRepository {
     @Override
     public List<Course> findAll() {
         return jpaRepository.findAll().stream().map(mapper::toDomain).toList();
-    }
-
-    @Override
-    public List<Course> findAllById(Collection<UUID> ids) {
-        return jpaRepository.findAllById(ids).stream().map(mapper::toDomain).toList();
     }
 
     @Override

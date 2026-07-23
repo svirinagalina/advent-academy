@@ -1,6 +1,11 @@
 package com.adventacademy.contentservice.application.service;
 
-import com.adventacademy.contentservice.domain.constructor.*;
+import com.adventacademy.contentservice.domain.constructor.Component;
+import com.adventacademy.contentservice.domain.constructor.ComponentRef;
+import com.adventacademy.contentservice.domain.constructor.Course;
+import com.adventacademy.contentservice.domain.constructor.CourseRef;
+import com.adventacademy.contentservice.domain.constructor.Direction;
+import com.adventacademy.contentservice.domain.constructor.PublicationStatus;
 import com.adventacademy.contentservice.domain.repository.ComponentRepository;
 import com.adventacademy.contentservice.domain.repository.CourseRepository;
 import com.adventacademy.contentservice.domain.repository.DirectionRepository;
@@ -13,8 +18,12 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Read side of the constructor: expands a course into a tree of
- * components with their lessons (components are loaded in one query).
+ * Read side of the constructor.
+ * <p>
+ * {@code getCourseTree} expands a course into a tree of components with their
+ * lessons (components are loaded in one query). {@code getCatalog} returns all
+ * directions together with their PUBLISHED courses only — draft and archived
+ * courses are filtered out here, so the catalog never exposes unpublished content.
  */
 @Service
 @Transactional(readOnly = true)
@@ -31,7 +40,8 @@ public class GetCatalogService {
     private final DirectionRepository directionRepository;
 
     public GetCatalogService(CourseRepository courseRepository,
-                             ComponentRepository componentRepository, DirectionRepository directionRepository) {
+                             ComponentRepository componentRepository,
+                             DirectionRepository directionRepository) {
         this.courseRepository = courseRepository;
         this.componentRepository = componentRepository;
         this.directionRepository = directionRepository;
@@ -57,12 +67,12 @@ public class GetCatalogService {
                 .map(CourseRef::getCourseId)
                 .distinct()
                 .toList();
-        Map<UUID, Course> coursesById = new HashMap<>();
+        Map<UUID, Course> publishedById = new HashMap<>();
         for (Course course : courseRepository.findAllById(courseIds)) {
             if (course.getStatus() == PublicationStatus.PUBLISHED) {
-                coursesById.put(course.getId(), course);
+                publishedById.put(course.getId(), course);
             }
         }
-        return new Catalog(directions, coursesById);
+        return new Catalog(directions, publishedById);
     }
 }
