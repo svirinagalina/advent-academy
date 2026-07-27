@@ -48,6 +48,7 @@ services:
     build:
       context: .
       dockerfile: user-service/Dockerfile
+      network: host
     container_name: advent-user-service
     depends_on:
       postgres:
@@ -73,6 +74,7 @@ services:
     build:
       context: .
       dockerfile: content-service/Dockerfile
+      network: host
     container_name: advent-content-service
     depends_on:
       postgres:
