@@ -4,6 +4,7 @@ import com.adventacademy.contentservice.domain.constructor.Course;
 import com.adventacademy.contentservice.domain.constructor.CourseRef;
 import com.adventacademy.contentservice.domain.constructor.Direction;
 import com.adventacademy.contentservice.domain.constructor.PublicationStatus;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +19,9 @@ public record CatalogResponse(List<DirectionNode> directions) {
 
     public record DirectionNode(
             UUID id,
+            @Schema(description = "Plain text. Render with a text-only sink (e.g. textContent), never innerHTML.")
             String title,
+            @Schema(description = "Plain text. Render with a text-only sink (e.g. textContent), never innerHTML.")
             String description,
             List<CourseNode> courses
     ) {
@@ -27,6 +30,7 @@ public record CatalogResponse(List<DirectionNode> directions) {
     public record CourseNode(
             UUID courseId,
             int position,
+            @Schema(description = "Plain text. Render with a text-only sink (e.g. textContent), never innerHTML.")
             String title,
             PublicationStatus status
     ) {

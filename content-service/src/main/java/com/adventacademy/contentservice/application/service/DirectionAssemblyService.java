@@ -1,5 +1,6 @@
 package com.adventacademy.contentservice.application.service;
 
+import com.adventacademy.contentservice.application.validation.PlainTextNormalizer;
 import com.adventacademy.contentservice.domain.constructor.Direction;
 import com.adventacademy.contentservice.domain.repository.CourseRepository;
 import com.adventacademy.contentservice.domain.repository.DirectionRepository;
@@ -29,7 +30,9 @@ public class DirectionAssemblyService {
     }
 
     public Direction create(String title, String description) {
-        return directionRepository.save(Direction.create(title, description, clock));
+        String safeTitle = PlainTextNormalizer.normalizeTitle(title);
+        String safeDescription = PlainTextNormalizer.normalizeDescription(description);
+        return directionRepository.save(Direction.create(safeTitle, safeDescription, clock));
     }
 
     @Transactional(readOnly = true)
@@ -45,7 +48,9 @@ public class DirectionAssemblyService {
 
     public Direction rename(UUID id, String title, String description) {
         Direction direction = get(id);
-        direction.rename(title, description, clock);
+        String safeTitle = PlainTextNormalizer.normalizeTitle(title);
+        String safeDescription = PlainTextNormalizer.normalizeDescription(description);
+        direction.rename(safeTitle, safeDescription, clock);
         return directionRepository.save(direction);
     }
 
