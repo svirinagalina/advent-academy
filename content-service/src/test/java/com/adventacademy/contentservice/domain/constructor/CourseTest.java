@@ -132,6 +132,43 @@ class CourseTest {
     }
 
     @Test
+    void reorderComponentsShouldRejectForeignIds() {
+        Course course = Course.create("Java", "About java", CLOCK);
+        course.addComponent(UUID.randomUUID(), CLOCK);
+        course.addComponent(UUID.randomUUID(), CLOCK);
+
+        assertThatThrownBy(() -> course.reorderComponents(List.of(UUID.randomUUID(), UUID.randomUUID()), CLOCK))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("permutation");
+    }
+
+    @Test
+    void reorderComponentsShouldRejectDuplicateIds() {
+        Course course = Course.create("Java", "About java", CLOCK);
+        UUID c1 = UUID.randomUUID();
+        UUID c2 = UUID.randomUUID();
+        course.addComponent(c1, CLOCK);
+        course.addComponent(c2, CLOCK);
+
+        assertThatThrownBy(() -> course.reorderComponents(List.of(c1, c1), CLOCK))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("permutation");
+    }
+
+    @Test
+    void reorderComponentsShouldRejectMissingIds() {
+        Course course = Course.create("Java", "About java", CLOCK);
+        UUID c1 = UUID.randomUUID();
+        UUID c2 = UUID.randomUUID();
+        course.addComponent(c1, CLOCK);
+        course.addComponent(c2, CLOCK);
+
+        assertThatThrownBy(() -> course.reorderComponents(List.of(c1), CLOCK))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("permutation");
+    }
+
+    @Test
     void publishShouldReportUnpublishedComponents() {
         Course course = Course.create("Java", "About java", CLOCK);
         UUID componentId = UUID.randomUUID();
