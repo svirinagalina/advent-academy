@@ -74,7 +74,50 @@ class LessonContentApiIT {
                 .andExpect(status().isConflict());
     }
 
-    /** Creates a component with a single lesson through the API and returns the lesson id. */
+    @Test
+    void uploadsMarkdownWithValidAssetLinkAndRewritesToDownloadUrl() throws Exception {
+        UUID lessonId = createLesson();
+        UUID assetId = uploadAsset(lessonId);
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "lesson.md", "text/markdown",
+                ("![diagram](asset:" + assetId + ")").getBytes(StandardCharsets.UTF_8));
+
+        mockMvc.perform(multipart("/api/lessons/{lessonId}/content", lessonId).file(file))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.html", containsString("/api/assets/" + assetId)));
+    }
+
+    @Test
+    void returns422ForAssetLinkToForeignLesson() throws Exception {
+        UUID lessonId = createLesson();
+        UUID foreignLessonId = createLesson();
+        UUID foreignAssetId = uploadAsset(foreignLessonId);
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "lesson.md", "text/markdown",
+                ("![diagram](asset:" + foreignAssetId + ")").getBytes(StandardCharsets.UTF_8));
+
+        mockMvc.perform(multipart("/api/lessons/{lessonId}/content", lessonId).file(file))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.notReadyIds[0]").value(foreignAssetId.toString()));    }
+
+    /**
+     * Uploads a small asset for the given lesson and returns its id.
+     */
+    private UUID uploadAsset(UUID lessonId) throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "diagram.png", "image/png", "fake-png-bytes".getBytes(StandardCharsets.UTF_8));
+
+        String response = mockMvc.perform(multipart("/api/lessons/{lessonId}/assets", lessonId).file(file))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return UUID.fromString(JsonPath.read(response, "$.id"));
+    }
+
+    /**
+     * Creates a component with a single lesson through the API and returns the lesson id.
+     */
     private UUID createLesson() throws Exception {
         String component = mockMvc.perform(post("/api/components")
                         .contentType(MediaType.APPLICATION_JSON)

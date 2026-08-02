@@ -3,6 +3,7 @@ package com.adventacademy.contentservice.adapter.rest.exception;
 import com.adventacademy.contentservice.application.port.MarkdownRenderingException;
 import com.adventacademy.contentservice.application.service.ComponentInUseException;
 import com.adventacademy.contentservice.application.service.CourseInUseException;
+import com.adventacademy.contentservice.application.service.InvalidAssetLinkException;
 import com.adventacademy.contentservice.application.service.LessonContentAlreadyExistsException;
 import com.adventacademy.contentservice.application.service.NotFoundException;
 import com.adventacademy.contentservice.application.validation.InvalidAssetFileException;
@@ -61,6 +62,12 @@ public class GlobalExceptionHandler {
                 .body(new PublicationErrorResponse(e.getMessage(), e.getComponentIds()));
     }
 
+    @ExceptionHandler(InvalidAssetLinkException.class)
+    public ResponseEntity<PublicationErrorResponse> handleInvalidAssetLink(InvalidAssetLinkException e) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(new PublicationErrorResponse(e.getMessage(), e.getInvalidAssetIds()));
+    }
+
     @ExceptionHandler(InvalidMarkdownFileException.class)
     public ResponseEntity<ErrorResponse> handleInvalidFile(InvalidMarkdownFileException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -78,7 +85,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ErrorResponse(e.getMessage()));
     }
-    
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT)

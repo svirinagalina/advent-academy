@@ -83,4 +83,40 @@ class CommonMarkMarkdownRendererTest {
         String html = renderer.render("<blink>мигалка</blink> обычный текст");
         assertThat(html).contains("обычный текст");
     }
+    @Test
+    void preservesMermaidFencedBlockWithLanguageClass() {
+        String markdown = """
+```mermaid
+            flowchart TD
+                A --> B
+```
+            """;
+
+        String html = renderer.render(markdown);
+
+        assertThat(html).contains("<pre><code class=\"language-mermaid\">");
+    }
+
+    @Test
+    void allowsAssetImageLink() {
+        String assetUrl = "/api/assets/11111111-1111-1111-1111-111111111111";
+        String html = renderer.render("![diagram](" + assetUrl + ")");
+
+        assertThat(html).contains("<img src=\"" + assetUrl + "\"");
+    }
+
+    @Test
+    void stripsExternalImageLink() {
+        String html = renderer.render("![evil](https://attacker.example/tracker.png)");
+
+        assertThat(html).doesNotContain("<img");
+        assertThat(html).doesNotContain("attacker.example");
+    }
+
+    @Test
+    void stripsClassAttributeNotMatchingLanguagePattern() {
+        String html = renderer.render("<pre class=\"evil-class\"><code>x</code></pre>");
+
+        assertThat(html).doesNotContain("evil-class");
+    }
 }

@@ -56,7 +56,7 @@ public class AssetController {
             @ApiResponse(responseCode = "201", description = "Asset created"),
             @ApiResponse(responseCode = "400", description = "Invalid file or MIME type"),
             @ApiResponse(responseCode = "404", description = "Lesson does not exist"),
-            @ApiResponse(responseCode = "413", description = "File size exceeds limit")
+            @ApiResponse(responseCode = "400", description = "File size exceeds limit")
     })
     public ResponseEntity<AssetResponse> uploadAsset(
             @PathVariable UUID lessonId,
