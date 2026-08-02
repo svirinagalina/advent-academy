@@ -5,6 +5,7 @@ import com.adventacademy.contentservice.application.service.ComponentInUseExcept
 import com.adventacademy.contentservice.application.service.CourseInUseException;
 import com.adventacademy.contentservice.application.service.LessonContentAlreadyExistsException;
 import com.adventacademy.contentservice.application.service.NotFoundException;
+import com.adventacademy.contentservice.application.validation.InvalidAssetFileException;
 import com.adventacademy.contentservice.application.validation.InvalidMarkdownFileException;
 import com.adventacademy.contentservice.domain.constructor.ComponentNotReadyForPublicationException;
 import com.adventacademy.contentservice.domain.constructor.CourseNotReadyForPublicationException;
@@ -62,6 +63,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidMarkdownFileException.class)
     public ResponseEntity<ErrorResponse> handleInvalidFile(InvalidMarkdownFileException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(e.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidAssetFileException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidAsset(InvalidAssetFileException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(e.getMessage()));
     }
