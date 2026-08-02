@@ -11,7 +11,7 @@ import org.owasp.html.HtmlPolicyBuilder;
 import org.owasp.html.PolicyFactory;
 import org.owasp.html.Sanitizers;
 import org.springframework.stereotype.Component;
-
+import org.owasp.html.ElementPolicy;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -31,7 +31,16 @@ import java.util.regex.Pattern;
 @Component
 public class CommonMarkMarkdownRenderer implements MarkdownRenderer {
 
+
     private static final Pattern LANGUAGE_CLASS = Pattern.compile("^language-[a-zA-Z0-9_-]+$");
+    private static final ElementPolicy IMG_REQUIRES_SRC = (elementName, attrs) -> {
+        for (int i = 0; i < attrs.size(); i += 2) {
+            if ("src".equals(attrs.get(i))) {
+                return elementName;
+            }
+        }
+        return null;
+    };
     private static final Pattern ASSET_IMAGE_SRC = Pattern.compile(
             "^/api/assets/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
 
@@ -42,9 +51,11 @@ public class CommonMarkMarkdownRenderer implements MarkdownRenderer {
             .and(Sanitizers.LINKS)
             .and(Sanitizers.TABLES)
             .and(new HtmlPolicyBuilder()
-                    .allowElements("pre", "code", "img").allowAttributes("class").matching(LANGUAGE_CLASS).onElements("pre", "code")
+                    .allowElements(IMG_REQUIRES_SRC, "img")
+                    .allowElements("pre", "code")
+                    .allowAttributes("class").matching(LANGUAGE_CLASS).onElements("pre", "code")
                     .allowAttributes("src").matching(ASSET_IMAGE_SRC).onElements("img")
-                    .disallowWithoutAttributes("img")
+                    .allowAttributes("alt").onElements("img")
                     .toFactory());
 
     public CommonMarkMarkdownRenderer() {

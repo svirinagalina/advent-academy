@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,8 +29,7 @@ public class LessonContentController {
         this.uploadService = uploadService;
     }
 
-    @PostMapping("/{lessonId}/content")
-    @Operation(summary = "Upload Markdown file or a .zip bundle for a lesson",
+    @PostMapping(value = "/{lessonId}/content", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)    @Operation(summary = "Upload Markdown file or a .zip bundle for a lesson",
             description = "Accepts either a plain .md file or a .zip archive. "
                     + "A .zip must contain exactly one Markdown file in its root and, optionally, an assets/ folder; "
                     + "each file under assets/ is saved as a lesson asset and references to it in the Markdown "

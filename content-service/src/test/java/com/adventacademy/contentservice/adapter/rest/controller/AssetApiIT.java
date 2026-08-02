@@ -89,7 +89,7 @@ class AssetApiIT {
         mockMvc.perform(get("/api/assets/{id}", assetId))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/pdf"))
-                .andExpect(header().string("Content-Disposition", "form-data; name=\"attachment\"; filename=\"document.pdf\""))
+                .andExpect(header().string("Content-Disposition", "attachment; filename=\"document.pdf\""))
                 .andExpect(content().bytes(fileContent));
     }
 
@@ -113,7 +113,7 @@ class AssetApiIT {
         mockMvc.perform(get("/api/assets/{id}", assetId))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("image/png"))
-                .andExpect(header().string("Content-Disposition", "form-data; name=\"inline\"; filename=\"image.png\""))
+                .andExpect(header().string("Content-Disposition", "inline; filename=\"image.png\""))
                 .andExpect(content().bytes(imageContent));
     }
 

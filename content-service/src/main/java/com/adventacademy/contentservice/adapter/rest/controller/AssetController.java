@@ -12,10 +12,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -47,8 +44,7 @@ public class AssetController {
         this.downloadAssetService = downloadAssetService;
     }
 
-    @PostMapping("/api/lessons/{lessonId}/assets")
-    @Operation(
+    @PostMapping(value = "/api/lessons/{lessonId}/assets", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)    @Operation(
             summary = "Upload asset for a lesson",
             description = "Validates file size and MIME type, stores the asset and returns metadata with download URL"
     )
@@ -89,10 +85,10 @@ public class AssetController {
         headers.setContentType(MediaType.parseMediaType(asset.getContentType()));
         headers.setContentLength(asset.getFileSize());
 
-        String disposition = IMAGE_MIME_TYPES.contains(asset.getContentType())
-                ? "inline"
-                : "attachment";
-        headers.setContentDispositionFormData(disposition, asset.getFilename());
+        ContentDisposition contentDisposition = IMAGE_MIME_TYPES.contains(asset.getContentType())
+                ? ContentDisposition.inline().filename(asset.getFilename()).build()
+                : ContentDisposition.attachment().filename(asset.getFilename()).build();
+        headers.setContentDisposition(contentDisposition);
 
         return ResponseEntity.ok()
                 .headers(headers)

@@ -104,6 +104,13 @@ class CommonMarkMarkdownRendererTest {
 
         assertThat(html).contains("<img src=\"" + assetUrl + "\"");
     }
+    @Test
+    void preservesAltTextForValidAssetImage() {
+        String assetUrl = "/api/assets/11111111-1111-1111-1111-111111111111";
+        String html = renderer.render("![pic](" + assetUrl + ")");
+
+        assertThat(html).contains("alt=\"pic\"");
+    }
 
     @Test
     void stripsExternalImageLink() {
