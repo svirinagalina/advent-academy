@@ -1,5 +1,7 @@
 package com.adventacademy.contentservice.adapter.rest.controller;
 
+import java.util.Map;
+
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,7 +102,8 @@ class LessonContentApiIT {
 
         mockMvc.perform(multipart("/api/lessons/{lessonId}/content", lessonId).file(file))
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.notReadyIds[0]").value(foreignAssetId.toString()));    }
+                .andExpect(jsonPath("$.notReadyIds[0]").value(foreignAssetId.toString()));
+    }
 
     /**
      * Uploads a small asset for the given lesson and returns its id.
@@ -132,5 +135,64 @@ class LessonContentApiIT {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return UUID.fromString(JsonPath.read(withLesson, "$.lessons[0].id"));
+    }
+    private static byte[] buildZip(Map<String, byte[]> entries) throws java.io.IOException {
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(out)) {
+            for (Map.Entry<String, byte[]> entry : entries.entrySet()) {
+                zos.putNextEntry(new java.util.zip.ZipEntry(entry.getKey()));
+                zos.write(entry.getValue());
+                zos.closeEntry();
+            }
+        }
+        return out.toByteArray();
+    }
+    @Test
+    void uploadsZipBundleAndCreatesContentWithResolvedAssetLinks() throws Exception {
+        UUID lessonId = createLesson();
+        byte[] zip = buildZip(Map.of(
+                "lesson.md", "# Title\n\n![diagram](assets/diagram.png)".getBytes(StandardCharsets.UTF_8),
+                "assets/diagram.png", "fake-png-bytes".getBytes(StandardCharsets.UTF_8)
+        ));
+        MockMultipartFile file = new MockMultipartFile("file", "bundle.zip", "application/zip", zip);
+
+        mockMvc.perform(multipart("/api/lessons/{lessonId}/content", lessonId).file(file))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("DRAFT"))
+                .andExpect(jsonPath("$.html", containsString("<h1>Title</h1>")))
+                .andExpect(jsonPath("$.html", containsString("/api/assets/")));
+    }
+    @Test
+    void returns400ForZipWithoutMarkdown() throws Exception {
+        UUID lessonId = createLesson();
+        byte[] zip = buildZip(Map.of("assets/diagram.png", "bytes".getBytes(StandardCharsets.UTF_8)));
+        MockMultipartFile file = new MockMultipartFile("file", "bundle.zip", "application/zip", zip);
+
+        mockMvc.perform(multipart("/api/lessons/{lessonId}/content", lessonId).file(file))
+                .andExpect(status().isBadRequest());
+    }
+    @Test
+    void returns400ForZipWithMultipleRootMarkdownFiles() throws Exception {
+        UUID lessonId = createLesson();
+        byte[] zip = buildZip(Map.of(
+                "one.md", "# One".getBytes(StandardCharsets.UTF_8),
+                "two.md", "# Two".getBytes(StandardCharsets.UTF_8)
+        ));
+        MockMultipartFile file = new MockMultipartFile("file", "bundle.zip", "application/zip", zip);
+
+        mockMvc.perform(multipart("/api/lessons/{lessonId}/content", lessonId).file(file))
+                .andExpect(status().isBadRequest());
+    }
+    @Test
+    void returns400ForZipSlipAttempt() throws Exception {
+        UUID lessonId = createLesson();
+        byte[] zip = buildZip(Map.of(
+                "lesson.md", "# Title".getBytes(StandardCharsets.UTF_8),
+                "../../etc/passwd", "evil".getBytes(StandardCharsets.UTF_8)
+        ));
+        MockMultipartFile file = new MockMultipartFile("file", "bundle.zip", "application/zip", zip);
+
+        mockMvc.perform(multipart("/api/lessons/{lessonId}/content", lessonId).file(file))
+                .andExpect(status().isBadRequest());
     }
 }
