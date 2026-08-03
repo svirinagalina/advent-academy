@@ -7,6 +7,7 @@ import com.adventacademy.contentservice.domain.LessonContent;
 import com.adventacademy.contentservice.domain.repository.LessonContentRepository;
 import com.adventacademy.contentservice.domain.repository.LessonRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -43,6 +44,7 @@ public class UploadLessonContentService {
         this.lessonRepository = lessonRepository;
     }
 
+    @Transactional
     public LessonContent saveLessonContent(UploadLessonContentCommand command) {
         markdownFileValidator.validate(command);
         if (!lessonRepository.existsById(command.lessonId())) {
