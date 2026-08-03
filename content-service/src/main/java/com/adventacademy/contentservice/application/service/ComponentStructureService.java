@@ -1,5 +1,6 @@
 package com.adventacademy.contentservice.application.service;
 
+import com.adventacademy.contentservice.application.validation.PlainTextNormalizer;
 import com.adventacademy.contentservice.domain.constructor.Component;
 import com.adventacademy.contentservice.domain.repository.ComponentRepository;
 import com.adventacademy.contentservice.domain.repository.CourseRepository;
@@ -31,7 +32,9 @@ public class ComponentStructureService {
     }
 
     public Component create(String title, String description) {
-        Component component = Component.create(title, description, clock);
+        String safeTitle = PlainTextNormalizer.normalizeTitle(title);
+        String safeDescription = PlainTextNormalizer.normalizeDescription(description);
+        Component component = Component.create(safeTitle, safeDescription, clock);
         return componentRepository.save(component);
     }
 
@@ -48,7 +51,9 @@ public class ComponentStructureService {
 
     public Component rename(UUID id, String title, String description) {
         Component component = get(id);
-        component.rename(title, description, clock);
+        String safeTitle = PlainTextNormalizer.normalizeTitle(title);
+        String safeDescription = PlainTextNormalizer.normalizeDescription(description);
+        component.rename(safeTitle, safeDescription, clock);
         return componentRepository.save(component);
     }
 
@@ -63,13 +68,15 @@ public class ComponentStructureService {
 
     public Component addLesson(UUID componentId, String lessonTitle) {
         Component component = get(componentId);
-        component.addLesson(lessonTitle, clock);
+        String safeLessonTitle = PlainTextNormalizer.normalizeTitle(lessonTitle);
+        component.addLesson(safeLessonTitle, clock);
         return componentRepository.save(component);
     }
 
     public Component renameLesson(UUID componentId, UUID lessonId, String title) {
         Component component = get(componentId);
-        component.renameLesson(lessonId, title, clock);
+        String safeTitle = PlainTextNormalizer.normalizeTitle(title);
+        component.renameLesson(lessonId, safeTitle, clock);
         return componentRepository.save(component);
     }
 

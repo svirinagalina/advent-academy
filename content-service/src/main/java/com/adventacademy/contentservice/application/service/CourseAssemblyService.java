@@ -1,5 +1,6 @@
 package com.adventacademy.contentservice.application.service;
 
+import com.adventacademy.contentservice.application.validation.PlainTextNormalizer;
 import com.adventacademy.contentservice.domain.constructor.Course;
 import com.adventacademy.contentservice.domain.constructor.CoursePublicationPolicy;
 import com.adventacademy.contentservice.domain.repository.ComponentRepository;
@@ -37,7 +38,9 @@ public class CourseAssemblyService {
     }
 
     public Course create(String title, String description) {
-        return courseRepository.save(Course.create(title, description, clock));
+        String safeTitle = PlainTextNormalizer.normalizeTitle(title);
+        String safeDescription = PlainTextNormalizer.normalizeDescription(description);
+        return courseRepository.save(Course.create(safeTitle, safeDescription, clock));
     }
 
     @Transactional(readOnly = true)
@@ -53,7 +56,9 @@ public class CourseAssemblyService {
 
     public Course rename(UUID id, String title, String description) {
         Course course = get(id);
-        course.rename(title, description, clock);
+        String safeTitle = PlainTextNormalizer.normalizeTitle(title);
+        String safeDescription = PlainTextNormalizer.normalizeDescription(description);
+        course.rename(safeTitle, safeDescription, clock);
         return courseRepository.save(course);
     }
 
