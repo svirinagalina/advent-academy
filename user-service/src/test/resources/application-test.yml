@@ -21,6 +21,16 @@ security:
     max-failed-attempts: 5
     lock-duration-minutes: 30
 
+camunda:
+  client:
+    zeebe:
+      enabled: false
+
+management:
+  health:
+    zeebe:
+      enabled: false
+
 logging:
   structured:
     format:

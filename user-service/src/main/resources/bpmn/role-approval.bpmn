@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:modeler="http://camunda.org/schema/modeler/1.0"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  id="Definitions_role_approval"
+                  targetNamespace="http://adventacademy.com/processes"
+                  exporter="Camunda Modeler"
+                  exporterVersion="5.36.0"
+                  modeler:executionPlatform="Camunda Cloud"
+                  modeler:executionPlatformVersion="8.7.0">
+  <bpmn:process id="role-approval" name="Role approval" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_role_request" name="Role requested">
+      <bpmn:outgoing>Flow_to_review</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="UserTask_review_role" name="Review role request">
+      <bpmn:extensionElements>
+        <zeebe:userTask/>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_to_review</bpmn:incoming>
+      <bpmn:outgoing>Flow_to_approved</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="EndEvent_role_approved" name="Role approved">
+      <bpmn:incoming>Flow_to_approved</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_to_review" sourceRef="StartEvent_role_request" targetRef="UserTask_review_role"/>
+    <bpmn:sequenceFlow id="Flow_to_approved" sourceRef="UserTask_review_role" targetRef="EndEvent_role_approved"/>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_role_approval">
+    <bpmndi:BPMNPlane id="BPMNPlane_role_approval" bpmnElement="role-approval">
+      <bpmndi:BPMNShape id="StartEvent_role_request_di" bpmnElement="StartEvent_role_request">
+        <dc:Bounds x="160" y="102" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_review_role_di" bpmnElement="UserTask_review_role">
+        <dc:Bounds x="250" y="80" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_role_approved_di" bpmnElement="EndEvent_role_approved">
+        <dc:Bounds x="430" y="102" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_to_review_di" bpmnElement="Flow_to_review">
+        <di:waypoint x="196" y="120"/>
+        <di:waypoint x="250" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_to_approved_di" bpmnElement="Flow_to_approved">
+        <di:waypoint x="370" y="120"/>
+        <di:waypoint x="430" y="120"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

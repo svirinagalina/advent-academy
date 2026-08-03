@@ -19,6 +19,11 @@ decorator:
   datasource:
     enabled: false
 
+camunda:
+  client:
+    zeebe:
+      enabled: false
+
 springdoc:
   api-docs:
     enabled: true
@@ -37,6 +42,9 @@ security:
     lock-duration-minutes: 30
 
 management:
+  health:
+    zeebe:
+      enabled: false
   endpoints:
     web:
       exposure:

@@ -60,6 +60,7 @@ The technology stack may evolve as the project grows.
 
 - JDK 21
 - Gradle (wrapper included)
+- Docker with Docker Compose v2
 
 This project is licensed under the terms of the [MIT License](LICENSE).
 
@@ -67,4 +68,22 @@ This project is licensed under the terms of the [MIT License](LICENSE).
 
 ```bash
 ./gradlew clean build
-./gradlew bootRun
+./gradlew :user-service:bootRun --args='--spring.profiles.active=local'
+```
+
+### Run user-service with Camunda 8
+
+Create local environment settings and start PostgreSQL, Zeebe, Operate, and Tasklist:
+
+```bash
+cp -n .env.example .env
+docker compose up -d postgres elasticsearch zeebe operate tasklist
+set -a
+source .env
+set +a
+./gradlew :user-service:bootRun --args='--spring.profiles.active=local'
+```
+
+The `role-approval.bpmn` process is deployed automatically when `user-service` starts with the
+`local` or `docker` profile. Detailed startup, verification, and process-instance commands are in
+[user-service/README.md](user-service/README.md#local-camunda-8).

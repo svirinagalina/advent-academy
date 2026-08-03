@@ -15,12 +15,14 @@ Production-ready microservice for user management with Role-Based Access Control
 - **Clean Architecture**: Domain-driven design with clear separation of concerns
 - **REST API**: Comprehensive API with OpenAPI/Swagger documentation
 - **Database**: PostgreSQL with JPA/Hibernate
+- **Workflow**: Camunda 8 role-approval process
 - **Docker**: Production-ready Docker configuration
 
 ## Technology Stack
 
-- Java 17
-- Spring Boot 4.0.3
+- Java 21
+- Spring Boot 3.4.1
+- Camunda 8.7 / Zeebe
 - PostgreSQL 16
 - Spring Security (configured as stub)
 - JWT (jjwt library - stub implementation)
@@ -44,38 +46,87 @@ com.adventacademy.userservice
 
 ### Prerequisites
 
-- Java 17
+- Java 21
 - Docker & Docker Compose
 - Gradle (or use included wrapper)
 
-### Running with Docker Compose
+### Local Camunda 8
 
-1. Start the services:
+Copy the environment template once, then start `user-service` with its local Camunda dependencies:
+
 ```bash
-docker-compose up --build
+cp -n .env.example .env
+docker compose up -d --build postgres elasticsearch zeebe operate tasklist user-service
 ```
 
-2. The service will be available at:
-   - API: http://localhost:8080
-   - Swagger UI: http://localhost:8080/swagger-ui.html
-   - Health check: http://localhost:8080/actuator/health
+The local endpoints are:
+
+- User Service: http://localhost:8080
+- Swagger UI: http://localhost:8080/swagger-ui.html
+- Operate: http://localhost:8082
+- Tasklist: http://localhost:8083
+- Zeebe gRPC: `localhost:26500`
+- Zeebe REST: http://localhost:8088
+- Zeebe management health: http://localhost:9600/actuator/health
+
+Operate and Tasklist use the local `demo` / `demo` credentials. The Zeebe gRPC and REST APIs do
+not require authentication in this development-only setup.
+
+Check container state and the connection reported by `user-service`:
+
+```bash
+docker compose ps
+curl -fsS http://localhost:9600/actuator/health
+curl -fsS http://localhost:8080/actuator/health/readiness
+curl -fsS http://localhost:8088/v2/topology
+```
+
+The `local` and `docker` profiles deploy `bpmn/role-approval.bpmn` automatically during application
+startup. Start an instance and inspect it in Operate or Tasklist:
+
+```bash
+curl -fsS -X POST http://localhost:8088/v2/process-instances \
+  -H 'Content-Type: application/json' \
+  -d '{"processDefinitionId":"role-approval","variables":{"userId":"local-user","requestedRole":"MENTOR"}}'
+```
+
+The instance stops at `Review role request`, which makes it visible in Tasklist.
+
+Stop the stack without deleting process and database data:
+
+```bash
+docker compose down
+```
 
 ### Running Locally (Development)
 
-1. Start PostgreSQL:
-```bash
-docker-compose up postgres -d
-```
+Run the infrastructure in Docker and `user-service` on the host:
 
-2. Run the application:
 ```bash
-./gradlew bootRun
+docker compose up -d postgres elasticsearch zeebe operate tasklist
+set -a
+source .env
+set +a
+./gradlew :user-service:bootRun --args='--spring.profiles.active=local'
 ```
 
 ### Running Tests
 
+Ordinary tests use the `test` profile and do not connect to Camunda:
+
 ```bash
-./gradlew test
+./gradlew :user-service:test
+```
+
+The opt-in smoke test requires PostgreSQL and Zeebe to be running and verifies that the Spring
+application starts, deploys BPMN, and reads broker topology:
+
+```bash
+docker compose up -d postgres elasticsearch zeebe
+set -a
+source .env
+set +a
+./gradlew :user-service:camundaSmokeTest
 ```
 
 ## API Endpoints
@@ -121,6 +172,14 @@ security:
   account-lock:
     max-failed-attempts: 5
     lock-duration-minutes: 30
+
+camunda:
+  client:
+    mode: self-managed
+    zeebe:
+      enabled: true
+      grpc-address: http://localhost:26500
+      rest-address: http://localhost:8088
 ```
 
 ## TODO: Future Implementation
@@ -161,6 +220,7 @@ The project includes:
 - Unit tests for services with Mockito
 - Integration tests for controllers
 - Testcontainers for integration tests (PostgreSQL)
+- Opt-in Camunda connection smoke test
 
 ## User Status Flow
 
