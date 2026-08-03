@@ -140,6 +140,26 @@ class ComponentTest {
     }
 
     @Test
+    void reorderLessonsShouldRejectDuplicateIds() {
+        Component component = Component.create("Basics", "About basics", CLOCK);
+        Lesson first = component.addLesson("Lesson 1", CLOCK);
+        component.addLesson("Lesson 2", CLOCK);
+
+        assertThatThrownBy(() -> component.reorderLessons(List.of(first.getId(), first.getId()), CLOCK))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void reorderLessonsShouldRejectMissingIds() {
+        Component component = Component.create("Basics", "About basics", CLOCK);
+        Lesson first = component.addLesson("Lesson 1", CLOCK);
+        component.addLesson("Lesson 2", CLOCK);
+
+        assertThatThrownBy(() -> component.reorderLessons(List.of(first.getId()), CLOCK))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void modificationShouldBeRejectedWhenNotDraft() {
         Component component = Component.create("Basics", "About basics", CLOCK);
         Lesson lesson = component.addLesson("Lesson 1", CLOCK);

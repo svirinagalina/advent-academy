@@ -117,4 +117,41 @@ class DirectionTest {
                 .extracting(CourseRef::getCourseId)
                 .containsExactly(c2, c1);
     }
+
+    @Test
+    void reorderCoursesShouldRejectForeignIds() {
+        Direction direction = Direction.create("Backend", "About backend", CLOCK);
+        direction.addCourse(UUID.randomUUID(), CLOCK);
+        direction.addCourse(UUID.randomUUID(), CLOCK);
+
+        assertThatThrownBy(() -> direction.reorderCourses(List.of(UUID.randomUUID(), UUID.randomUUID()), CLOCK))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("permutation");
+    }
+
+    @Test
+    void reorderCoursesShouldRejectDuplicateIds() {
+        Direction direction = Direction.create("Backend", "About backend", CLOCK);
+        UUID c1 = UUID.randomUUID();
+        UUID c2 = UUID.randomUUID();
+        direction.addCourse(c1, CLOCK);
+        direction.addCourse(c2, CLOCK);
+
+        assertThatThrownBy(() -> direction.reorderCourses(List.of(c1, c1), CLOCK))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("permutation");
+    }
+
+    @Test
+    void reorderCoursesShouldRejectMissingIds() {
+        Direction direction = Direction.create("Backend", "About backend", CLOCK);
+        UUID c1 = UUID.randomUUID();
+        UUID c2 = UUID.randomUUID();
+        direction.addCourse(c1, CLOCK);
+        direction.addCourse(c2, CLOCK);
+
+        assertThatThrownBy(() -> direction.reorderCourses(List.of(c1), CLOCK))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("permutation");
+    }
 }
