@@ -5,6 +5,15 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * Domain model representing a binary asset (image, document, etc.) bundled with a lesson.
+ * <p>
+ * Holds the raw file bytes together with its metadata (owning lesson, original
+ * filename, MIME type, size) and creation/update timestamps. Instances are
+ * immutable except for {@code updatedAt}, and can only be created with a
+ * non-null lessonId, a non-blank filename and contentType, and non-empty
+ * file data.
+ */
 public final class StoredAsset {
 
     private final UUID id;
@@ -36,6 +45,9 @@ public final class StoredAsset {
         this.updatedAt = updatedAt;
     }
 
+    /**
+     * Creates a new asset with a generated id and timestamps set to the current UTC time.
+     */
     public static StoredAsset create(
             UUID lessonId,
             String filename,
@@ -45,6 +57,10 @@ public final class StoredAsset {
         return create(lessonId, filename, contentType, fileData, Clock.systemUTC());
     }
 
+    /**
+     * Creates a new asset with a generated id, using the given clock for its
+     * creation and update timestamps. Validates all fields before construction.
+     */
     public static StoredAsset create(
             UUID lessonId,
             String filename,
@@ -68,6 +84,10 @@ public final class StoredAsset {
         );
     }
 
+    /**
+     * Reconstructs an asset from already-persisted state (e.g. when loading from
+     * the database), keeping its existing id and timestamps without validation.
+     */
     public static StoredAsset restore(
             UUID id,
             UUID lessonId,
