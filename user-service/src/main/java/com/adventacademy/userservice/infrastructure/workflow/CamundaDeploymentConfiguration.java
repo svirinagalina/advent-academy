@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 @Configuration(proxyBeanMethods = false)
-@Profile({"local", "docker"})
+@Profile({"local", "docker", "camunda-process-test"})
 @Deployment(resources = "classpath:/bpmn/role-approval.bpmn")
 public class CamundaDeploymentConfiguration {
 }

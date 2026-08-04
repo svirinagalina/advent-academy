@@ -112,14 +112,17 @@ set +a
 
 ### Running Tests
 
-Ordinary tests use the `test` profile and do not connect to Camunda:
+Ordinary tests use the `test` profile and do not connect to the shared local Camunda stack. The
+`RoleApprovalProcessTest` starts an isolated Zeebe Testcontainer, deploys `role-approval.bpmn`, and
+checks that a process instance reaches the review user task. Docker must be available:
 
 ```bash
 ./gradlew :user-service:test
 ```
 
 The opt-in smoke test requires PostgreSQL and Zeebe to be running and verifies that the Spring
-application starts, deploys BPMN, and reads broker topology:
+application starts, deploys BPMN, reads broker topology, starts `role-approval`, and cancels the
+test instance after verification:
 
 ```bash
 docker compose up -d postgres elasticsearch zeebe
