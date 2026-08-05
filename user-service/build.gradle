@@ -74,6 +74,13 @@ dependencies {
     implementation 'org.flywaydb:flyway-database-postgresql'
 }
 
+// Keep exactly one artifact in build/libs so the Dockerfile can copy it with
+// a wildcard: the plain jar is not used by anything, and its presence makes
+// `COPY user-service/build/libs/*.jar app.jar` resolve to two sources.
+tasks.named('jar') {
+    enabled = false
+}
+
 tasks.named('test') {
     useJUnitPlatform {
         excludeTags 'performance-regression', 'camunda-smoke'
