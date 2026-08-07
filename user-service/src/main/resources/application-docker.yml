@@ -8,3 +8,22 @@ spring:
     user:
       name: ${SPRING_SECURITY_USER_NAME:admin}
       password: ${SPRING_SECURITY_USER_PASSWORD:admin}
+
+camunda:
+  client:
+    mode: ${CAMUNDA_CLIENT_MODE:self-managed}
+    zeebe:
+      enabled: ${CAMUNDA_CLIENT_ZEEBE_ENABLED:true}
+      grpc-address: ${CAMUNDA_CLIENT_ZEEBE_GRPCADDRESS:http://zeebe:26500}
+      rest-address: ${CAMUNDA_CLIENT_ZEEBE_RESTADDRESS:http://zeebe:8080}
+      prefer-rest-over-grpc: ${CAMUNDA_CLIENT_ZEEBE_PREFERRESTOVERGRPC:false}
+
+management:
+  health:
+    zeebe:
+      enabled: true
+  endpoint:
+    health:
+      group:
+        readiness:
+          include: db, diskSpace, zeebeClient

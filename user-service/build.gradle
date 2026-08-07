@@ -31,6 +31,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.camunda:spring-boot-starter-camunda-sdk:8.7.35'
     // Micrometer Prometheus
     implementation 'io.micrometer:micrometer-registry-prometheus'
 
@@ -63,9 +64,8 @@ dependencies {
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
-    testImplementation 'org.testcontainers:testcontainers:1.19.3'
-    testImplementation 'org.testcontainers:postgresql:1.19.3'
-    testImplementation 'org.testcontainers:junit-jupiter:1.19.3'
+    testImplementation 'io.camunda:spring-boot-starter-camunda-test-testcontainer:8.7.35'
+    testImplementation 'org.testcontainers:testcontainers:2.0.5'
     testRuntimeOnly 'com.h2database:h2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
@@ -76,7 +76,19 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform {
-        excludeTags 'performance-regression'
+        excludeTags 'performance-regression', 'camunda-smoke'
+    }
+}
+
+tasks.register('camundaSmokeTest', Test) {
+    group = 'verification'
+    description = 'Starts user-service and verifies its connection to a local Zeebe broker.'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    shouldRunAfter tasks.named('test')
+
+    useJUnitPlatform {
+        includeTags 'camunda-smoke'
     }
 }
 

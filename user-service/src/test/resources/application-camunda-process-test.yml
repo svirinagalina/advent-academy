@@ -1,0 +1,14 @@
+spring:
+  flyway:
+    enabled: false
+
+camunda:
+  client:
+    zeebe:
+      enabled: true
+      prefer-rest-over-grpc: false
+
+management:
+  health:
+    zeebe:
+      enabled: false

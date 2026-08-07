@@ -24,6 +24,25 @@ decorator:
       enable-logging: true
       logging: slf4j
 
+camunda:
+  client:
+    mode: self-managed
+    zeebe:
+      enabled: ${CAMUNDA_CLIENT_ZEEBE_ENABLED:true}
+      grpc-address: ${CAMUNDA_CLIENT_ZEEBE_GRPCADDRESS:http://localhost:26500}
+      rest-address: ${CAMUNDA_CLIENT_ZEEBE_RESTADDRESS:http://localhost:8088}
+      prefer-rest-over-grpc: false
+
+management:
+  health:
+    zeebe:
+      enabled: true
+  endpoint:
+    health:
+      group:
+        readiness:
+          include: db, diskSpace, zeebeClient
+
 logging:
   level:
     com.adventacademy: INFO

@@ -1,3 +1,5 @@
+# Local development only. This stack disables authentication for selected components
+# and uses resource-saving settings that are not suitable for production deployments.
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
@@ -6,7 +8,7 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
-      - "2181:2181"
+      - "127.0.0.1:2181:2181"
     networks:
       - advent-network
 
@@ -16,7 +18,7 @@ services:
     depends_on:
       - zookeeper
     ports:
-      - "9092:9092"
+      - "127.0.0.1:9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -33,7 +35,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -41,6 +43,113 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - advent-network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION:-8.17.10}
+    container_name: advent-elasticsearch
+    environment:
+      bootstrap.memory_lock: "true"
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      cluster.routing.allocation.disk.threshold_enabled: "false"
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+    ports:
+      - "127.0.0.1:9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks:
+      - advent-network
+
+  zeebe:
+    image: camunda/zeebe:${CAMUNDA_VERSION:-8.7.35}
+    container_name: advent-zeebe
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME: io.camunda.zeebe.exporter.ElasticsearchExporter
+      ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL: http://elasticsearch:9200
+      ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE: 1
+      ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK: 0.998
+      ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK: 0.999
+      JAVA_TOOL_OPTIONS: -Xms512m -Xmx512m
+    ports:
+      - "127.0.0.1:26500:26500"
+      - "127.0.0.1:8088:8080"
+      - "127.0.0.1:9600:9600"
+    volumes:
+      - zeebe_data:/usr/local/zeebe/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -O - -q 'http://localhost:9600/actuator/health/readiness'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - advent-network
+
+  operate:
+    image: camunda/operate:${CAMUNDA_VERSION:-8.7.35}
+    container_name: advent-operate
+    depends_on:
+      zeebe:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS: zeebe:26500
+      CAMUNDA_OPERATE_ELASTICSEARCH_URL: http://elasticsearch:9200
+      CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL: http://elasticsearch:9200
+      CAMUNDA_OPERATE_CSRFPREVENTIONENABLED: "false"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health
+      MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
+    ports:
+      - "127.0.0.1:8082:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -O - -q 'http://localhost:9600/actuator/health/readiness'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - advent-network
+
+  tasklist:
+    image: camunda/tasklist:${CAMUNDA_VERSION:-8.7.35}
+    container_name: advent-tasklist
+    depends_on:
+      zeebe:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS: zeebe:26500
+      CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS: http://zeebe:8080
+      CAMUNDA_TASKLIST_ELASTICSEARCH_URL: http://elasticsearch:9200
+      CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL: http://elasticsearch:9200
+      CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED: "false"
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health
+      MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
+    ports:
+      - "127.0.0.1:8083:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -O - -q 'http://localhost:9600/actuator/health/readiness'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     networks:
       - advent-network
 
@@ -53,14 +162,21 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      zeebe:
+        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: docker
       JWT_SECRET: ${JWT_SECRET}
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      CAMUNDA_CLIENT_MODE: self-managed
+      CAMUNDA_CLIENT_ZEEBE_ENABLED: "true"
+      CAMUNDA_CLIENT_ZEEBE_GRPCADDRESS: http://zeebe:26500
+      CAMUNDA_CLIENT_ZEEBE_RESTADDRESS: http://zeebe:8080
+      CAMUNDA_CLIENT_ZEEBE_PREFERRESTOVERGRPC: "false"
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health/readiness"]
       interval: 30s
@@ -85,7 +201,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "8081:8081"
+      - "127.0.0.1:8081:8081"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/actuator/health/readiness"]
       interval: 30s
@@ -97,6 +213,8 @@ services:
 
 volumes:
   postgres_data:
+  elasticsearch_data:
+  zeebe_data:
 
 networks:
   advent-network:
