@@ -1,3 +1,4 @@
 rootProject.name = 'advent-academy'
 include 'user-service'
 include 'content-service'
+include 'meeting-service'

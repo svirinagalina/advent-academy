@@ -1,0 +1,10 @@
+{
+  "name": "advent-academy-meeting-ui",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "node --check src/main/resources/static/js/meeting-client.js && node --check src/main/resources/static/js/app.js",
+    "test": "node src/test/frontend/meeting-client.test.js",
+    "build": "node scripts/build-frontend.mjs"
+  }
+}

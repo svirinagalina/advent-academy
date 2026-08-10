@@ -211,6 +211,23 @@ services:
     networks:
       - advent-network
 
+  meeting-service:
+    build:
+      context: .
+      dockerfile: meeting-service/Dockerfile
+      network: host
+    container_name: advent-meeting-service
+    ports:
+      - "127.0.0.1:8084:8084"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8084/actuator/health/readiness"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    networks:
+      - advent-network
+
 volumes:
   postgres_data:
   elasticsearch_data:

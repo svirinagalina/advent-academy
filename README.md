@@ -71,6 +71,18 @@ This project is licensed under the terms of the [MIT License](LICENSE).
 ./gradlew :user-service:bootRun --args='--spring.profiles.active=local'
 ```
 
+### Run the local meeting MVP
+
+The dependency-free meeting UI, REST room API, and WebSocket signaling endpoint are served by
+`meeting-service` on port `8084`:
+
+```bash
+./gradlew :meeting-service:bootRun
+```
+
+Open http://localhost:8084 in two browser tabs. Detailed architecture, protocol, testing, and
+troubleshooting guidance is in [docs/meeting-service.md](docs/meeting-service.md).
+
 ### Run user-service with Camunda 8
 
 Create local environment settings and start PostgreSQL, Zeebe, Operate, and Tasklist:
