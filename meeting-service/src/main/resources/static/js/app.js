@@ -91,7 +91,7 @@ window.addEventListener("beforeunload", () => client.leave());
 function updateState(state) {
     elements.status.textContent = state;
     elements.status.dataset.state = state.toLowerCase().replaceAll(" ", "-");
-    const inMeeting = ![STATES.IDLE, STATES.ERROR, STATES.DISCONNECTED].includes(state);
+    const inMeeting = ![STATES.IDLE, STATES.FAILED, STATES.DISCONNECTED].includes(state);
     elements.microphone.disabled = !inMeeting;
     elements.camera.disabled = !inMeeting;
     elements.leave.disabled = !inMeeting;
@@ -112,7 +112,9 @@ function setVideoStream(video, stream) {
     video.srcObject = stream;
     if (stream) {
         video.play().catch(() => {
-            showError("Browser autoplay was blocked. Click the video to start playback.");
+            if (video.srcObject === stream) {
+                showError("Browser autoplay was blocked. Click the video to start playback.");
+            }
         });
     }
 }

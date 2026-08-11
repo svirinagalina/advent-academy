@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import java.time.Instant;
 
 public record SignalMessage(
+        int version,
         SignalType type,
         String roomId,
         String senderId,

@@ -1,16 +1,16 @@
 package com.adventacademy.meetingservice.adapter.websocket;
 
-import com.adventacademy.meetingservice.application.service.RoomService;
-import com.adventacademy.meetingservice.domain.exception.DuplicateParticipantException;
+import com.adventacademy.meetingservice.application.service.MeetingSessionRegistry;
+import com.adventacademy.meetingservice.application.session.MeetingSession;
+import com.adventacademy.meetingservice.application.session.SessionDeparture;
+import com.adventacademy.meetingservice.application.session.SessionRegistration;
+import com.adventacademy.meetingservice.application.session.SessionSignalType;
+import com.adventacademy.meetingservice.application.session.SignalRoute;
 import com.adventacademy.meetingservice.domain.exception.InvalidSignalException;
 import com.adventacademy.meetingservice.domain.exception.MeetingException;
-import com.adventacademy.meetingservice.domain.exception.ParticipantNotRegisteredException;
 import com.adventacademy.meetingservice.domain.exception.RoomFullException;
-import com.adventacademy.meetingservice.domain.exception.RoomNotFoundException;
 import com.adventacademy.meetingservice.domain.exception.TargetParticipantNotFoundException;
 import com.adventacademy.meetingservice.domain.model.ParticipantId;
-import com.adventacademy.meetingservice.domain.model.RoomJoinResult;
-import com.adventacademy.meetingservice.domain.model.RoomSnapshot;
 import com.adventacademy.meetingservice.infrastructure.config.MeetingProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -25,7 +25,9 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -34,22 +36,20 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(MeetingSignalingHandler.class);
 
-    private final RoomService roomService;
+    private final MeetingSessionRegistry sessionRegistry;
     private final SignalMessageValidator validator;
     private final ObjectMapper objectMapper;
     private final Clock clock;
     private final int maxMessageBytes;
     private final ConcurrentMap<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String, SessionBinding> bindingsBySession = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String, String> sessionsByParticipant = new ConcurrentHashMap<>();
 
     public MeetingSignalingHandler(
-            RoomService roomService,
+            MeetingSessionRegistry sessionRegistry,
             SignalMessageValidator validator,
             ObjectMapper objectMapper,
             Clock clock,
             MeetingProperties properties) {
-        this.roomService = roomService;
+        this.sessionRegistry = sessionRegistry;
         this.validator = validator;
         this.objectMapper = objectMapper;
         this.clock = clock;
@@ -59,7 +59,7 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
         sessions.put(session.getId(), session);
-        logger.info("Meeting WebSocket connected sessionId={}", session.getId());
+        logger.info("Meeting WebSocket connected");
     }
 
     @Override
@@ -72,6 +72,10 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
                 sendFailure(session, exception);
             } catch (JsonProcessingException exception) {
                 sendError(session, "INVALID_MESSAGE", "Malformed JSON signaling message");
+            } catch (RuntimeException exception) {
+                logger.error("Unexpected meeting signaling failure errorType={}",
+                        exception.getClass().getSimpleName());
+                sendError(session, "INTERNAL_SIGNALING_ERROR", "Unable to process signaling message");
             }
         }
     }
@@ -80,24 +84,25 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         synchronized (session) {
             sessions.remove(session.getId(), session);
-            cleanupBinding(session.getId());
+            cleanupBinding(session.getId(), true);
         }
-        logger.info("Meeting WebSocket disconnected sessionId={} closeCode={}",
-                session.getId(), status.getCode());
+        logger.info("Meeting WebSocket disconnected closeCode={}", status.getCode());
     }
 
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-        logger.warn("Meeting WebSocket transport error sessionId={} errorType={}",
-                session.getId(), exception.getClass().getSimpleName());
+        logger.warn("Meeting WebSocket transport error errorType={}",
+                exception.getClass().getSimpleName());
         if (session.isOpen()) {
             session.close(CloseStatus.SERVER_ERROR);
         }
     }
 
     private SignalMessage parseAndValidate(TextMessage textMessage) throws JsonProcessingException {
-        if (textMessage.getPayloadLength() > maxMessageBytes) {
-            throw new InvalidSignalException("MESSAGE_TOO_LARGE", "Signaling message exceeds the configured limit");
+        if (textMessage.getPayload().getBytes(StandardCharsets.UTF_8).length > maxMessageBytes) {
+            throw new InvalidSignalException(
+                    "MESSAGE_TOO_LARGE",
+                    "Signaling message exceeds the configured limit");
         }
         final JsonNode tree = objectMapper.readTree(textMessage.getPayload());
         JsonNode typeNode = null;
@@ -108,15 +113,15 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
             throw new InvalidSignalException("INVALID_MESSAGE", "Signal type is required");
         }
 
-        final SignalType type = parseSignalType(typeNode.textValue());
         final SignalMessage message = new SignalMessage(
-                type,
+                intValue(tree, "version"),
+                parseSignalType(typeNode.textValue()),
                 textValue(tree, "roomId"),
-                textValue(tree, "senderId"),
+                null,
                 textValue(tree, "targetId"),
                 tree.get("payload"),
                 clock.instant());
-        validator.validate(message);
+        validator.validate(tree, message);
         return message;
     }
 
@@ -133,77 +138,102 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
     }
 
     private void joinRoom(WebSocketSession session, SignalMessage message) {
-        if (bindingsBySession.containsKey(session.getId())) {
-            throw new DuplicateParticipantException(message.senderId());
+        SessionRegistration registration = sessionRegistry.join(session.getId(), message.roomId());
+        registration = removeClosedPeer(registration);
+        if (!sendJoined(session, registration)) {
+            cleanupBinding(session.getId(), false);
+            return;
         }
-        final String existingSession = sessionsByParticipant.putIfAbsent(message.senderId(), session.getId());
-        if (existingSession != null) {
-            throw new DuplicateParticipantException(message.senderId());
+        if (registration.newlyJoined() && registration.peer().isPresent()) {
+            final MeetingSession peer = registration.peer().orElseThrow();
+            if (!notifyParticipantJoined(registration.session(), peer)) {
+                cleanupBinding(peer.sessionId(), true);
+            }
         }
+        logger.info("Participant joined meeting participantCount={} newlyJoined={}",
+                registration.room().participants().size(), registration.newlyJoined());
+    }
 
-        try {
-            final RoomJoinResult result = roomService.join(message.roomId(), message.senderId());
-            final SessionBinding binding = new SessionBinding(session.getId(), message.senderId(), message.roomId());
-            bindingsBySession.put(session.getId(), binding);
-            sendJoined(session, binding, result);
-            result.peerId().ifPresent(peerId -> notifyParticipantJoined(binding, peerId));
-            logger.info("Participant joined meeting roomId={} participantId={} participantCount={}",
-                    message.roomId(), message.senderId(), result.room().participants().size());
-        } catch (RuntimeException exception) {
-            sessionsByParticipant.remove(message.senderId(), session.getId());
-            throw exception;
+    private SessionRegistration removeClosedPeer(SessionRegistration registration) {
+        final Optional<MeetingSession> peer = registration.peer();
+        if (peer.isEmpty()) {
+            return registration;
         }
+        final MeetingSession peerSession = peer.orElseThrow();
+        if (openSession(peerSession).isPresent()) {
+            return registration;
+        }
+        cleanupBinding(peerSession.sessionId(), false);
+        return sessionRegistry.current(registration.session().sessionId());
     }
 
     private void forwardSignal(WebSocketSession senderSession, SignalMessage message) {
-        final SessionBinding sender = requireBinding(senderSession.getId());
-        verifySender(message, sender);
-        final SessionBinding target = requireTarget(message.targetId());
-        if (!sender.roomId().equals(message.roomId()) || !sender.roomId().equals(target.roomId())) {
-            throw new InvalidSignalException("CROSS_ROOM_SIGNALING", "Sender and target must belong to the same room");
-        }
-
-        final WebSocketSession targetSession = requireOpenSession(target.sessionId(), target.participantId());
+        final SignalRoute route = sessionRegistry.requireRoute(
+                senderSession.getId(),
+                message.roomId(),
+                message.targetId(),
+                SessionSignalType.valueOf(message.type().name()));
+        final WebSocketSession targetSession = openSession(route.target())
+                .orElseThrow(TargetParticipantNotFoundException::new);
         final SignalMessage outgoing = signal(
-                message.type(), sender.roomId(), sender.participantId(), target.participantId(), message.payload());
+                message.type(),
+                route.sender().roomId(),
+                route.sender().participantId(),
+                route.target().participantId(),
+                message.payload());
         if (!safeSend(targetSession, outgoing)) {
-            cleanupBinding(target.sessionId());
-            throw new TargetParticipantNotFoundException(target.participantId());
+            cleanupBinding(route.target().sessionId(), true);
+            throw new TargetParticipantNotFoundException();
         }
-        logger.info("Forwarded meeting signal type={} roomId={} senderId={} targetId={}",
-                message.type(), sender.roomId(), sender.participantId(), target.participantId());
+        logger.info("Forwarded meeting signal type={}", message.type());
     }
 
     private void leaveRoom(WebSocketSession session, SignalMessage message) {
-        final SessionBinding binding = requireBinding(session.getId());
-        verifySender(message, binding);
-        cleanupBinding(session.getId());
+        final Optional<MeetingSession> binding = sessionRegistry.findBySession(session.getId());
+        boolean released = false;
+        if (binding.isPresent()) {
+            sessionRegistry.requireSender(session.getId(), message.roomId());
+            cleanupBinding(session.getId(), true);
+            released = true;
+        }
+        final ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("released", released);
+        safeSend(session, signal(SignalType.LEFT, message.roomId(), null, null, payload));
     }
 
     private void pong(WebSocketSession session, SignalMessage message) {
-        final SessionBinding binding = requireBinding(session.getId());
-        verifySender(message, binding);
-        safeSend(session, signal(SignalType.PONG, binding.roomId(), null, binding.participantId(), null));
+        final MeetingSession sender = sessionRegistry.requireSender(session.getId(), message.roomId());
+        safeSend(session, signal(SignalType.PONG, sender.roomId(), null, sender.participantId(), null));
     }
 
-    private void sendJoined(WebSocketSession session, SessionBinding binding, RoomJoinResult result) {
+    private boolean sendJoined(WebSocketSession session, SessionRegistration registration) {
         final ObjectNode payload = objectMapper.createObjectNode();
-        payload.put("participantId", binding.participantId());
-        result.peerId().ifPresentOrElse(
-                peerId -> payload.put("peerId", peerId.value()),
+        payload.put("participantId", registration.session().participantId());
+        registration.peer().ifPresentOrElse(
+                peer -> payload.put("peerId", peer.participantId()),
                 () -> payload.putNull("peerId"));
-        payload.put("initiator", false);
-        payload.put("status", result.room().status().name());
-        safeSend(session, signal(SignalType.JOINED, binding.roomId(), null, binding.participantId(), payload));
+        final boolean initiator = !registration.room().participants().isEmpty()
+                && registration.room().participants().getFirst().value()
+                .equals(registration.session().participantId());
+        payload.put("initiator", initiator);
+        payload.put("status", registration.room().status().name());
+        return safeSend(session, signal(
+                SignalType.JOINED,
+                registration.session().roomId(),
+                null,
+                registration.session().participantId(),
+                payload));
     }
 
-    private void notifyParticipantJoined(SessionBinding joining, ParticipantId peerId) {
-        final SessionBinding peer = requireTarget(peerId.value());
-        final WebSocketSession peerSession = requireOpenSession(peer.sessionId(), peer.participantId());
+    private boolean notifyParticipantJoined(MeetingSession joining, MeetingSession peer) {
+        final Optional<WebSocketSession> peerSession = openSession(peer);
+        if (peerSession.isEmpty()) {
+            return false;
+        }
         final ObjectNode payload = objectMapper.createObjectNode();
         payload.put("participantId", joining.participantId());
         payload.put("initiator", true);
-        safeSend(peerSession, signal(
+        return safeSend(peerSession.orElseThrow(), signal(
                 SignalType.PARTICIPANT_JOINED,
                 joining.roomId(),
                 joining.participantId(),
@@ -211,76 +241,39 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
                 payload));
     }
 
-    private void cleanupBinding(String sessionId) {
-        final SessionBinding binding = bindingsBySession.remove(sessionId);
-        if (binding == null) {
+    private void cleanupBinding(String sessionId, boolean notifyPeers) {
+        final Optional<SessionDeparture> departure = sessionRegistry.leave(sessionId);
+        if (departure.isEmpty()) {
             return;
         }
-        sessionsByParticipant.remove(binding.participantId(), sessionId);
-        try {
-            final RoomSnapshot room = roomService.leave(binding.roomId(), binding.participantId());
-            notifyParticipantLeft(binding, room);
-        } catch (RoomNotFoundException exception) {
-            logger.debug("Room already removed during disconnect cleanup roomId={}", binding.roomId());
+        if (notifyPeers) {
+            notifyParticipantLeft(departure.orElseThrow());
         }
     }
 
-    private void notifyParticipantLeft(SessionBinding leaving, RoomSnapshot room) {
+    private void notifyParticipantLeft(SessionDeparture departure) {
         final ObjectNode payload = objectMapper.createObjectNode();
-        payload.put("participantId", leaving.participantId());
-        for (ParticipantId participantId : room.participants()) {
-            final String targetSessionId = sessionsByParticipant.get(participantId.value());
-            if (targetSessionId != null) {
-                final WebSocketSession targetSession = sessions.get(targetSessionId);
-                if (targetSession != null) {
-                    safeSend(targetSession, signal(
+        payload.put("participantId", departure.session().participantId());
+        for (ParticipantId participantId : departure.room().participants()) {
+            sessionRegistry.findByParticipant(participantId.value())
+                    .flatMap(this::openSession)
+                    .ifPresent(session -> safeSend(session, signal(
                             SignalType.PARTICIPANT_LEFT,
-                            leaving.roomId(),
-                            leaving.participantId(),
+                            departure.session().roomId(),
+                            departure.session().participantId(),
                             participantId.value(),
-                            payload));
-                }
-            }
+                            payload)));
         }
-        logger.info("Participant left meeting roomId={} participantId={} participantCount={}",
-                leaving.roomId(), leaving.participantId(), room.participants().size());
+        logger.info("Participant left meeting participantCount={}",
+                departure.room().participants().size());
     }
 
-    private SessionBinding requireBinding(String sessionId) {
-        final SessionBinding binding = bindingsBySession.get(sessionId);
-        if (binding == null) {
-            throw new ParticipantNotRegisteredException(sessionId);
-        }
-        return binding;
-    }
-
-    private SessionBinding requireTarget(String participantId) {
-        final String targetSessionId = sessionsByParticipant.get(participantId);
-        if (targetSessionId == null) {
-            throw new TargetParticipantNotFoundException(participantId);
-        }
-        final SessionBinding binding = bindingsBySession.get(targetSessionId);
-        if (binding == null) {
-            throw new TargetParticipantNotFoundException(participantId);
-        }
-        return binding;
-    }
-
-    private WebSocketSession requireOpenSession(String sessionId, String participantId) {
-        final WebSocketSession session = sessions.get(sessionId);
+    private Optional<WebSocketSession> openSession(MeetingSession meetingSession) {
+        final WebSocketSession session = sessions.get(meetingSession.sessionId());
         if (session == null || !session.isOpen()) {
-            throw new TargetParticipantNotFoundException(participantId);
+            return Optional.empty();
         }
-        return session;
-    }
-
-    private void verifySender(SignalMessage message, SessionBinding binding) {
-        if (!binding.roomId().equals(message.roomId())) {
-            throw new InvalidSignalException("CROSS_ROOM_SIGNALING", "The session is not bound to the requested room");
-        }
-        if (message.senderId() != null && !binding.participantId().equals(message.senderId())) {
-            throw new InvalidSignalException("SENDER_MISMATCH", "senderId does not match the WebSocket session");
-        }
+        return Optional.of(session);
     }
 
     private void sendFailure(WebSocketSession session, RuntimeException exception) {
@@ -312,7 +305,14 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
             String senderId,
             String targetId,
             JsonNode payload) {
-        return new SignalMessage(type, roomId, senderId, targetId, payload, clock.instant());
+        return new SignalMessage(
+                SignalMessageValidator.PROTOCOL_VERSION,
+                type,
+                roomId,
+                senderId,
+                targetId,
+                payload,
+                clock.instant());
     }
 
     private boolean safeSend(WebSocketSession session, SignalMessage message) {
@@ -325,7 +325,7 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
             }
             return true;
         } catch (IOException exception) {
-            logger.warn("Unable to send meeting signal sessionId={} type={}", session.getId(), message.type());
+            logger.warn("Unable to send meeting signal type={}", message.type());
             return false;
         }
     }
@@ -334,15 +334,31 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
         try {
             return SignalType.valueOf(value);
         } catch (IllegalArgumentException exception) {
-            throw new InvalidSignalException("UNSUPPORTED_SIGNAL_TYPE", "Unsupported signal type: " + value);
+            throw new InvalidSignalException(
+                    "UNSUPPORTED_SIGNAL_TYPE",
+                    "Unsupported signal type: " + value);
         }
     }
 
     private String textValue(JsonNode tree, String field) {
-        final JsonNode value = tree.get(field);
+        JsonNode value = null;
+        if (tree != null) {
+            value = tree.get(field);
+        }
         if (value != null && value.isTextual()) {
             return value.textValue();
         }
         return null;
+    }
+
+    private int intValue(JsonNode tree, String field) {
+        JsonNode value = null;
+        if (tree != null) {
+            value = tree.get(field);
+        }
+        if (value != null && value.isIntegralNumber() && value.canConvertToInt()) {
+            return value.intValue();
+        }
+        return -1;
     }
 }

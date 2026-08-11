@@ -1,12 +1,18 @@
+const PROTOCOL_VERSION = 1;
+const MAX_PENDING_ICE_CANDIDATES = 128;
+const MAX_SEEN_ICE_CANDIDATES = 512;
+
 const STATES = Object.freeze({
     IDLE: "Idle",
     REQUESTING_MEDIA: "Requesting media permissions",
     WAITING: "Waiting for another participant",
     CONNECTING: "Connecting",
     CONNECTED: "Connected",
+    RECONNECTING: "Reconnecting",
+    DEGRADED: "Degraded",
     PARTICIPANT_LEFT: "Participant left",
     DISCONNECTED: "Disconnected",
-    ERROR: "Error"
+    FAILED: "Failed"
 });
 
 export class MeetingClient {
@@ -18,7 +24,6 @@ export class MeetingClient {
         this.RTCIceCandidate = dependencies.RTCIceCandidateImpl ?? globalThis.RTCIceCandidate;
         this.mediaDevices = dependencies.mediaDevices ?? globalThis.navigator?.mediaDevices;
         this.location = dependencies.location ?? globalThis.location;
-        this.randomUUID = dependencies.randomUUID ?? (() => globalThis.crypto.randomUUID());
         this.setInterval = dependencies.setIntervalImpl ?? globalThis.setInterval.bind(globalThis);
         this.clearInterval = dependencies.clearIntervalImpl ?? globalThis.clearInterval.bind(globalThis);
         this.onStateChange = dependencies.onStateChange ?? (() => {});
@@ -34,9 +39,14 @@ export class MeetingClient {
         this.socket = null;
         this.peerConnection = null;
         this.pendingIceCandidates = [];
+        this.seenIceCandidates = new Set();
+        this.appliedDescriptions = new Set();
         this.iceServers = [];
         this.manualLeave = false;
         this.heartbeatTimer = null;
+        this.signalQueue = Promise.resolve();
+        this.makingOffer = false;
+        this.isInitiator = false;
         this.state = STATES.IDLE;
     }
 
@@ -52,14 +62,27 @@ export class MeetingClient {
         if (this.socket || this.localStream) {
             throw new Error("Leave the current meeting before joining another room");
         }
+        if (!this.mediaDevices?.getUserMedia) {
+            throw new Error("Camera and microphone access is not supported by this browser");
+        }
+        if (!this.RTCPeerConnection) {
+            throw new Error("WebRTC is not supported by this browser");
+        }
+
         this.roomId = roomId.trim();
-        this.participantId = this.randomUUID().replaceAll("-", "");
         this.manualLeave = false;
         this.setState(STATES.REQUESTING_MEDIA);
 
         try {
             await this.loadConfiguration();
-            this.localStream = await this.mediaDevices.getUserMedia({video: true, audio: true});
+            this.localStream = await this.mediaDevices.getUserMedia({
+                video: true,
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                }
+            });
             this.onLocalStream(this.localStream);
             await this.openSignalingSocket();
             this.send("JOIN");
@@ -78,6 +101,10 @@ export class MeetingClient {
         return this.toggleTrack("video");
     }
 
+    async renegotiate() {
+        return this.createAndSendOffer();
+    }
+
     leave() {
         this.manualLeave = true;
         if (this.socket?.readyState === 1 && this.roomId) {
@@ -85,8 +112,6 @@ export class MeetingClient {
         }
         this.cleanupAll();
         this.roomId = null;
-        this.participantId = null;
-        this.peerId = null;
         this.setState(STATES.IDLE);
     }
 
@@ -112,22 +137,31 @@ export class MeetingClient {
             this.socket.onerror = () => reject(new Error("WebSocket connection failed"));
         });
 
-        this.socket.onmessage = async event => {
-            try {
-                await this.handleSignal(JSON.parse(event.data));
-            } catch (error) {
-                this.reportError(error.message || "Invalid signaling response");
-            }
-        };
+        this.socket.onmessage = event => this.queueSignal(event.data);
         this.socket.onerror = () => this.reportError("WebSocket connection failure");
         this.socket.onclose = () => this.handleSocketClosed();
         this.startHeartbeat();
     }
 
+    queueSignal(rawMessage) {
+        this.signalQueue = this.signalQueue
+            .then(() => this.handleSignal(JSON.parse(rawMessage)))
+            .catch(error => {
+                if (!this.manualLeave) {
+                    this.cleanupAll();
+                    this.reportError(error.message || "Invalid signaling response");
+                }
+            });
+        return this.signalQueue;
+    }
+
     async handleSignal(message) {
+        if (message.version !== PROTOCOL_VERSION) {
+            throw new Error(`Unsupported signaling protocol version: ${message.version}`);
+        }
         switch (message.type) {
             case "JOINED":
-                this.handleJoined(message.payload);
+                await this.handleJoined(message.payload);
                 break;
             case "PARTICIPANT_JOINED":
                 await this.handleParticipantJoined(message.payload);
@@ -142,12 +176,13 @@ export class MeetingClient {
                 await this.handleIceCandidate(message);
                 break;
             case "PARTICIPANT_LEFT":
-                this.handleParticipantLeft();
+                this.handleParticipantLeft(message.payload);
                 break;
             case "ROOM_FULL":
             case "ERROR":
                 this.handleServerError(message.payload);
                 break;
+            case "LEFT":
             case "PONG":
                 break;
             default:
@@ -155,28 +190,66 @@ export class MeetingClient {
         }
     }
 
-    handleJoined(payload) {
+    async handleJoined(payload) {
+        this.participantId = payload.participantId;
         this.peerId = payload.peerId ?? null;
+        this.isInitiator = Boolean(payload.initiator);
         this.setState(this.peerId ? STATES.CONNECTING : STATES.WAITING);
+        if (this.peerId) {
+            await this.ensurePeerConnection();
+            if (this.isInitiator) {
+                await this.createAndSendOffer();
+            }
+        }
     }
 
     async handleParticipantJoined(payload) {
+        if (this.peerId === payload.participantId && this.peerConnection) {
+            return;
+        }
         this.peerId = payload.participantId;
+        this.isInitiator = Boolean(payload.initiator);
         this.setState(STATES.CONNECTING);
         await this.ensurePeerConnection();
-        if (payload.initiator) {
+        if (this.isInitiator) {
+            await this.createAndSendOffer();
+        }
+    }
+
+    async createAndSendOffer() {
+        if (!this.isInitiator || !this.peerId || this.makingOffer) {
+            return false;
+        }
+        this.makingOffer = true;
+        try {
+            await this.ensurePeerConnection();
+            if (this.peerConnection.signalingState && this.peerConnection.signalingState !== "stable") {
+                return false;
+            }
             const offer = await this.peerConnection.createOffer();
             await this.peerConnection.setLocalDescription(offer);
             this.send("OFFER", this.peerId, {sdp: offer.sdp});
+            return true;
+        } finally {
+            this.makingOffer = false;
         }
     }
 
     async handleOffer(message) {
-        this.peerId = message.senderId;
-        this.setState(STATES.CONNECTING);
+        if (!this.acceptSignalFromCurrentPeer(message.senderId) || this.isInitiator) {
+            return;
+        }
+        const key = `offer:${message.payload.sdp}`;
+        if (this.appliedDescriptions.has(key)) {
+            return;
+        }
         await this.ensurePeerConnection();
+        if (this.peerConnection.signalingState && this.peerConnection.signalingState !== "stable") {
+            return;
+        }
         const description = this.createSessionDescription({type: "offer", sdp: message.payload.sdp});
         await this.peerConnection.setRemoteDescription(description);
+        this.appliedDescriptions.add(key);
         await this.flushPendingIceCandidates();
         const answer = await this.peerConnection.createAnswer();
         await this.peerConnection.setLocalDescription(answer);
@@ -184,26 +257,54 @@ export class MeetingClient {
     }
 
     async handleAnswer(message) {
-        this.peerId = message.senderId;
+        if (!this.acceptSignalFromCurrentPeer(message.senderId) || !this.isInitiator) {
+            return;
+        }
+        const key = `answer:${message.payload.sdp}`;
+        if (this.appliedDescriptions.has(key)) {
+            return;
+        }
         await this.ensurePeerConnection();
+        if (this.peerConnection.signalingState
+            && this.peerConnection.signalingState !== "have-local-offer") {
+            return;
+        }
         const description = this.createSessionDescription({type: "answer", sdp: message.payload.sdp});
         await this.peerConnection.setRemoteDescription(description);
+        this.appliedDescriptions.add(key);
         await this.flushPendingIceCandidates();
     }
 
     async handleIceCandidate(message) {
-        this.peerId = message.senderId;
+        if (!this.acceptSignalFromCurrentPeer(message.senderId)) {
+            return;
+        }
+        const key = this.iceCandidateKey(message.payload);
+        if (this.seenIceCandidates.has(key)) {
+            return;
+        }
+        if (this.seenIceCandidates.size >= MAX_SEEN_ICE_CANDIDATES) {
+            this.seenIceCandidates.clear();
+        }
+        this.seenIceCandidates.add(key);
         await this.ensurePeerConnection();
         const candidate = this.createIceCandidate(message.payload);
         if (this.peerConnection.remoteDescription) {
             await this.peerConnection.addIceCandidate(candidate);
-        } else {
-            this.pendingIceCandidates.push(candidate);
+            return;
         }
+        if (this.pendingIceCandidates.length >= MAX_PENDING_ICE_CANDIDATES) {
+            throw new Error("Too many ICE candidates arrived before negotiation completed");
+        }
+        this.pendingIceCandidates.push(candidate);
     }
 
-    handleParticipantLeft() {
+    handleParticipantLeft(payload = {}) {
+        if (this.peerId && payload.participantId && payload.participantId !== this.peerId) {
+            return;
+        }
         this.peerId = null;
+        this.isInitiator = false;
         this.cleanupPeerConnection();
         this.setState(STATES.PARTICIPANT_LEFT);
     }
@@ -214,9 +315,23 @@ export class MeetingClient {
         this.reportError(message);
     }
 
+    acceptSignalFromCurrentPeer(senderId) {
+        if (!senderId) {
+            return false;
+        }
+        if (!this.peerId) {
+            this.peerId = senderId;
+            return true;
+        }
+        return senderId === this.peerId;
+    }
+
     async ensurePeerConnection() {
         if (this.peerConnection) {
             return;
+        }
+        if (!this.localStream) {
+            throw new Error("Local media is not available");
         }
         this.peerConnection = new this.RTCPeerConnection({iceServers: this.iceServers});
         for (const track of this.localStream.getTracks()) {
@@ -242,7 +357,12 @@ export class MeetingClient {
         const connectionState = this.peerConnection?.connectionState;
         if (connectionState === "connected") {
             this.setState(STATES.CONNECTED);
-        } else if (["failed", "closed"].includes(connectionState)) {
+        } else if (connectionState === "disconnected") {
+            this.setState(STATES.RECONNECTING);
+        } else if (connectionState === "failed") {
+            this.setState(STATES.FAILED);
+            this.onError("The media connection failed. Leave and join the room again.");
+        } else if (connectionState === "closed" && !this.manualLeave) {
             this.setState(STATES.DISCONNECTED);
         }
     }
@@ -258,20 +378,24 @@ export class MeetingClient {
         if (!this.socket || this.socket.readyState !== 1) {
             throw new Error("WebSocket is not connected");
         }
-        this.socket.send(JSON.stringify({
+        const message = {
+            version: PROTOCOL_VERSION,
             type,
-            roomId: this.roomId,
-            senderId: this.participantId,
-            targetId,
-            payload,
-            timestamp: new Date().toISOString()
-        }));
+            roomId: this.roomId
+        };
+        if (targetId !== null) {
+            message.targetId = targetId;
+        }
+        if (payload !== null) {
+            message.payload = payload;
+        }
+        this.socket.send(JSON.stringify(message));
     }
 
     startHeartbeat() {
         this.stopHeartbeat();
         this.heartbeatTimer = this.setInterval(() => {
-            if (this.socket?.readyState === 1) {
+            if (this.socket?.readyState === 1 && this.participantId) {
                 this.send("PING");
             }
         }, 30000);
@@ -311,7 +435,13 @@ export class MeetingClient {
             this.localStream = null;
             this.onLocalStream(null);
         }
+        this.participantId = null;
+        this.peerId = null;
+        this.isInitiator = false;
+        this.makingOffer = false;
         this.pendingIceCandidates = [];
+        this.seenIceCandidates.clear();
+        this.appliedDescriptions.clear();
     }
 
     cleanupPeerConnection() {
@@ -324,6 +454,8 @@ export class MeetingClient {
         }
         this.remoteStream = null;
         this.pendingIceCandidates = [];
+        this.seenIceCandidates.clear();
+        this.appliedDescriptions.clear();
         this.onRemoteStream(null);
     }
 
@@ -334,6 +466,10 @@ export class MeetingClient {
             this.setState(STATES.DISCONNECTED);
             this.onError("Signaling connection closed. Join the room again to reconnect.");
         }
+    }
+
+    iceCandidateKey(candidate) {
+        return `${candidate.candidate}|${candidate.sdpMid}|${candidate.sdpMLineIndex}`;
     }
 
     createSessionDescription(value) {
@@ -350,7 +486,7 @@ export class MeetingClient {
     }
 
     reportError(message) {
-        this.setState(STATES.ERROR);
+        this.setState(STATES.FAILED);
         this.onError(message);
     }
 
@@ -371,4 +507,4 @@ export class MeetingClient {
     }
 }
 
-export {STATES};
+export {MAX_PENDING_ICE_CANDIDATES, PROTOCOL_VERSION, STATES};

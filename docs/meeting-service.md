@@ -20,7 +20,7 @@ receives audio or video bytes. After negotiation, browsers exchange media direct
 The backend layers are:
 
 - `domain`: room identifiers, participant identifiers, room state, and transitions;
-- `application`: the thread-safe in-memory room registry;
+- `application`: the thread-safe room service and atomic session/participant registry;
 - `adapter/rest`: room and client-configuration APIs;
 - `adapter/websocket`: typed signaling validation, session identity, and targeted forwarding;
 - `infrastructure/config`: clock, WebSocket limits, origin policy, and externalized ICE settings.
@@ -32,8 +32,8 @@ flowchart TD
     UI1 -->|"JSON WebSocket: JOIN, SDP, ICE, LEAVE"| WS["Signaling handler"]
     UI2 -->|"JSON WebSocket: JOIN, SDP, ICE, LEAVE"| WS
     API --> REG["Thread-safe in-memory room service"]
-    WS --> REG
-    WS --> MAP["Session - participant - room bindings"]
+    WS --> SESSION["Atomic meeting session registry"]
+    SESSION --> REG
     UI1 <-->|"WebRTC peer-to-peer audio and video"| UI2
 ```
 
@@ -160,31 +160,31 @@ Connect to the same-origin endpoint:
 ws://localhost:8084/ws/meetings
 ```
 
-The browser first creates or obtains a room, opens the WebSocket, and sends `JOIN`. A successful
-join binds the WebSocket session ID to exactly one participant ID and room ID. For every later
-message, the server derives the sender from that binding. A supplied `senderId` must match it.
+The browser first creates or obtains a room, opens the WebSocket, and sends `JOIN`. Protocol version
+1 uses strict JSON objects: missing fields, unknown fields, client-provided server fields, and
+fields belonging to another message type are rejected. A successful join creates a random
+participant ID on the server and binds the WebSocket session to that ID and one room. For every
+later message, the server derives the sender from this binding; clients never send `senderId` or
+`timestamp`.
 
 ### Client-to-server messages
 
 | Type | Required fields | Purpose |
 | --- | --- | --- |
-| `JOIN` | `roomId`, `senderId` | Atomically occupy a participant slot. |
-| `OFFER` | `roomId`, `targetId`, `payload.sdp` | Send an SDP offer to the room peer. |
-| `ANSWER` | `roomId`, `targetId`, `payload.sdp` | Send an SDP answer to the room peer. |
-| `ICE_CANDIDATE` | `roomId`, `targetId`, candidate payload | Send one ICE candidate to the peer. |
-| `LEAVE` | `roomId` | Release this session's participant binding. |
-| `PING` | `roomId` | Verify that signaling is responsive. |
+| `JOIN` | `version`, `type`, `roomId` | Atomically occupy a participant slot. Duplicate JOIN on the same socket and room returns the same identity. |
+| `OFFER` | base fields, `targetId`, `payload.sdp` | Send an SDP offer to the room peer; only the server-selected offerer is accepted. |
+| `ANSWER` | base fields, `targetId`, `payload.sdp` | Send an SDP answer from the selected answerer. |
+| `ICE_CANDIDATE` | base fields, `targetId`, exact candidate payload | Send one ICE candidate to the same-room peer. |
+| `LEAVE` | `version`, `type`, `roomId` | Idempotently release this session's participant binding. |
+| `PING` | `version`, `type`, `roomId` | Verify that signaling is responsive for a joined session. |
 
 JOIN example:
 
 ```json
 {
+  "version": 1,
   "type": "JOIN",
-  "roomId": "a118d64f8dbb40bc9f205242b51453ef",
-  "senderId": "d8ed8f267bb148e28ff49c151c12d75a",
-  "targetId": null,
-  "payload": null,
-  "timestamp": "2026-08-10T10:00:00Z"
+  "roomId": "a118d64f8dbb40bc9f205242b51453ef"
 }
 ```
 
@@ -192,12 +192,11 @@ Offer and answer payloads have one non-blank `sdp` field:
 
 ```json
 {
+  "version": 1,
   "type": "OFFER",
   "roomId": "a118d64f8dbb40bc9f205242b51453ef",
-  "senderId": "d8ed8f267bb148e28ff49c151c12d75a",
   "targetId": "98cb62bf70ef44dd8022d30e5993f52c",
-  "payload": {"sdp": "v=0..."},
-  "timestamp": "2026-08-10T10:00:01Z"
+  "payload": {"sdp": "v=0..."}
 }
 ```
 
@@ -206,24 +205,28 @@ ICE payloads require a non-blank candidate, a non-blank `sdpMid`, and a non-nega
 
 ```json
 {
+  "version": 1,
   "type": "ICE_CANDIDATE",
   "roomId": "a118d64f8dbb40bc9f205242b51453ef",
-  "senderId": "d8ed8f267bb148e28ff49c151c12d75a",
   "targetId": "98cb62bf70ef44dd8022d30e5993f52c",
   "payload": {
     "candidate": "candidate:...",
     "sdpMid": "0",
     "sdpMLineIndex": 0
-  },
-  "timestamp": "2026-08-10T10:00:02Z"
+  }
 }
 ```
+
+SDP is limited to 49,152 characters. A candidate is limited to 4,096 characters, `sdpMid` to 64,
+and the integral `sdpMLineIndex` to 0 through 128. The whole UTF-8 message is limited to 65,536
+bytes. Client messages use exact per-type fields; `senderId`, `timestamp`, and extra payload fields
+are rejected as server-owned or unknown data.
 
 ### Server-to-client messages
 
 | Type | Purpose |
 | --- | --- |
-| `JOINED` | Confirms the binding and reports `peerId`, room status, and `initiator=false`. |
+| `JOINED` | Confirms the server identity and reports `participantId`, optional `peerId`, room status, and the deterministic `initiator` role. |
 | `PARTICIPANT_JOINED` | Tells the existing peer to initiate negotiation. |
 | `OFFER` | Validated offer forwarded only to `targetId`. |
 | `ANSWER` | Validated answer forwarded only to `targetId`. |
@@ -231,12 +234,14 @@ ICE payloads require a non-blank candidate, a non-blank `sdpMid`, and a non-nega
 | `PARTICIPANT_LEFT` | Reports explicit leave or unexpected disconnect. |
 | `ROOM_FULL` | Rejects a third participant without retaining a binding. |
 | `ERROR` | Controlled protocol or identity error with `code` and `message`. |
+| `LEFT` | Confirms idempotent leave with `payload.released`. |
 | `PONG` | Response to `PING`. |
 
 Example controlled error:
 
 ```json
 {
+  "version": 1,
   "type": "ERROR",
   "roomId": null,
   "senderId": null,
@@ -249,23 +254,32 @@ Example controlled error:
 }
 ```
 
-Malformed JSON, oversized messages, unsupported types, invalid payloads, unbound senders, sender
-impersonation, missing targets, and cross-room targets are rejected. The configured maximum text
-message size is 65,536 bytes. Full SDP and ICE contents are not logged.
+Malformed JSON, oversized messages, unsupported versions/types, invalid or unknown fields,
+unbound senders, missing targets, wrong negotiation roles, and cross-room targets are rejected.
+Full SDP and ICE contents, room IDs, participant IDs, session IDs, tokens, and media are not logged
+by the signaling handler.
 
 ## WebRTC Lifecycle
 
 1. The browser loads the externalized ICE-server list.
 2. `getUserMedia({video: true, audio: true})` obtains and displays the local stream.
-3. A peer connection is created when a peer appears or an offer/candidate arrives.
+3. A peer connection is created when a peer appears or a valid signal from the selected peer arrives.
 4. Every local track is added with `addTrack` and the remote stream is attached from `ontrack`.
 5. The existing first participant creates the offer after `PARTICIPANT_JOINED`.
 6. The second participant applies the offer, creates an answer, and returns it through signaling.
-7. Both clients exchange ICE candidates. Candidates received before `remoteDescription` are queued
-   and flushed immediately after the remote offer or answer is applied.
+7. Both clients exchange ICE candidates. Candidates received before `remoteDescription` are
+   deduplicated, queued up to 128 entries, and flushed after the remote offer or answer is applied.
+   The recent-candidate set is bounded at 512 entries.
 8. Microphone and camera buttons change the matching `MediaStreamTrack.enabled` flag.
-9. Leave closes the peer connection and WebSocket, stops local tracks, clears both video elements,
-   and empties the ICE queue. An unexpected socket close performs the same local cleanup.
+9. Duplicate descriptions and candidates, stale peer signals, and the non-selected peer's offer are
+   ignored or rejected without mutating the active negotiation. Only the selected first
+   participant can initiate a renegotiation offer.
+10. Leave closes the peer connection and WebSocket, stops local tracks, clears both video elements,
+    and empties bounded protocol state. An unexpected socket close performs the same local cleanup.
+
+The UI reports distinct `Waiting`, `Connecting`, `Connected`, `Reconnecting`, `Degraded`,
+`Participant left`, `Disconnected`, and `Failed` states. Automatic reconnect, ICE restart, and
+quality adaptation are later milestones; the states do not claim those mechanics exist yet.
 
 STUN discovers network candidates; it does not relay media and does not replace TURN.
 
@@ -333,26 +347,36 @@ cd meeting-service
 npm run lint
 npm test
 npm run build
+npm run test:e2e
 ```
 
+`npm run test:e2e` uses the system Chrome channel with fake camera and microphone devices. It starts
+the service automatically unless `MEETING_E2E_EXTERNAL_SERVER=true` is set. The browser suite uses
+isolated contexts and asserts live remote audio/video tracks, media controls, third-user rejection,
+refresh cleanup, and reuse of the released slot.
+
 Backend tests cover lifecycle transitions, duplicate/full rooms, cleanup, invalid transitions, a
-concurrent final-slot race, REST contracts, real WebSocket connection and forwarding, malformed
-messages, unsupported signals, impersonation, unknown participants, cross-room isolation, and
-disconnect cleanup. Frontend tests mock browser media and peer APIs to cover permission outcomes,
-track attachment, offer/answer flow, early ICE queuing, controls, signaling errors, participant
-leave, and full cleanup. Mocks do not prove that physical camera/video transport works; perform the
-manual checklist for that proof.
+concurrent final-slot race, REST contracts, real WebSocket connection and forwarding, strict and
+oversized protocol messages, unknown participants, cross-room isolation, deterministic roles,
+duplicate lifecycle requests, failed-join compensation, and disconnect cleanup. Frontend unit
+tests cover permissions, audio constraints, deterministic and repeated negotiation, duplicate and
+bounded early ICE, controls, state transitions, stale messages, room-full handling, and full
+cleanup. Playwright fake-media tests prove the browser WebRTC path on the installed Chrome build;
+they do not replace a physical-device and cross-network test.
 
 ## Security Considerations
 
-- A participant identity is reserved atomically and bound to one WebSocket session and room.
-- Client-provided sender IDs cannot override the server-side session binding.
+- A server-generated participant identity is reserved atomically and bound to one WebSocket
+  session and room; duplicate join/leave operations are idempotent.
+- Client-provided sender IDs and timestamps are rejected, not used as authority.
 - Targets must have an active binding in the same room; signals are never globally broadcast.
 - Room occupancy is synchronized and cannot exceed two even under concurrent joins.
-- Message type, identifier, target, and type-specific payload fields are validated before forwarding.
-- Text messages are capped at 65,536 bytes and malformed JSON returns a controlled error.
+- Version, exact field set, type, identifier, target, negotiation role, and type-specific payload
+  fields and sizes are validated before forwarding.
+- UTF-8 messages are capped at 65,536 bytes and malformed JSON returns a controlled error.
 - The origin allowlist uses explicit same-origin local URLs rather than `*`.
-- Logs contain signal type and identifiers but omit SDP, ICE payloads, tokens, and media.
+- Signaling logs contain event/signal type and participant count, but omit room, participant and
+  session IDs, SDP, ICE payloads, tokens, IP addresses, credentials, and media.
 - The current project authentication is incomplete, so this local MVP isolates anonymous random
   participant IDs at the WebSocket boundary. Production must use an authenticated principal and
   authorize room membership.

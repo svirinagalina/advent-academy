@@ -8,6 +8,7 @@ public enum SignalType {
     ANSWER,
     ICE_CANDIDATE,
     LEAVE,
+    LEFT,
     PARTICIPANT_LEFT,
     ROOM_FULL,
     ERROR,

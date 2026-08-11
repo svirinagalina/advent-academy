@@ -46,31 +46,34 @@ class MeetingWebSocketIT {
             final TestClient first = connect(clients);
             final TestClient second = connect(clients);
 
-            first.send(join(room.roomId(), "participant-a"));
-            assertThat(first.nextOfType("JOINED").path("payload").path("peerId").isNull()).isTrue();
+            first.send(join(room.roomId()));
+            final JsonNode firstJoined = first.nextOfType("JOINED");
+            final String firstId = firstJoined.path("payload").path("participantId").textValue();
+            assertThat(firstJoined.path("payload").path("peerId").isNull()).isTrue();
 
-            second.send(join(room.roomId(), "participant-b"));
-            assertThat(second.nextOfType("JOINED").path("payload").path("peerId").textValue())
-                    .isEqualTo("participant-a");
+            second.send(join(room.roomId()));
+            final JsonNode secondJoined = second.nextOfType("JOINED");
+            final String secondId = secondJoined.path("payload").path("participantId").textValue();
+            assertThat(secondJoined.path("payload").path("peerId").textValue()).isEqualTo(firstId);
             assertThat(first.nextOfType("PARTICIPANT_JOINED").path("payload").path("initiator").booleanValue())
                     .isTrue();
 
-            first.send(signal("OFFER", room.roomId(), "participant-a", "participant-b",
+            first.send(signal("OFFER", room.roomId(), secondId,
                     "{\"sdp\":\"offer-sdp\"}"));
-            assertForwarded(second, "OFFER", "participant-a", "sdp", "offer-sdp");
+            assertForwarded(second, "OFFER", firstId, "sdp", "offer-sdp");
 
-            second.send(signal("ANSWER", room.roomId(), "participant-b", "participant-a",
+            second.send(signal("ANSWER", room.roomId(), firstId,
                     "{\"sdp\":\"answer-sdp\"}"));
-            assertForwarded(first, "ANSWER", "participant-b", "sdp", "answer-sdp");
+            assertForwarded(first, "ANSWER", secondId, "sdp", "answer-sdp");
 
-            first.send(signal("ICE_CANDIDATE", room.roomId(), "participant-a", "participant-b",
+            first.send(signal("ICE_CANDIDATE", room.roomId(), secondId,
                     "{\"candidate\":\"candidate-a\",\"sdpMid\":\"0\",\"sdpMLineIndex\":0}"));
-            assertForwarded(second, "ICE_CANDIDATE", "participant-a", "candidate", "candidate-a");
+            assertForwarded(second, "ICE_CANDIDATE", firstId, "candidate", "candidate-a");
 
             second.close(CloseStatus.GOING_AWAY);
             final JsonNode participantLeft = first.nextOfType("PARTICIPANT_LEFT");
             assertThat(participantLeft.path("payload").path("participantId").textValue())
-                    .isEqualTo("participant-b");
+                    .isEqualTo(secondId);
 
             final RoomResponse afterDisconnect = restTemplate.getForObject(
                     "/api/meetings/rooms/{roomId}", RoomResponse.class, room.roomId());
@@ -89,13 +92,13 @@ class MeetingWebSocketIT {
             final TestClient first = connect(clients);
             final TestClient second = connect(clients);
             final TestClient third = connect(clients);
-            first.send(join(room.roomId(), "participant-a"));
+            first.send(join(room.roomId()));
             first.nextOfType("JOINED");
-            second.send(join(room.roomId(), "participant-b"));
+            second.send(join(room.roomId()));
             second.nextOfType("JOINED");
             first.nextOfType("PARTICIPANT_JOINED");
 
-            third.send(join(room.roomId(), "participant-c"));
+            third.send(join(room.roomId()));
 
             final JsonNode roomFull = third.nextOfType("ROOM_FULL");
             assertThat(roomFull.path("payload").path("code").textValue()).isEqualTo("ROOM_FULL");
@@ -137,14 +140,13 @@ class MeetingWebSocketIT {
         assertThat(message.path("payload").path(payloadField).textValue()).isEqualTo(payloadValue);
     }
 
-    private String join(String roomId, String participantId) {
-        return "{\"type\":\"JOIN\",\"roomId\":\"" + roomId + "\",\"senderId\":\""
-                + participantId + "\"}";
+    private String join(String roomId) {
+        return "{\"version\":1,\"type\":\"JOIN\",\"roomId\":\"" + roomId + "\"}";
     }
 
-    private String signal(String type, String roomId, String senderId, String targetId, String payload) {
-        return "{\"type\":\"" + type + "\",\"roomId\":\"" + roomId + "\",\"senderId\":\""
-                + senderId + "\",\"targetId\":\"" + targetId + "\",\"payload\":" + payload + "}";
+    private String signal(String type, String roomId, String targetId, String payload) {
+        return "{\"version\":1,\"type\":\"" + type + "\",\"roomId\":\"" + roomId
+                + "\",\"targetId\":\"" + targetId + "\",\"payload\":" + payload + "}";
     }
 
     private void closeAll(List<TestClient> clients) throws Exception {

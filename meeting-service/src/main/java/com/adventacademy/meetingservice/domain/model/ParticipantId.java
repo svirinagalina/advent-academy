@@ -1,6 +1,7 @@
 package com.adventacademy.meetingservice.domain.model;
 
 import java.util.Objects;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 public record ParticipantId(String value) {
@@ -13,5 +14,9 @@ public record ParticipantId(String value) {
             throw new IllegalArgumentException(
                     "participantId must contain 8 to 64 letters, digits, underscores, or hyphens");
         }
+    }
+
+    public static ParticipantId generate() {
+        return new ParticipantId(UUID.randomUUID().toString().replace("-", ""));
     }
 }
