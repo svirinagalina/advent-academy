@@ -32,7 +32,7 @@ export default defineConfig({
         trace: "retain-on-failure"
     },
     webServer: externalServer ? undefined : {
-        command: "../gradlew :meeting-service:bootRun --no-daemon",
+        command: "JWT_SECRET=test-secret-key-for-testing-purposes-only-32-bytes ../gradlew :meeting-service:bootRun --no-daemon",
         cwd: ".",
         url: `${baseURL}/actuator/health`,
         reuseExistingServer: true,

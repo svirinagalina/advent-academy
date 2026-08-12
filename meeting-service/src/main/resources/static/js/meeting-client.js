@@ -30,6 +30,7 @@ export class MeetingClient {
         this.onError = dependencies.onError ?? (() => {});
         this.onLocalStream = dependencies.onLocalStream ?? (() => {});
         this.onRemoteStream = dependencies.onRemoteStream ?? (() => {});
+        this.accessToken = dependencies.accessToken ?? null;
 
         this.roomId = null;
         this.participantId = null;
@@ -51,7 +52,7 @@ export class MeetingClient {
     }
 
     async createRoom() {
-        const response = await this.fetch("/api/meetings/rooms", {method: "POST"});
+        const response = await this.authorizedFetch("/api/meetings/rooms", {method: "POST"});
         if (!response.ok) {
             throw new Error(await this.readError(response, "Unable to create a room"));
         }
@@ -74,6 +75,7 @@ export class MeetingClient {
         this.setState(STATES.REQUESTING_MEDIA);
 
         try {
+            const capability = await this.issueCapability();
             await this.loadConfiguration();
             this.localStream = await this.mediaDevices.getUserMedia({
                 video: true,
@@ -85,7 +87,7 @@ export class MeetingClient {
             });
             this.onLocalStream(this.localStream);
             await this.openSignalingSocket();
-            this.send("JOIN");
+            this.send("JOIN", null, null, capability);
         } catch (error) {
             this.cleanupAll();
             this.reportError(this.mediaErrorMessage(error));
@@ -116,12 +118,37 @@ export class MeetingClient {
     }
 
     async loadConfiguration() {
-        const response = await this.fetch("/api/meetings/config");
+        const response = await this.authorizedFetch("/api/meetings/config");
         if (!response.ok) {
             throw new Error(await this.readError(response, "Unable to load meeting configuration"));
         }
         const configuration = await response.json();
         this.iceServers = configuration.iceServers ?? [];
+    }
+
+    setAccessToken(accessToken) {
+        this.accessToken = accessToken?.trim() || null;
+    }
+
+    async issueCapability() {
+        const response = await this.authorizedFetch(
+            `/api/meetings/rooms/${encodeURIComponent(this.roomId)}/capabilities`,
+            {method: "POST"}
+        );
+        if (!response.ok) {
+            throw new Error(await this.readError(response, "Unable to authorize meeting access"));
+        }
+        const issued = await response.json();
+        return issued.capability;
+    }
+
+    async authorizedFetch(url, options = {}) {
+        if (!this.accessToken) {
+            throw new Error("Sign in and provide an access token before using meetings");
+        }
+        const headers = new Headers(options.headers ?? {});
+        headers.set("Authorization", `Bearer ${this.accessToken}`);
+        return this.fetch(url, {...options, headers});
     }
 
     async openSignalingSocket() {
@@ -374,7 +401,7 @@ export class MeetingClient {
         }
     }
 
-    send(type, targetId = null, payload = null) {
+    send(type, targetId = null, payload = null, capability = null) {
         if (!this.socket || this.socket.readyState !== 1) {
             throw new Error("WebSocket is not connected");
         }
@@ -383,6 +410,9 @@ export class MeetingClient {
             type,
             roomId: this.roomId
         };
+        if (capability !== null) {
+            message.capability = capability;
+        }
         if (targetId !== null) {
             message.targetId = targetId;
         }

@@ -2,6 +2,9 @@ package com.adventacademy.meetingservice.adapter.websocket;
 
 import com.adventacademy.meetingservice.application.service.MeetingSessionRegistry;
 import com.adventacademy.meetingservice.application.service.RoomService;
+import com.adventacademy.meetingservice.application.security.MeetingCapabilityService;
+import com.adventacademy.meetingservice.application.security.MeetingRateLimiter;
+import com.adventacademy.meetingservice.domain.model.MeetingRole;
 import com.adventacademy.meetingservice.domain.model.RoomSnapshot;
 import com.adventacademy.meetingservice.infrastructure.config.MeetingProperties;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -20,6 +23,8 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,19 +41,26 @@ class MeetingSignalingHandlerTest {
     private ObjectMapper objectMapper;
     private RoomService roomService;
     private MeetingSessionRegistry sessionRegistry;
+    private MeetingCapabilityService capabilityService;
     private MeetingSignalingHandler handler;
+    private AtomicInteger userSequence;
 
     @BeforeEach
     void setUp() {
         objectMapper = JsonMapper.builder().addModule(new JavaTimeModule()).build();
         roomService = new RoomService(CLOCK);
         sessionRegistry = new MeetingSessionRegistry(roomService);
+        final MeetingProperties properties = new MeetingProperties();
+        capabilityService = new MeetingCapabilityService(CLOCK, properties);
+        userSequence = new AtomicInteger();
         handler = new MeetingSignalingHandler(
                 sessionRegistry,
                 new SignalMessageValidator(),
                 objectMapper,
                 CLOCK,
-                new MeetingProperties());
+                properties,
+                capabilityService,
+                new MeetingRateLimiter(CLOCK, properties));
     }
 
     @Test
@@ -216,6 +228,24 @@ class MeetingSignalingHandlerTest {
     }
 
     @Test
+    void revocationDisconnectsAuthenticatedMemberAndReleasesSlot() throws Exception {
+        final RoomSnapshot room = roomService.createRoom();
+        final WebSocketSession host = connectedSession("session-host");
+        final WebSocketSession member = connectedSession("session-member");
+        join(host, room.roomId().value());
+        final String memberId = join(member, room.roomId().value());
+        clearInvocations(host, member);
+
+        handler.revoke(room.roomId().value(), new UUID(0, 2));
+
+        assertError(member, "ACCESS_REVOKED");
+        verify(member).close(CloseStatus.POLICY_VIOLATION);
+        assertSignal(host, "PARTICIPANT_LEFT", memberId, "participantId", memberId);
+        assertThat(sessionRegistry.findBySession("session-member")).isEmpty();
+        assertThat(roomService.getRoom(room.roomId().value()).participants()).hasSize(1);
+    }
+
+    @Test
     void thirdParticipantReceivesRoomFullWithoutOccupyingSlot() throws Exception {
         final RoomSnapshot room = roomService.createRoom();
         final WebSocketSession first = connectedSession("session-a");
@@ -225,7 +255,7 @@ class MeetingSignalingHandlerTest {
         join(second, room.roomId().value());
         clearInvocations(third);
 
-        send(third, baseMessage("JOIN", room.roomId().value()));
+        send(third, joinMessage(room.roomId().value()));
 
         assertSignalTypeAndCode(third, "ROOM_FULL", "ROOM_FULL");
         assertThat(roomService.getRoom(room.roomId().value()).participants()).hasSize(2);
@@ -258,11 +288,25 @@ class MeetingSignalingHandlerTest {
     }
 
     private String join(WebSocketSession session, String roomId) throws Exception {
-        send(session, baseMessage("JOIN", roomId));
+        send(session, joinMessage(roomId));
         final JsonNode joined = lastMessage(session);
         assertThat(joined.path("type").textValue()).isEqualTo("JOINED");
         assertThat(joined.path("version").intValue()).isEqualTo(1);
         return joined.path("payload").path("participantId").textValue();
+    }
+
+    private String joinMessage(String roomId) {
+        final int userIndex = userSequence.incrementAndGet();
+        MeetingRole role = MeetingRole.PARTICIPANT;
+        if (userIndex == 1) {
+            role = MeetingRole.HOST;
+        }
+        final String capability = capabilityService.issue(
+                roomId,
+                new UUID(0, userIndex),
+                role).token();
+        return "{\"version\":1,\"type\":\"JOIN\",\"roomId\":\""
+                + roomId + "\",\"capability\":\"" + capability + "\"}";
     }
 
     private void send(WebSocketSession session, String message) throws Exception {

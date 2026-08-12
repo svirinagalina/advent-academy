@@ -43,7 +43,7 @@ public class RefreshTokenService {
 
     @Transactional(readOnly = true)
     public AuthResponse refresh(RefreshTokenRequest request) {
-        if (!jwtProvider.validateToken(request.refreshToken())) {
+        if (!jwtProvider.consumeRefreshToken(request.refreshToken())) {
             throw new InvalidUserStateException("Invalid refresh token");
         }
 
@@ -55,7 +55,11 @@ public class RefreshTokenService {
             throw new InvalidUserStateException("User account is not active. Status: " + user.getStatus());
         }
 
-        String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getEmail());
+        String accessToken = jwtProvider.generateAccessToken(
+                user.getId(),
+                user.getEmail(),
+                user.getRoles().stream().map(role -> role.getName()).collect(java.util.stream.Collectors.toSet()));
+        String refreshToken = jwtProvider.generateRefreshToken(user.getId());
 
         auditTrailPort.record(new AuditEvent(
                 UUID.randomUUID(),
@@ -72,7 +76,7 @@ public class RefreshTokenService {
 
         return new AuthResponse(
                 accessToken,
-                request.refreshToken(),
+                refreshToken,
                 accessTokenExpirationMinutes * 60,
                 false
         );

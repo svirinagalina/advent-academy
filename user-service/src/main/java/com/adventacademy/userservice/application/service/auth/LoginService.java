@@ -120,7 +120,10 @@ public class LoginService {
         user.setLastLoginAt(LocalDateTime.now(clock));
         userRepository.save(user);
 
-        String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getEmail());
+        String accessToken = jwtProvider.generateAccessToken(
+                user.getId(),
+                user.getEmail(),
+                user.getRoles().stream().map(role -> role.getName()).collect(java.util.stream.Collectors.toSet()));
         String refreshToken = jwtProvider.generateRefreshToken(user.getId());
 
         auditTrailPort.record(new AuditEvent(

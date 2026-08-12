@@ -34,9 +34,12 @@ springdoc:
 
 security:
   jwt:
-    secret: ${JWT_SECRET:your-256-bit-secret-key-change-this-in-production-use-at-least-32-characters}
+    secret: ${JWT_SECRET}
+    issuer: ${JWT_ISSUER:advent-academy-user-service}
+    audience: ${JWT_AUDIENCE:advent-academy-services}
     access-token-expiration-minutes: 15
     refresh-token-expiration-days: 7
+    clock-skew-seconds: 30
   account-lock:
     max-failed-attempts: 5
     lock-duration-minutes: 30

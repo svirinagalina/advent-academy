@@ -20,6 +20,7 @@ public class SignalMessageValidator {
     public static final int MAX_SDP_MID_CHARS = 64;
     public static final int MAX_SDP_M_LINE_INDEX = 128;
 
+    private static final Set<String> JOIN_FIELDS = Set.of("version", "type", "roomId", "capability");
     private static final Set<String> BASE_FIELDS = Set.of("version", "type", "roomId");
     private static final Set<String> FORWARD_FIELDS = Set.of("version", "type", "roomId", "targetId", "payload");
     private static final Set<String> SDP_FIELDS = Set.of("sdp");
@@ -55,8 +56,13 @@ public class SignalMessageValidator {
         }
         new RoomId(message.roomId());
 
-        if (message.type() == SignalType.JOIN || message.type() == SignalType.LEAVE
-                || message.type() == SignalType.PING) {
+        if (message.type() == SignalType.JOIN) {
+            requireExactFields(tree, JOIN_FIELDS, "JOIN message");
+            if (message.capability() == null || message.capability().isBlank()
+                    || message.capability().length() > 128) {
+                throw invalid("JOIN requires a valid capability");
+            }
+        } else if (message.type() == SignalType.LEAVE || message.type() == SignalType.PING) {
             requireExactFields(tree, BASE_FIELDS, message.type() + " message");
         } else if (isForwardedSignal(message.type())) {
             requireExactFields(tree, FORWARD_FIELDS, message.type() + " message");

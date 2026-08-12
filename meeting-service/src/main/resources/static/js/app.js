@@ -3,6 +3,7 @@ import {MeetingClient, STATES} from "./meeting-client.js";
 const elements = {
     createRoom: document.querySelector("#create-room"),
     joinRoom: document.querySelector("#join-room"),
+    accessToken: document.querySelector("#access-token"),
     roomId: document.querySelector("#room-id"),
     shareUrl: document.querySelector("#share-url"),
     copyUrl: document.querySelector("#copy-url"),
@@ -29,6 +30,7 @@ if (roomFromUrl) {
 }
 
 elements.createRoom.addEventListener("click", async () => {
+    client.setAccessToken(elements.accessToken.value);
     clearError();
     setBusy(true);
     try {
@@ -44,6 +46,7 @@ elements.createRoom.addEventListener("click", async () => {
 });
 
 elements.joinRoom.addEventListener("click", async () => {
+    client.setAccessToken(elements.accessToken.value);
     const roomId = elements.roomId.value.trim();
     if (!roomId) {
         showError("Enter a room ID");

@@ -1,6 +1,9 @@
 package com.adventacademy.meetingservice.adapter.websocket;
 
 import com.adventacademy.meetingservice.application.service.MeetingSessionRegistry;
+import com.adventacademy.meetingservice.application.security.MeetingCapabilityService;
+import com.adventacademy.meetingservice.application.security.MeetingGrant;
+import com.adventacademy.meetingservice.application.security.MeetingRateLimiter;
 import com.adventacademy.meetingservice.application.session.MeetingSession;
 import com.adventacademy.meetingservice.application.session.SessionDeparture;
 import com.adventacademy.meetingservice.application.session.SessionRegistration;
@@ -30,6 +33,7 @@ import java.time.Clock;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.UUID;
 
 @Component
 public class MeetingSignalingHandler extends TextWebSocketHandler {
@@ -41,6 +45,8 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
     private final ObjectMapper objectMapper;
     private final Clock clock;
     private final int maxMessageBytes;
+    private final MeetingCapabilityService capabilityService;
+    private final MeetingRateLimiter rateLimiter;
     private final ConcurrentMap<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
 
     public MeetingSignalingHandler(
@@ -48,12 +54,16 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
             SignalMessageValidator validator,
             ObjectMapper objectMapper,
             Clock clock,
-            MeetingProperties properties) {
+            MeetingProperties properties,
+            MeetingCapabilityService capabilityService,
+            MeetingRateLimiter rateLimiter) {
         this.sessionRegistry = sessionRegistry;
         this.validator = validator;
         this.objectMapper = objectMapper;
         this.clock = clock;
         this.maxMessageBytes = properties.getMaxMessageBytes();
+        this.capabilityService = capabilityService;
+        this.rateLimiter = rateLimiter;
     }
 
     @Override
@@ -98,6 +108,28 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
         }
     }
 
+    public void revoke(String roomId, UUID userId) {
+        sessionRegistry.findByRoomAndUser(roomId, userId).ifPresent(binding -> {
+            final WebSocketSession session = sessions.get(binding.sessionId());
+            if (session == null) {
+                cleanupBinding(binding.sessionId(), true);
+                return;
+            }
+            synchronized (session) {
+                sendError(session, "ACCESS_REVOKED", "Meeting access was revoked by the host");
+                sessions.remove(binding.sessionId(), session);
+                cleanupBinding(binding.sessionId(), true);
+                try {
+                    if (session.isOpen()) {
+                        session.close(CloseStatus.POLICY_VIOLATION);
+                    }
+                } catch (IOException exception) {
+                    logger.warn("Unable to close revoked meeting WebSocket");
+                }
+            }
+        });
+    }
+
     private SignalMessage parseAndValidate(TextMessage textMessage) throws JsonProcessingException {
         if (textMessage.getPayload().getBytes(StandardCharsets.UTF_8).length > maxMessageBytes) {
             throw new InvalidSignalException(
@@ -117,6 +149,7 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
                 intValue(tree, "version"),
                 parseSignalType(typeNode.textValue()),
                 textValue(tree, "roomId"),
+                textValue(tree, "capability"),
                 null,
                 textValue(tree, "targetId"),
                 tree.get("payload"),
@@ -138,7 +171,16 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
     }
 
     private void joinRoom(WebSocketSession session, SignalMessage message) {
-        SessionRegistration registration = sessionRegistry.join(session.getId(), message.roomId());
+        final Optional<MeetingSession> existing = sessionRegistry.findBySession(session.getId());
+        final MeetingGrant grant;
+        if (existing.isPresent()) {
+            final MeetingSession binding = existing.orElseThrow();
+            grant = new MeetingGrant(binding.roomId(), binding.userId(), binding.role());
+        } else {
+            rateLimiter.requireJoinAllowed(remoteKey(session));
+            grant = capabilityService.consume(message.capability(), message.roomId());
+        }
+        SessionRegistration registration = sessionRegistry.join(session.getId(), grant);
         registration = removeClosedPeer(registration);
         if (!sendJoined(session, registration)) {
             cleanupBinding(session.getId(), false);
@@ -217,6 +259,7 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
                 .equals(registration.session().participantId());
         payload.put("initiator", initiator);
         payload.put("status", registration.room().status().name());
+        payload.put("role", registration.session().role().name());
         return safeSend(session, signal(
                 SignalType.JOINED,
                 registration.session().roomId(),
@@ -309,6 +352,7 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
                 SignalMessageValidator.PROTOCOL_VERSION,
                 type,
                 roomId,
+                null,
                 senderId,
                 targetId,
                 payload,
@@ -360,5 +404,12 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
             return value.intValue();
         }
         return -1;
+    }
+
+    private String remoteKey(WebSocketSession session) {
+        if (session.getRemoteAddress() == null || session.getRemoteAddress().getAddress() == null) {
+            return "unknown";
+        }
+        return session.getRemoteAddress().getAddress().getHostAddress();
     }
 }

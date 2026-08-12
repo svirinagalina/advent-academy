@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -120,9 +121,9 @@ public class AuthController {
     @ApiResponse(responseCode = "401", description = "Invalid old password")
 
     public ResponseEntity<MessageResponse> changePassword(
-            @RequestParam UUID userId,
             @Valid @RequestBody ChangePasswordRequest request,
-            HttpServletRequest httpRequest) {
+            HttpServletRequest httpRequest,
+            Authentication authentication) {
 
         String ipAddress = httpRequest.getRemoteAddr();
         String userAgent = httpRequest.getHeader("User-Agent");
@@ -134,7 +135,7 @@ public class AuthController {
                 userAgent
         );
 
-        MessageResponse response = changePasswordService.changePassword(userId, enrichedRequest);
+        MessageResponse response = changePasswordService.changePassword(userId(authentication), enrichedRequest);
         return ResponseEntity.ok(response);
     }
 
@@ -163,8 +164,8 @@ public class AuthController {
     @PostMapping("/mfa/enable")
     @Operation(summary = "Enable MFA", description = "Enable multi-factor authentication and get QR code")
     @ApiResponse(responseCode = "200", description = "MFA secret generated")
-    public ResponseEntity<EnableMfaResponse> enableMfa(@RequestParam UUID userId) {
-        EnableMfaResponse response = mfaService.enableMfa(userId);
+    public ResponseEntity<EnableMfaResponse> enableMfa(Authentication authentication) {
+        EnableMfaResponse response = mfaService.enableMfa(userId(authentication));
         return ResponseEntity.ok(response);
     }
 
@@ -173,9 +174,9 @@ public class AuthController {
     @ApiResponse(responseCode = "200", description = "MFA enabled successfully")
     @ApiResponse(responseCode = "401", description = "Invalid MFA code")
     public ResponseEntity<MessageResponse> confirmMfa(
-            @RequestParam UUID userId,
-            @RequestParam String code) {
-        MessageResponse response = mfaService.confirmMfa(userId, code);
+            @RequestParam String code,
+            Authentication authentication) {
+        MessageResponse response = mfaService.confirmMfa(userId(authentication), code);
         return ResponseEntity.ok(response);
     }
 
@@ -184,9 +185,13 @@ public class AuthController {
     @ApiResponse(responseCode = "200", description = "MFA disabled successfully")
     @ApiResponse(responseCode = "401", description = "Invalid MFA code")
     public ResponseEntity<MessageResponse> disableMfa(
-            @RequestParam UUID userId,
-            @RequestParam String code) {
-        MessageResponse response = mfaService.disableMfa(userId, code);
+            @RequestParam String code,
+            Authentication authentication) {
+        MessageResponse response = mfaService.disableMfa(userId(authentication), code);
         return ResponseEntity.ok(response);
+    }
+
+    private UUID userId(Authentication authentication) {
+        return UUID.fromString(authentication.getName());
     }
 }

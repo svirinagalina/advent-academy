@@ -5,6 +5,7 @@ import com.adventacademy.meetingservice.application.session.SessionDeparture;
 import com.adventacademy.meetingservice.application.session.SessionRegistration;
 import com.adventacademy.meetingservice.application.session.SessionSignalType;
 import com.adventacademy.meetingservice.application.session.SignalRoute;
+import com.adventacademy.meetingservice.application.security.MeetingGrant;
 import com.adventacademy.meetingservice.domain.exception.InvalidSignalException;
 import com.adventacademy.meetingservice.domain.exception.ParticipantNotRegisteredException;
 import com.adventacademy.meetingservice.domain.exception.TargetParticipantNotFoundException;
@@ -13,6 +14,11 @@ import com.adventacademy.meetingservice.domain.model.RoomJoinResult;
 import com.adventacademy.meetingservice.domain.model.RoomSnapshot;
 import org.springframework.stereotype.Service;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -28,10 +34,10 @@ public class MeetingSessionRegistry {
         this.roomService = roomService;
     }
 
-    public synchronized SessionRegistration join(String sessionId, String roomId) {
+    public synchronized SessionRegistration join(String sessionId, MeetingGrant grant) {
         final MeetingSession existing = sessionsByConnection.get(sessionId);
         if (existing != null) {
-            if (!existing.roomId().equals(roomId)) {
+            if (!existing.roomId().equals(grant.roomId()) || !existing.userId().equals(grant.userId())) {
                 throw new InvalidSignalException(
                         "SESSION_ALREADY_BOUND",
                         "The WebSocket session is already bound to another room");
@@ -39,9 +45,14 @@ public class MeetingSessionRegistry {
             return currentRegistration(existing, false);
         }
 
-        final ParticipantId participantId = generateParticipantId();
-        final RoomJoinResult joined = roomService.join(roomId, participantId.value());
-        final MeetingSession session = new MeetingSession(sessionId, participantId.value(), roomId);
+        final ParticipantId participantId = participantId(grant);
+        final RoomJoinResult joined = roomService.join(grant.roomId(), participantId.value());
+        final MeetingSession session = new MeetingSession(
+                sessionId,
+                participantId.value(),
+                grant.roomId(),
+                grant.userId(),
+                grant.role());
         sessionsByConnection.put(sessionId, session);
         sessionsByParticipant.put(participantId.value(), session);
         final Optional<MeetingSession> peer = joined.peerId().map(this::requireRegisteredParticipant);
@@ -58,6 +69,12 @@ public class MeetingSessionRegistry {
 
     public synchronized Optional<MeetingSession> findByParticipant(String participantId) {
         return Optional.ofNullable(sessionsByParticipant.get(participantId));
+    }
+
+    public synchronized Optional<MeetingSession> findByRoomAndUser(String roomId, java.util.UUID userId) {
+        return sessionsByConnection.values().stream()
+                .filter(session -> session.roomId().equals(roomId) && session.userId().equals(userId))
+                .findFirst();
     }
 
     public synchronized Optional<SessionDeparture> leave(String sessionId) {
@@ -163,11 +180,19 @@ public class MeetingSessionRegistry {
         return session;
     }
 
-    private ParticipantId generateParticipantId() {
-        ParticipantId participantId;
-        do {
-            participantId = ParticipantId.generate();
-        } while (sessionsByParticipant.containsKey(participantId.value()));
-        return participantId;
+    private ParticipantId participantId(MeetingGrant grant) {
+        try {
+            final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            digest.update(grant.roomId().getBytes(StandardCharsets.UTF_8));
+            digest.update(ByteBuffer.allocate(Long.BYTES * 2)
+                    .putLong(grant.userId().getMostSignificantBits())
+                    .putLong(grant.userId().getLeastSignificantBits())
+                    .array());
+            final String encoded = Base64.getUrlEncoder().withoutPadding()
+                    .encodeToString(digest.digest()).substring(0, 22);
+            return new ParticipantId("participant-" + encoded);
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is unavailable", exception);
+        }
     }
 }

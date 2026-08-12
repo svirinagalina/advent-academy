@@ -1,15 +1,24 @@
 import {expect, test} from "@playwright/test";
+import {createHmac} from "node:crypto";
+
+const HOST_ID = "00000000-0000-0000-0000-000000000001";
+const SECOND_ID = "00000000-0000-0000-0000-000000000002";
+const THIRD_ID = "00000000-0000-0000-0000-000000000003";
+const JWT_SECRET = "test-secret-key-for-testing-purposes-only-32-bytes";
 
 test("two isolated browser contexts exchange live audio and video tracks", async ({browser}) => {
-    const first = await openMeetingPage(browser);
-    const second = await openMeetingPage(browser);
+    const first = await openMeetingPage(browser, HOST_ID);
+    const second = await openMeetingPage(browser, SECOND_ID);
     try {
         await first.page.getByRole("button", {name: "Create room"}).click();
         await expect(first.page.locator("#connection-status"))
             .toHaveText("Waiting for another participant");
         const shareUrl = await first.page.locator("#share-url").inputValue();
+        const roomId = await first.page.locator("#room-id").inputValue();
+        await grantMember(first.page, roomId, SECOND_ID, first.token);
 
         await second.page.goto(shareUrl);
+        await setToken(second.page, second.token);
         await second.page.getByRole("button", {name: "Join room"}).click();
 
         await expectConnectedWithRemoteMedia(first.page);
@@ -26,21 +35,26 @@ test("two isolated browser contexts exchange live audio and video tracks", async
 });
 
 test("third participant is rejected and refresh releases the occupied slot", async ({browser}) => {
-    const first = await openMeetingPage(browser);
-    const second = await openMeetingPage(browser);
-    const third = await openMeetingPage(browser);
+    const first = await openMeetingPage(browser, HOST_ID);
+    const second = await openMeetingPage(browser, SECOND_ID);
+    const third = await openMeetingPage(browser, THIRD_ID);
     try {
         await first.page.getByRole("button", {name: "Create room"}).click();
         await expect(first.page.locator("#connection-status"))
             .toHaveText("Waiting for another participant");
         const shareUrl = await first.page.locator("#share-url").inputValue();
+        const roomId = await first.page.locator("#room-id").inputValue();
+        await grantMember(first.page, roomId, SECOND_ID, first.token);
+        await grantMember(first.page, roomId, THIRD_ID, first.token);
 
         await second.page.goto(shareUrl);
+        await setToken(second.page, second.token);
         await second.page.getByRole("button", {name: "Join room"}).click();
         await expectConnectedWithRemoteMedia(first.page);
         await expectConnectedWithRemoteMedia(second.page);
 
         await third.page.goto(shareUrl);
+        await setToken(third.page, third.token);
         await third.page.getByRole("button", {name: "Join room"}).click();
         await expect(third.page.locator("#connection-status")).toHaveText("Failed");
         await expect(third.page.locator("#error-message"))
@@ -60,11 +74,46 @@ test("third participant is rejected and refresh releases the occupied slot", asy
     }
 });
 
-async function openMeetingPage(browser) {
+async function openMeetingPage(browser, userId) {
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.goto("/");
-    return {context, page};
+    const token = accessToken(userId);
+    await setToken(page, token);
+    return {context, page, token};
+}
+
+async function setToken(page, token) {
+    await page.locator("#access-token").fill(token);
+}
+
+async function grantMember(page, roomId, userId, token) {
+    const response = await page.request.put(`/api/meetings/rooms/${roomId}/members/${userId}`, {
+        headers: {Authorization: `Bearer ${token}`}
+    });
+    expect(response.ok()).toBe(true);
+}
+
+function accessToken(userId) {
+    const now = Math.floor(Date.now() / 1000);
+    const header = base64Url(JSON.stringify({alg: "HS256", typ: "JWT"}));
+    const payload = base64Url(JSON.stringify({
+        sub: userId,
+        iss: "advent-academy-user-service",
+        aud: ["advent-academy-services"],
+        iat: now,
+        exp: now + 300,
+        jti: `${userId}-${now}`,
+        token_type: "access"
+    }));
+    const signature = createHmac("sha256", JWT_SECRET)
+        .update(`${header}.${payload}`)
+        .digest("base64url");
+    return `${header}.${payload}.${signature}`;
+}
+
+function base64Url(value) {
+    return Buffer.from(value).toString("base64url");
 }
 
 async function expectConnectedWithRemoteMedia(page) {

@@ -2,9 +2,11 @@ package com.adventacademy.meetingservice.application.service;
 
 import com.adventacademy.meetingservice.application.session.SessionRegistration;
 import com.adventacademy.meetingservice.application.session.SessionSignalType;
+import com.adventacademy.meetingservice.application.security.MeetingGrant;
 import com.adventacademy.meetingservice.domain.exception.InvalidSignalException;
 import com.adventacademy.meetingservice.domain.exception.RoomFullException;
 import com.adventacademy.meetingservice.domain.model.RoomSnapshot;
+import com.adventacademy.meetingservice.domain.model.MeetingRole;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +16,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -48,10 +51,12 @@ class MeetingSessionRegistryTest {
     void assignsServerIdentityAndMakesDuplicateJoinIdempotent() {
         final RoomSnapshot room = roomService.createRoom();
 
-        final SessionRegistration first = registry.join("session-a", room.roomId().value());
-        final SessionRegistration duplicate = registry.join("session-a", room.roomId().value());
+        final MeetingGrant grant = grant(room.roomId().value(), 1);
+        final SessionRegistration first = registry.join("session-a", grant);
+        final SessionRegistration duplicate = registry.join("session-a", grant);
 
-        assertThat(first.session().participantId()).matches("[a-f0-9]{32}");
+        assertThat(first.session().participantId()).matches("participant-[A-Za-z0-9_-]{22}");
+        assertThat(first.session().userId()).isEqualTo(grant.userId());
         assertThat(first.newlyJoined()).isTrue();
         assertThat(duplicate.newlyJoined()).isFalse();
         assertThat(duplicate.session()).isEqualTo(first.session());
@@ -62,7 +67,7 @@ class MeetingSessionRegistryTest {
     @Test
     void concurrentSessionJoinsNeverOverfillLastSlot() throws Exception {
         final RoomSnapshot room = roomService.createRoom();
-        registry.join("session-initial", room.roomId().value());
+        registry.join("session-initial", grant(room.roomId().value(), 1));
         final int contenders = 20;
         final CountDownLatch ready = new CountDownLatch(contenders);
         final CountDownLatch start = new CountDownLatch(1);
@@ -71,8 +76,9 @@ class MeetingSessionRegistryTest {
 
         for (int index = 0; index < contenders; index++) {
             final String sessionId = "session-" + index;
+            final int userIndex = index + 2;
             futures.add(executor.submit(() -> attemptJoin(
-                    sessionId, room.roomId().value(), ready, start, successfulJoins)));
+                    sessionId, room.roomId().value(), userIndex, ready, start, successfulJoins)));
         }
         ready.await();
         start.countDown();
@@ -88,7 +94,8 @@ class MeetingSessionRegistryTest {
     @Test
     void leaveIsIdempotentAndRemovesBothRegistryIndexes() {
         final RoomSnapshot room = roomService.createRoom();
-        final SessionRegistration registration = registry.join("session-a", room.roomId().value());
+        final SessionRegistration registration = registry.join(
+                "session-a", grant(room.roomId().value(), 1));
 
         assertThat(registry.leave("session-a")).isPresent();
         assertThat(registry.leave("session-a")).isEmpty();
@@ -102,8 +109,8 @@ class MeetingSessionRegistryTest {
     @Test
     void enforcesServerSelectedOfferAndAnswerRoles() {
         final RoomSnapshot room = roomService.createRoom();
-        final SessionRegistration first = registry.join("session-a", room.roomId().value());
-        final SessionRegistration second = registry.join("session-b", room.roomId().value());
+        final SessionRegistration first = registry.join("session-a", grant(room.roomId().value(), 1));
+        final SessionRegistration second = registry.join("session-b", grant(room.roomId().value(), 2));
 
         assertThat(registry.requireRoute(
                 "session-a",
@@ -129,13 +136,14 @@ class MeetingSessionRegistryTest {
     private void attemptJoin(
             String sessionId,
             String roomId,
+            int userIndex,
             CountDownLatch ready,
             CountDownLatch start,
             AtomicInteger successfulJoins) {
         ready.countDown();
         try {
             start.await();
-            registry.join(sessionId, roomId);
+            registry.join(sessionId, grant(roomId, userIndex));
             successfulJoins.incrementAndGet();
         } catch (RoomFullException exception) {
             assertThat(exception.getCode()).isEqualTo("ROOM_FULL");
@@ -143,5 +151,16 @@ class MeetingSessionRegistryTest {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(exception);
         }
+    }
+
+    private MeetingGrant grant(String roomId, int userIndex) {
+        MeetingRole role = MeetingRole.PARTICIPANT;
+        if (userIndex == 1) {
+            role = MeetingRole.HOST;
+        }
+        return new MeetingGrant(
+                roomId,
+                new UUID(0, userIndex),
+                role);
     }
 }

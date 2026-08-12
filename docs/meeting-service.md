@@ -1,14 +1,15 @@
-# Meeting Service MVP
+# Meeting Service
 
 ## Overview
 
-`meeting-service` is a local-development browser meeting MVP for exactly two participants in one
-room. It supports room creation, camera and microphone capture, peer-to-peer audio/video, mute and
-camera controls, leave notifications, and cleanup after explicit or unexpected disconnects.
+`meeting-service` is an authenticated browser meeting service for exactly two participants in one
+private room. It supports host-controlled membership, short-lived one-time signaling capabilities,
+camera and microphone capture, peer-to-peer audio/video, controls, revocation, and cleanup.
 
-The MVP intentionally does not include authentication, group calls, recording, screen sharing,
-chat, scheduling, persistence, Redis, TURN, an SFU, or production deployment. Rooms and participant
-bindings exist only in one application process and are lost on restart.
+It does not yet include group calls, recording, persistence, Redis, TURN, an SFU, HTTPS/WSS, or
+production deployment. Rooms, policies, capabilities, refresh-token replay state, and participant
+bindings are process-local and are lost on restart. Restart therefore fails closed but interrupts
+active meetings and invalidates refresh tokens.
 
 ## Architecture
 
@@ -27,10 +28,12 @@ The backend layers are:
 
 ```mermaid
 flowchart TD
-    UI1["Browser A: static meeting UI"] -->|"REST create/get room and config"| API["Meeting REST API"]
-    UI2["Browser B: static meeting UI"] -->|"REST create/get room and config"| API
-    UI1 -->|"JSON WebSocket: JOIN, SDP, ICE, LEAVE"| WS["Signaling handler"]
-    UI2 -->|"JSON WebSocket: JOIN, SDP, ICE, LEAVE"| WS
+    AUTH["user-service JWT issuer"] -->|"Access JWT"| UI1["Browser A"]
+    AUTH -->|"Access JWT"| UI2["Browser B"]
+    UI1 -->|"Bearer JWT: policy and capability"| API["Meeting REST API"]
+    UI2 -->|"Bearer JWT: policy and capability"| API
+    UI1 -->|"WebSocket: capability, SDP, ICE"| WS["Signaling handler"]
+    UI2 -->|"WebSocket: capability, SDP, ICE"| WS
     API --> REG["Thread-safe in-memory room service"]
     WS --> SESSION["Atomic meeting session registry"]
     SESSION --> REG
@@ -48,13 +51,17 @@ sequenceDiagram
     participant S as Meeting service
     participant B as Participant B browser
 
-    A->>S: POST /api/meetings/rooms
+    A->>S: POST room with access JWT
     S-->>A: 201 roomId, WAITING
+    A->>S: PUT member B
+    A->>S: POST one-time capability
+    S-->>A: capability, expiry, HOST
     A->>A: getUserMedia and show local stream
-    A->>S: WebSocket JOIN
+    A->>S: WebSocket JOIN with capability
     S-->>A: JOINED (no peer, WAITING)
+    B->>S: POST one-time capability with access JWT
     B->>B: getUserMedia and show local stream
-    B->>S: WebSocket JOIN
+    B->>S: WebSocket JOIN with capability
     S-->>B: JOINED (peerId=A, ACTIVE)
     S-->>A: PARTICIPANT_JOINED (B, initiator=true)
     A->>S: OFFER targeted to B
@@ -98,6 +105,7 @@ duplicate lifecycle and disconnect-compensation rules.
 
 ```http
 POST /api/meetings/rooms
+Authorization: Bearer <user-service-access-token>
 ```
 
 Returns `201 Created` and a `Location` header.
@@ -116,15 +124,40 @@ Returns `201 Created` and a `Location` header.
 
 ```http
 GET /api/meetings/rooms/{roomId}
+Authorization: Bearer <user-service-access-token>
 ```
 
-Returns `200 OK`, or `404 Not Found` after an unknown/closed room is removed. Participant identities
-are not exposed by REST; only the count is public.
+Only the host or an admitted member can read it. Participant identities are not exposed by REST.
+
+### Manage private membership
+
+The creator is the `HOST`. Only the host may add or remove a member:
+
+```http
+PUT /api/meetings/rooms/{roomId}/members/{userId}
+DELETE /api/meetings/rooms/{roomId}/members/{userId}
+Authorization: Bearer <host-access-token>
+```
+
+Removal revokes outstanding capabilities and disconnects that user's active signaling session with
+close code 1008. Public-link meetings are disabled; a room ID is only a locator.
+
+### Issue a signaling capability
+
+```http
+POST /api/meetings/rooms/{roomId}/capabilities
+Authorization: Bearer <user-service-access-token>
+```
+
+The response contains an opaque 256-bit capability, its expiry, and `HOST` or `PARTICIPANT`. The
+default lifetime is 60 seconds. The server stores only its SHA-256 digest. It is scoped to one room
+and authenticated identity, consumed by JOIN, and cannot be replayed.
 
 ### Get WebRTC client configuration
 
 ```http
 GET /api/meetings/config
+Authorization: Bearer <user-service-access-token>
 ```
 
 ```json
@@ -160,10 +193,12 @@ Connect to the same-origin endpoint:
 ws://localhost:8084/ws/meetings
 ```
 
-The browser first creates or obtains a room, opens the WebSocket, and sends `JOIN`. Protocol version
+The browser obtains a capability over authenticated REST, opens the WebSocket, and sends `JOIN`.
+Protocol version
 1 uses strict JSON objects: missing fields, unknown fields, client-provided server fields, and
-fields belonging to another message type are rejected. A successful join creates a random
-participant ID on the server and binds the WebSocket session to that ID and one room. For every
+fields belonging to another message type are rejected. A successful join derives an opaque
+participant ID from the authenticated user and room and binds the WebSocket session to that ID,
+role, identity, and room. For every
 later message, the server derives the sender from this binding; clients never send `senderId` or
 `timestamp`.
 
@@ -171,7 +206,7 @@ later message, the server derives the sender from this binding; clients never se
 
 | Type | Required fields | Purpose |
 | --- | --- | --- |
-| `JOIN` | `version`, `type`, `roomId` | Atomically occupy a participant slot. Duplicate JOIN on the same socket and room returns the same identity. |
+| `JOIN` | `version`, `type`, `roomId`, `capability` | Consume a short-lived one-time grant and atomically occupy a slot. Duplicate JOIN on the already-bound socket is idempotent. |
 | `OFFER` | base fields, `targetId`, `payload.sdp` | Send an SDP offer to the room peer; only the server-selected offerer is accepted. |
 | `ANSWER` | base fields, `targetId`, `payload.sdp` | Send an SDP answer from the selected answerer. |
 | `ICE_CANDIDATE` | base fields, `targetId`, exact candidate payload | Send one ICE candidate to the same-room peer. |
@@ -184,7 +219,8 @@ JOIN example:
 {
   "version": 1,
   "type": "JOIN",
-  "roomId": "a118d64f8dbb40bc9f205242b51453ef"
+  "roomId": "a118d64f8dbb40bc9f205242b51453ef",
+  "capability": "opaque-one-time-value"
 }
 ```
 
@@ -226,7 +262,7 @@ are rejected as server-owned or unknown data.
 
 | Type | Purpose |
 | --- | --- |
-| `JOINED` | Confirms the server identity and reports `participantId`, optional `peerId`, room status, and the deterministic `initiator` role. |
+| `JOINED` | Reports `participantId`, optional `peerId`, room status, `HOST`/`PARTICIPANT`, and the deterministic `initiator` flag. |
 | `PARTICIPANT_JOINED` | Tells the existing peer to initiate negotiation. |
 | `OFFER` | Validated offer forwarded only to `targetId`. |
 | `ANSWER` | Validated answer forwarded only to `targetId`. |
@@ -291,6 +327,7 @@ tests, and a browser with camera/microphone support.
 Run directly:
 
 ```bash
+export JWT_SECRET="$(openssl rand -hex 32)"
 ./gradlew :meeting-service:bootRun
 ```
 
@@ -299,6 +336,10 @@ Or build and run the isolated Compose service:
 ```bash
 docker compose up -d --build meeting-service
 ```
+
+The same `JWT_SECRET`, issuer, and audience must be supplied to `user-service` and
+`meeting-service`. Obtain an access token from `POST /api/auth/login`; the local UI keeps the pasted
+token in memory only. It is never added to the room link, local storage, or logs.
 
 Then open http://localhost:8084. Camera and microphone access works on `localhost`, which browsers
 treat as a secure context. To add a development STUN server, change the external configuration:
@@ -315,17 +356,21 @@ different local host or port is intentionally used.
 
 ### Two-tab manual verification
 
-1. Open tab A, click **Create room**, and grant camera and microphone access.
-2. Copy the generated local link and open it in tab B.
-3. Click **Join room** in tab B and grant media permissions.
-4. Confirm that both tabs show local and remote video and report `Connected`.
-5. Mute tab A, disable the camera in tab B, and then re-enable both.
-6. Leave from tab B and confirm that tab A reports `Participant left`.
-7. Join the still-waiting room again from tab B.
-8. While A and B are active, try the link in tab C and confirm the room-full error.
-9. Refresh one joined tab and confirm the other receives `Participant left`; rejoin from the
+1. Sign in two users through user-service and paste each access token into its own browser context.
+2. In context A, click **Create room**. Have B provide their user UUID (`sub` in B's own test
+   token), then admit B with the host-only membership endpoint.
+3. Copy the generated room link to context B, paste B's token, and click **Join room**.
+4. Grant camera and microphone permission in both contexts.
+5. Confirm that both tabs show local and remote video and report `Connected`.
+6. Mute A, disable B's camera, and then re-enable both.
+7. Leave from B and confirm that A reports `Participant left`.
+8. Join the still-waiting room again from B; the client obtains a new capability.
+9. Admit a third authenticated user, try the link in context C, and confirm the room-full error.
+10. Refresh one joined tab and confirm the other receives `Participant left`; paste the access token
+   again and rejoin from the
    refreshed tab.
-10. Inspect backend logs and storage: only room/session metadata exists, with no media or recording.
+11. Remove B through the host endpoint and confirm B receives `ACCESS_REVOKED` and disconnects.
+12. Inspect logs: no access token, capability, identity, room ID, SDP, ICE, IP, or media is present.
 
 Use headphones or mute one browser tab to prevent acoustic echo on one device.
 
@@ -355,7 +400,9 @@ the service automatically unless `MEETING_E2E_EXTERNAL_SERVER=true` is set. The 
 isolated contexts and asserts live remote audio/video tracks, media controls, third-user rejection,
 refresh cleanup, and reuse of the released slot.
 
-Backend tests cover lifecycle transitions, duplicate/full rooms, cleanup, invalid transitions, a
+Backend tests cover JWT issuer/audience/type/expiry/skew, refresh rotation and replay, RBAC,
+private membership, capability expiry/scope/replay/revocation, rate limits, lifecycle transitions,
+duplicate/full rooms, cleanup, invalid transitions, a
 concurrent final-slot race, REST contracts, real WebSocket connection and forwarding, strict and
 oversized protocol messages, unknown participants, cross-room isolation, deterministic roles,
 duplicate lifecycle requests, failed-join compensation, and disconnect cleanup. Frontend unit
@@ -366,8 +413,14 @@ they do not replace a physical-device and cross-network test.
 
 ## Security Considerations
 
-- A server-generated participant identity is reserved atomically and bound to one WebSocket
-  session and room; duplicate join/leave operations are idempotent.
+- user-service signs typed access and refresh JWTs with issuer, audience, expiry, ID, and roles;
+  refresh tokens rotate and are one-time while their process-local replay record exists.
+- Meeting REST operations require an access JWT. The creator is host; private membership and role
+  checks are server-side, and public links are disabled.
+- A participant identity derived from the authenticated user and room is reserved atomically and
+  bound to one WebSocket session; client identity fields remain untrusted.
+- JOIN consumes a 60-second opaque capability stored only as a digest. Cross-room use, replay,
+  expiry, and revocation fail closed.
 - Client-provided sender IDs and timestamps are rejected, not used as authority.
 - Targets must have an active binding in the same room; signals are never globally broadcast.
 - Room occupancy is synchronized and cannot exceed two even under concurrent joins.
@@ -377,16 +430,15 @@ they do not replace a physical-device and cross-network test.
 - The origin allowlist uses explicit same-origin local URLs rather than `*`.
 - Signaling logs contain event/signal type and participant count, but omit room, participant and
   session IDs, SDP, ICE payloads, tokens, IP addresses, credentials, and media.
-- The current project authentication is incomplete, so this local MVP isolates anonymous random
-  participant IDs at the WebSocket boundary. Production must use an authenticated principal and
-  authorize room membership.
+- Room creation, capability issuance, and JOIN attempts have configurable one-minute limits.
 
 ## Production Considerations
 
-A production version requires HTTPS and secure WebSocket (`wss`), authenticated and authorized
-participants, expiring room capabilities, rate limits, abuse controls, and a production origin
-policy. Real-world NAT/firewall traversal requires TURN, commonly coturn or a managed equivalent,
-in addition to STUN. TURN credentials must be short-lived and supplied securely.
+A production deployment still requires HTTPS/WSS, TURN, persistent meeting metadata, distributed
+presence/revocation/rate limits, key rotation, and production origins. The current HS256 secret is
+externalized and fail-closed, but gives every verifier signing capability; migrate to asymmetric
+signing and public-key/JWKS verification before widening the trust boundary. Real-world
+NAT/firewall traversal requires TURN in addition to STUN.
 
 Multiple service replicas require a distributed room/session registry such as Redis, signaling
 fan-out between nodes, and either sticky sessions or WebSocket-aware routing. Add metrics for room

@@ -8,6 +8,7 @@ public record SignalMessage(
         int version,
         SignalType type,
         String roomId,
+        String capability,
         String senderId,
         String targetId,
         JsonNode payload,

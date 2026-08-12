@@ -14,7 +14,9 @@ spring:
 
 security:
   jwt:
-    secret: test-secret-key-for-testing-purposes-only
+    secret: test-secret-key-for-testing-purposes-only-32-bytes
+    issuer: advent-academy-user-service
+    audience: advent-academy-services
     access-token-expiration-minutes: 15
     refresh-token-expiration-days: 7
   account-lock:

@@ -20,6 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.test.context.support.WithMockUser;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -40,6 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.jpa.properties.hibernate.generate_statistics=true"
 })
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@WithMockUser(roles = "ADMIN")
 class RoleRequestApiPerformanceRegressionTest {
 
     private static final int TARGET_USER_REQUESTS = 1_100;

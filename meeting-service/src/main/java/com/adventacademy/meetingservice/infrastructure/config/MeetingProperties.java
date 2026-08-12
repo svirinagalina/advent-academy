@@ -10,6 +10,10 @@ public class MeetingProperties {
 
     private List<String> allowedOrigins = new ArrayList<>();
     private int maxMessageBytes = 65_536;
+    private long capabilityTtlSeconds = 60;
+    private int roomCreationLimitPerMinute = 10;
+    private int capabilityLimitPerMinute = 30;
+    private int joinLimitPerMinute = 20;
     private List<IceServer> iceServers = new ArrayList<>();
 
     public List<String> getAllowedOrigins() {
@@ -26,6 +30,38 @@ public class MeetingProperties {
 
     public void setMaxMessageBytes(int maxMessageBytes) {
         this.maxMessageBytes = maxMessageBytes;
+    }
+
+    public long getCapabilityTtlSeconds() {
+        return capabilityTtlSeconds;
+    }
+
+    public void setCapabilityTtlSeconds(long capabilityTtlSeconds) {
+        this.capabilityTtlSeconds = capabilityTtlSeconds;
+    }
+
+    public int getRoomCreationLimitPerMinute() {
+        return roomCreationLimitPerMinute;
+    }
+
+    public void setRoomCreationLimitPerMinute(int roomCreationLimitPerMinute) {
+        this.roomCreationLimitPerMinute = roomCreationLimitPerMinute;
+    }
+
+    public int getCapabilityLimitPerMinute() {
+        return capabilityLimitPerMinute;
+    }
+
+    public void setCapabilityLimitPerMinute(int capabilityLimitPerMinute) {
+        this.capabilityLimitPerMinute = capabilityLimitPerMinute;
+    }
+
+    public int getJoinLimitPerMinute() {
+        return joinLimitPerMinute;
+    }
+
+    public void setJoinLimitPerMinute(int joinLimitPerMinute) {
+        this.joinLimitPerMinute = joinLimitPerMinute;
     }
 
     public List<IceServer> getIceServers() {

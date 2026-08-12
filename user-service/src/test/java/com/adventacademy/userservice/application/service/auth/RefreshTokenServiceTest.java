@@ -51,10 +51,11 @@ class RefreshTokenServiceTest {
         user.setEmail("user@test.com");
         user.setStatus(UserStatus.ACTIVE);
 
-        when(jwtProvider.validateToken("rt")).thenReturn(true);
+        when(jwtProvider.consumeRefreshToken("rt")).thenReturn(true);
         when(jwtProvider.getUserIdFromToken("rt")).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(jwtProvider.generateAccessToken(any(UUID.class), anyString())).thenReturn("at-new");
+        when(jwtProvider.generateAccessToken(any(UUID.class), anyString(), any())).thenReturn("at-new");
+        when(jwtProvider.generateRefreshToken(userId)).thenReturn("rt-new");
 
         service.refresh(new RefreshTokenRequest("rt", "10.0.0.4", "okhttp"));
 

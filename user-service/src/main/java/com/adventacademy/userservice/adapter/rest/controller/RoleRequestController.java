@@ -18,6 +18,7 @@ import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -49,6 +50,7 @@ public class RoleRequestController {
     }
 
     @PostMapping("/api/users/{userId}/role-requests")
+    @PreAuthorize("#userId.toString() == authentication.name or hasRole('ADMIN')")
     @Operation(
             summary = "Submit a role request",
             description = "Create a PENDING request for assigning a role",
@@ -81,6 +83,7 @@ public class RoleRequestController {
     }
 
     @GetMapping("/api/users/{userId}/role-requests")
+    @PreAuthorize("#userId.toString() == authentication.name or hasRole('ADMIN')")
     @Operation(summary = "List user role requests", description = "Retrieve role requests for a single user")
     @ApiResponse(responseCode = "200", description = "Role requests returned")
     @ApiResponse(responseCode = "404", description = "User not found")
@@ -97,6 +100,7 @@ public class RoleRequestController {
     }
 
     @GetMapping("/api/role-requests")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "List all role requests", description = "Retrieve role requests for admin review")
     @ApiResponse(responseCode = "200", description = "Role requests returned")
     public ResponseEntity<PageResult<RoleRequestResponse>> getAll(

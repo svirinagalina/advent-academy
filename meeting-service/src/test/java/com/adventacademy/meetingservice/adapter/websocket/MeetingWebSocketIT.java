@@ -1,14 +1,15 @@
 package com.adventacademy.meetingservice.adapter.websocket;
 
-import com.adventacademy.meetingservice.adapter.rest.dto.RoomResponse;
+import com.adventacademy.meetingservice.application.security.MeetingAccessService;
+import com.adventacademy.meetingservice.application.service.RoomService;
+import com.adventacademy.meetingservice.domain.model.RoomSnapshot;
+import com.adventacademy.meetingservice.domain.model.RoomStatus;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,40 +35,45 @@ class MeetingWebSocketIT {
     private int port;
 
     @Autowired
-    private TestRestTemplate restTemplate;
+    private MeetingAccessService meetingAccessService;
+
+    @Autowired
+    private RoomService roomService;
 
     @Autowired
     private ObjectMapper objectMapper;
 
     @Test
     void joinsForwardsSignalsAndCleansUpUnexpectedDisconnect() throws Exception {
-        final RoomResponse room = createRoom();
+        final UUID firstUser = UUID.randomUUID();
+        final UUID secondUser = UUID.randomUUID();
+        final RoomSnapshot room = createRoom(firstUser, secondUser);
         final List<TestClient> clients = new ArrayList<>();
         try {
             final TestClient first = connect(clients);
             final TestClient second = connect(clients);
 
-            first.send(join(room.roomId()));
+            first.send(join(room.roomId().value(), capability(room.roomId().value(), firstUser)));
             final JsonNode firstJoined = first.nextOfType("JOINED");
             final String firstId = firstJoined.path("payload").path("participantId").textValue();
             assertThat(firstJoined.path("payload").path("peerId").isNull()).isTrue();
 
-            second.send(join(room.roomId()));
+            second.send(join(room.roomId().value(), capability(room.roomId().value(), secondUser)));
             final JsonNode secondJoined = second.nextOfType("JOINED");
             final String secondId = secondJoined.path("payload").path("participantId").textValue();
             assertThat(secondJoined.path("payload").path("peerId").textValue()).isEqualTo(firstId);
             assertThat(first.nextOfType("PARTICIPANT_JOINED").path("payload").path("initiator").booleanValue())
                     .isTrue();
 
-            first.send(signal("OFFER", room.roomId(), secondId,
+            first.send(signal("OFFER", room.roomId().value(), secondId,
                     "{\"sdp\":\"offer-sdp\"}"));
             assertForwarded(second, "OFFER", firstId, "sdp", "offer-sdp");
 
-            second.send(signal("ANSWER", room.roomId(), firstId,
+            second.send(signal("ANSWER", room.roomId().value(), firstId,
                     "{\"sdp\":\"answer-sdp\"}"));
             assertForwarded(first, "ANSWER", secondId, "sdp", "answer-sdp");
 
-            first.send(signal("ICE_CANDIDATE", room.roomId(), secondId,
+            first.send(signal("ICE_CANDIDATE", room.roomId().value(), secondId,
                     "{\"candidate\":\"candidate-a\",\"sdpMid\":\"0\",\"sdpMLineIndex\":0}"));
             assertForwarded(second, "ICE_CANDIDATE", firstId, "candidate", "candidate-a");
 
@@ -75,10 +82,9 @@ class MeetingWebSocketIT {
             assertThat(participantLeft.path("payload").path("participantId").textValue())
                     .isEqualTo(secondId);
 
-            final RoomResponse afterDisconnect = restTemplate.getForObject(
-                    "/api/meetings/rooms/{roomId}", RoomResponse.class, room.roomId());
-            assertThat(afterDisconnect.status()).isEqualTo("WAITING");
-            assertThat(afterDisconnect.participantCount()).isEqualTo(1);
+            final RoomSnapshot afterDisconnect = roomService.getRoom(room.roomId().value());
+            assertThat(afterDisconnect.status()).isEqualTo(RoomStatus.WAITING);
+            assertThat(afterDisconnect.participants()).hasSize(1);
         } finally {
             closeAll(clients);
         }
@@ -86,36 +92,66 @@ class MeetingWebSocketIT {
 
     @Test
     void rejectsThirdParticipantWithControlledRoomFullSignal() throws Exception {
-        final RoomResponse room = createRoom();
+        final UUID firstUser = UUID.randomUUID();
+        final UUID secondUser = UUID.randomUUID();
+        final UUID thirdUser = UUID.randomUUID();
+        final RoomSnapshot room = createRoom(firstUser, secondUser, thirdUser);
         final List<TestClient> clients = new ArrayList<>();
         try {
             final TestClient first = connect(clients);
             final TestClient second = connect(clients);
             final TestClient third = connect(clients);
-            first.send(join(room.roomId()));
+            first.send(join(room.roomId().value(), capability(room.roomId().value(), firstUser)));
             first.nextOfType("JOINED");
-            second.send(join(room.roomId()));
+            second.send(join(room.roomId().value(), capability(room.roomId().value(), secondUser)));
             second.nextOfType("JOINED");
             first.nextOfType("PARTICIPANT_JOINED");
 
-            third.send(join(room.roomId()));
+            third.send(join(room.roomId().value(), capability(room.roomId().value(), thirdUser)));
 
             final JsonNode roomFull = third.nextOfType("ROOM_FULL");
             assertThat(roomFull.path("payload").path("code").textValue()).isEqualTo("ROOM_FULL");
-            final RoomResponse response = restTemplate.getForObject(
-                    "/api/meetings/rooms/{roomId}", RoomResponse.class, room.roomId());
-            assertThat(response.participantCount()).isEqualTo(2);
+            final RoomSnapshot response = roomService.getRoom(room.roomId().value());
+            assertThat(response.participants()).hasSize(2);
         } finally {
             closeAll(clients);
         }
     }
 
-    private RoomResponse createRoom() {
-        final ResponseEntity<RoomResponse> response = restTemplate.postForEntity(
-                "/api/meetings/rooms", null, RoomResponse.class);
-        assertThat(response.getStatusCode().value()).isEqualTo(201);
-        assertThat(response.getBody()).isNotNull();
-        return response.getBody();
+    @Test
+    void rejectsCapabilityReplayAndCrossRoomUse() throws Exception {
+        final UUID firstUser = UUID.randomUUID();
+        final UUID secondUser = UUID.randomUUID();
+        final RoomSnapshot firstRoom = createRoom(firstUser);
+        final RoomSnapshot secondRoom = createRoom(secondUser);
+        final String capability = capability(firstRoom.roomId().value(), firstUser);
+        final List<TestClient> clients = new ArrayList<>();
+        try {
+            final TestClient first = connect(clients);
+            first.send(join(firstRoom.roomId().value(), capability));
+            first.nextOfType("JOINED");
+
+            final TestClient replay = connect(clients);
+            replay.send(join(firstRoom.roomId().value(), capability));
+            assertThat(replay.nextOfType("ERROR").path("payload").path("code").textValue())
+                    .isEqualTo("INVALID_CAPABILITY");
+
+            final String secondCapability = capability(secondRoom.roomId().value(), secondUser);
+            final TestClient crossRoom = connect(clients);
+            crossRoom.send(join(firstRoom.roomId().value(), secondCapability));
+            assertThat(crossRoom.nextOfType("ERROR").path("payload").path("code").textValue())
+                    .isEqualTo("INVALID_CAPABILITY");
+        } finally {
+            closeAll(clients);
+        }
+    }
+
+    private RoomSnapshot createRoom(UUID hostId, UUID... memberIds) {
+        final RoomSnapshot room = meetingAccessService.createPrivateMeeting(hostId);
+        for (UUID memberId : memberIds) {
+            meetingAccessService.addMember(room.roomId().value(), hostId, memberId);
+        }
+        return room;
     }
 
     private TestClient connect(List<TestClient> clients) throws Exception {
@@ -140,8 +176,13 @@ class MeetingWebSocketIT {
         assertThat(message.path("payload").path(payloadField).textValue()).isEqualTo(payloadValue);
     }
 
-    private String join(String roomId) {
-        return "{\"version\":1,\"type\":\"JOIN\",\"roomId\":\"" + roomId + "\"}";
+    private String capability(String roomId, UUID userId) {
+        return meetingAccessService.issueCapability(roomId, userId).token();
+    }
+
+    private String join(String roomId, String capability) {
+        return "{\"version\":1,\"type\":\"JOIN\",\"roomId\":\"" + roomId
+                + "\",\"capability\":\"" + capability + "\"}";
     }
 
     private String signal(String type, String roomId, String targetId, String payload) {

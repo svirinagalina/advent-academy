@@ -120,10 +120,13 @@ function createClient(overrides = {}) {
     const localStreams = [];
     const remoteStreams = [];
     const client = new MeetingClient({
-        fetchImpl: overrides.fetchImpl ?? (async () => ({
+        fetchImpl: overrides.fetchImpl ?? (async url => ({
             ok: true,
-            json: async () => ({iceServers: [{urls: "stun:example.test:3478"}]})
+            json: async () => url.endsWith("/capabilities")
+                ? {capability: "one-time-capability"}
+                : {iceServers: [{urls: "stun:example.test:3478"}]}
         })),
+        accessToken: Object.hasOwn(overrides, "accessToken") ? overrides.accessToken : "access-token",
         WebSocketImpl: FakeWebSocket,
         RTCPeerConnectionImpl: FakePeerConnection,
         RTCSessionDescriptionImpl: function FakeSessionDescription(value) { return value; },
@@ -178,9 +181,19 @@ test.beforeEach(() => {
 
 test("requests processed local audio and video then sends a server-identity JOIN", async () => {
     let mediaConstraints;
+    const requests = [];
     const stream = mediaStream();
     const {client, states, localStreams} = createClient({
         stream,
+        fetchImpl: async (url, options) => {
+            requests.push({url, options});
+            return {
+                ok: true,
+                json: async () => url.endsWith("/capabilities")
+                    ? {capability: "one-time-capability"}
+                    : {iceServers: []}
+            };
+        },
         mediaDevices: {getUserMedia: async constraints => {
             mediaConstraints = constraints;
             return stream;
@@ -193,13 +206,34 @@ test("requests processed local audio and video then sends a server-identity JOIN
     assert.deepEqual(socket.sent[0], {
         version: PROTOCOL_VERSION,
         type: "JOIN",
-        roomId: "room-12345"
+        roomId: "room-12345",
+        capability: "one-time-capability"
     });
     assert.equal(mediaConstraints.audio.echoCancellation, true);
     assert.equal(mediaConstraints.audio.noiseSuppression, true);
     assert.equal(mediaConstraints.audio.autoGainControl, true);
     assert.equal(localStreams[0], stream);
     assert.deepEqual(states, [STATES.REQUESTING_MEDIA]);
+    assert.equal(requests.length, 2);
+    assert.equal(requests.every(request => request.options.headers.get("Authorization")
+        === "Bearer access-token"), true);
+    assert.equal(requests.some(request => request.url.includes("one-time-capability")), false);
+});
+
+test("fails closed before media access when no access token is present", async () => {
+    let mediaRequested = false;
+    const {client, errors} = createClient({
+        accessToken: null,
+        mediaDevices: {getUserMedia: async () => {
+            mediaRequested = true;
+            return mediaStream();
+        }}
+    });
+
+    await assert.rejects(client.join("room-12345"), /provide an access token/);
+
+    assert.equal(mediaRequested, false);
+    assert.match(errors[0], /provide an access token/);
 });
 
 test("reports camera or microphone permission denial as a failed state", async () => {
