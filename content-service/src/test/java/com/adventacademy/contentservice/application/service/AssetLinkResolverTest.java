@@ -56,7 +56,39 @@ class AssetLinkResolverTest {
         assertThatThrownBy(() -> resolver.resolve(markdown, lessonId))
                 .isInstanceOf(InvalidAssetLinkException.class)
                 .satisfies(e -> assertThat(((InvalidAssetLinkException) e).getInvalidAssetIds())
-                        .containsExactly(missingAssetId));
+                        .containsExactly(missingAssetId.toString()));
+    }
+
+    @Test
+    void rejectsMalformedAssetReference() {
+        String markdown = "See ![diagram](asset:12345) below.";
+
+        assertThatThrownBy(() -> resolver.resolve(markdown, UUID.randomUUID()))
+                .isInstanceOf(InvalidAssetLinkException.class)
+                .satisfies(e -> assertThat(((InvalidAssetLinkException) e).getInvalidAssetIds())
+                        .containsExactly("12345"));
+    }
+
+    @Test
+    void reportsEveryInvalidReferenceAtOnce() {
+        UUID missingAssetId = UUID.randomUUID();
+        String markdown = "asset:" + missingAssetId + " and asset:not-a-uuid";
+
+        assertThatThrownBy(() -> resolver.resolve(markdown, UUID.randomUUID()))
+                .isInstanceOf(InvalidAssetLinkException.class)
+                .satisfies(e -> assertThat(((InvalidAssetLinkException) e).getInvalidAssetIds())
+                        .containsExactlyInAnyOrder(missingAssetId.toString(), "not-a-uuid"));
+    }
+
+    @Test
+    void ignoresTrailingPunctuationAfterAssetLink() {
+        UUID lessonId = UUID.randomUUID();
+        StoredAsset asset = StoredAsset.create(lessonId, "diagram.png", "image/png", new byte[]{1});
+        assets.put(asset.getId(), asset);
+
+        String result = resolver.resolve("See asset:" + asset.getId() + ".", lessonId);
+
+        assertThat(result).isEqualTo("See /api/assets/" + asset.getId() + ".");
     }
 
     @Test
@@ -71,7 +103,7 @@ class AssetLinkResolverTest {
         assertThatThrownBy(() -> resolver.resolve(markdown, lessonId))
                 .isInstanceOf(InvalidAssetLinkException.class)
                 .satisfies(e -> assertThat(((InvalidAssetLinkException) e).getInvalidAssetIds())
-                        .containsExactly(foreignAsset.getId()));
+                        .containsExactly(foreignAsset.getId().toString()));
     }
 
     @Test

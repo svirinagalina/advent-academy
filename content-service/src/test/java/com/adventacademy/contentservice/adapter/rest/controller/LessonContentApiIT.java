@@ -102,7 +102,7 @@ class LessonContentApiIT {
 
         mockMvc.perform(multipart("/api/lessons/{lessonId}/content", lessonId).file(file))
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(jsonPath("$.notReadyIds[0]").value(foreignAssetId.toString()));
+                .andExpect(jsonPath("$.invalidAssetIds[0]").value(foreignAssetId.toString()));
     }
 
     /**

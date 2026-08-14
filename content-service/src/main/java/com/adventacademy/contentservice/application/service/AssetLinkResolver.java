@@ -9,11 +9,28 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Rewrites {@code asset:<uuid>} references in lesson Markdown into
+ * {@code /api/assets/<uuid>} download links.
+ * <p>
+ * A reference is accepted only when it is a well-formed UUID, the asset exists
+ * and it belongs to the lesson being uploaded. Every rejected reference is
+ * collected and reported at once through {@link InvalidAssetLinkException},
+ * so the author gets the full list instead of one error at a time.
+ */
 @Component
 public class AssetLinkResolver {
 
-    private static final Pattern ASSET_LINK_PATTERN = Pattern.compile(
-            "asset:([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})");
+    /**
+     * Deliberately wider than a UUID: a malformed reference such as
+     * {@code asset:12345} must be reported rather than silently left in the
+     * Markdown. Restricting the character class to UUID characters keeps
+     * trailing prose punctuation (e.g. {@code asset:<uuid>.}) out of the match.
+     */
+    private static final Pattern ASSET_LINK_PATTERN = Pattern.compile("asset:([A-Za-z0-9-]*)");
+
+    private static final Pattern ASSET_ID_PATTERN = Pattern.compile(
+            "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
 
     private final AssetStorage assetStorage;
 
@@ -23,19 +40,16 @@ public class AssetLinkResolver {
 
     public String resolve(String markdown, UUID lessonId) {
         Matcher matcher = ASSET_LINK_PATTERN.matcher(markdown);
-        Set<UUID> invalidAssetIds = new LinkedHashSet<>();
+        Set<String> invalidAssetIds = new LinkedHashSet<>();
         StringBuilder rewritten = new StringBuilder();
 
         while (matcher.find()) {
-            UUID assetId = UUID.fromString(matcher.group(1));
-            boolean belongsToLesson = assetStorage.findById(assetId)
-                    .map(asset -> asset.getLessonId().equals(lessonId))
-                    .orElse(false);
+            String reference = matcher.group(1);
 
-            if (belongsToLesson) {
-                matcher.appendReplacement(rewritten, "/api/assets/" + assetId);
+            if (isUsableAsset(reference, lessonId)) {
+                matcher.appendReplacement(rewritten, "/api/assets/" + reference);
             } else {
-                invalidAssetIds.add(assetId);
+                invalidAssetIds.add(reference.isEmpty() ? matcher.group() : reference);
                 matcher.appendReplacement(rewritten, Matcher.quoteReplacement(matcher.group()));
             }
         }
@@ -46,5 +60,14 @@ public class AssetLinkResolver {
         }
 
         return rewritten.toString();
+    }
+
+    private boolean isUsableAsset(String reference, UUID lessonId) {
+        if (!ASSET_ID_PATTERN.matcher(reference).matches()) {
+            return false;
+        }
+        return assetStorage.findById(UUID.fromString(reference))
+                .map(asset -> asset.getLessonId().equals(lessonId))
+                .orElse(false);
     }
 }

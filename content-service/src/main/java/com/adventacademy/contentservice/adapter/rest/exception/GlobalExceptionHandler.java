@@ -63,9 +63,9 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(InvalidAssetLinkException.class)
-    public ResponseEntity<PublicationErrorResponse> handleInvalidAssetLink(InvalidAssetLinkException e) {
+    public ResponseEntity<AssetLinkErrorResponse> handleInvalidAssetLink(InvalidAssetLinkException e) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
-                .body(new PublicationErrorResponse(e.getMessage(), e.getInvalidAssetIds()));
+                .body(new AssetLinkErrorResponse(e.getMessage(), e.getInvalidAssetIds()));
     }
 
     @ExceptionHandler(InvalidMarkdownFileException.class)

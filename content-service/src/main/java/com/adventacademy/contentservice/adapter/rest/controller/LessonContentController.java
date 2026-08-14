@@ -1,11 +1,15 @@
 package com.adventacademy.contentservice.adapter.rest.controller;
 
 import com.adventacademy.contentservice.adapter.rest.dto.LessonContentResponse;
+import com.adventacademy.contentservice.adapter.rest.exception.AssetLinkErrorResponse;
+import com.adventacademy.contentservice.adapter.rest.exception.ErrorResponse;
 import com.adventacademy.contentservice.application.command.UploadLessonContentCommand;
 import com.adventacademy.contentservice.application.service.UploadLessonContentService;
 import com.adventacademy.contentservice.application.validation.InvalidMarkdownFileException;
 import com.adventacademy.contentservice.domain.LessonContent;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,7 +33,8 @@ public class LessonContentController {
         this.uploadService = uploadService;
     }
 
-    @PostMapping(value = "/{lessonId}/content", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)    @Operation(summary = "Upload Markdown file or a .zip bundle for a lesson",
+    @PostMapping(value = "/{lessonId}/content", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload Markdown file or a .zip bundle for a lesson",
             description = "Accepts either a plain .md file or a .zip archive. "
                     + "A .zip must contain exactly one Markdown file in its root and, optionally, an assets/ folder; "
                     + "each file under assets/ is saved as a lesson asset and references to it in the Markdown "
@@ -38,16 +43,21 @@ public class LessonContentController {
                     + "Markdown may also reference already-uploaded assets directly using `asset:<uuid>` links "
                     + "(e.g. `![diagram](asset:11111111-1111-1111-1111-111111111111)`); "
                     + "each referenced asset must already be uploaded via POST /api/lessons/{lessonId}/assets and belong to this lesson. "
-                    + "Valid references are rewritten to /api/assets/{id} download links in the stored HTML. "
+                    + "Valid references are rewritten to /api/assets/{id} download links in the stored HTML, "
+                    + "while references that are not well-formed asset ids are rejected the same way as missing ones. "
                     + "Fenced code blocks with a language tag, including ```mermaid``` blocks, are preserved as <pre><code class=\"language-...\"> for the frontend to render.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Content created"),
             @ApiResponse(responseCode = "400", description = "Invalid file"),
             @ApiResponse(responseCode = "404", description = "Lesson does not exist"),
             @ApiResponse(responseCode = "409", description = "Content already exists for this lesson"),
-            @ApiResponse(responseCode = "422", description = "Markdown cannot be rendered, or references non-existent/foreign assets (see notReadyIds)")
+            @ApiResponse(responseCode = "422",
+                    description = "Markdown references assets that do not exist, belong to another lesson "
+                            + "or are not valid asset ids (AssetLinkErrorResponse, offending ids in invalidAssetIds); "
+                            + "or the Markdown itself cannot be rendered (ErrorResponse)",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(oneOf = {AssetLinkErrorResponse.class, ErrorResponse.class})))
     })
-
     public ResponseEntity<LessonContentResponse> uploadContent(
             @PathVariable UUID lessonId,
             @RequestParam("file") MultipartFile file) {
