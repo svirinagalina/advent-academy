@@ -7,6 +7,7 @@ COPY gradlew settings.gradle build.gradle ./
 COPY config config
 COPY user-service/build.gradle user-service/build.gradle
 COPY content-service/build.gradle content-service/build.gradle
+COPY api-gateway/build.gradle api-gateway/build.gradle
 COPY meeting-service/build.gradle meeting-service/build.gradle
 COPY meeting-service/src meeting-service/src
 
