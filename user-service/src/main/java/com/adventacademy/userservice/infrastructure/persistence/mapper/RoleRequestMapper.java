@@ -19,6 +19,7 @@ public class RoleRequestMapper {
         entity.setStatus(roleRequest.getStatus());
         entity.setReviewerId(roleRequest.getReviewerId());
         entity.setDecisionReason(roleRequest.getDecisionReason());
+        entity.setProcessInstanceKey(roleRequest.getProcessInstanceKey());
         entity.setCreatedAt(roleRequest.getCreatedAt());
         entity.setReviewedAt(roleRequest.getReviewedAt());
         entity.setUpdatedAt(roleRequest.getUpdatedAt());
@@ -37,6 +38,7 @@ public class RoleRequestMapper {
                 entity.getStatus(),
                 entity.getReviewerId(),
                 entity.getDecisionReason(),
+                entity.getProcessInstanceKey(),
                 entity.getCreatedAt(),
                 entity.getReviewedAt(),
                 entity.getUpdatedAt());

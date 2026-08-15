@@ -86,4 +86,48 @@ class RoleRequestTest {
         assertThatThrownBy(() -> request.reject(UUID.randomUUID(), "Again", REVIEWED_AT.plusMinutes(1)))
                 .isInstanceOf(InvalidRoleRequestStateException.class);
     }
+
+    @Test
+    void attachProcessInstanceRecordsTheKey() {
+        RoleRequest request = RoleRequest.create(UUID.randomUUID(), UUID.randomUUID(), CREATED_AT);
+
+        request.attachProcessInstance(12345L);
+
+        assertThat(request.getProcessInstanceKey()).isEqualTo(12345L);
+    }
+
+    @Test
+    void attachProcessInstanceRejectsNonPendingRequest() {
+        RoleRequest request = RoleRequest.create(UUID.randomUUID(), UUID.randomUUID(), CREATED_AT);
+        request.approve(UUID.randomUUID(), REVIEWED_AT);
+
+        assertThatThrownBy(() -> request.attachProcessInstance(12345L))
+                .isInstanceOf(InvalidRoleRequestStateException.class);
+    }
+
+    @Test
+    void requireDecidableRejectsRequestWithoutProcessInstance() {
+        RoleRequest request = RoleRequest.create(UUID.randomUUID(), UUID.randomUUID(), CREATED_AT);
+
+        assertThatThrownBy(request::requireDecidable)
+                .isInstanceOf(InvalidRoleRequestStateException.class);
+    }
+
+    @Test
+    void requireDecidableRejectsNonPendingRequestEvenWithProcessInstance() {
+        RoleRequest request = RoleRequest.create(UUID.randomUUID(), UUID.randomUUID(), CREATED_AT);
+        request.attachProcessInstance(12345L);
+        request.approve(UUID.randomUUID(), REVIEWED_AT);
+
+        assertThatThrownBy(request::requireDecidable)
+                .isInstanceOf(InvalidRoleRequestStateException.class);
+    }
+
+    @Test
+    void requireDecidablePassesForPendingRequestWithProcessInstance() {
+        RoleRequest request = RoleRequest.create(UUID.randomUUID(), UUID.randomUUID(), CREATED_AT);
+        request.attachProcessInstance(12345L);
+
+        request.requireDecidable();
+    }
 }

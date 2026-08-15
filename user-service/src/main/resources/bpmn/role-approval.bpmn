@@ -20,13 +20,41 @@
         <zeebe:userTask/>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_to_review</bpmn:incoming>
-      <bpmn:outgoing>Flow_to_approved</bpmn:outgoing>
+      <bpmn:outgoing>Flow_to_decision</bpmn:outgoing>
     </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_decision" name="Decision?" default="Flow_to_reject">
+      <bpmn:incoming>Flow_to_decision</bpmn:incoming>
+      <bpmn:outgoing>Flow_to_approve</bpmn:outgoing>
+      <bpmn:outgoing>Flow_to_reject</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="ServiceTask_assign_role" name="Assign role">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="role-request-approve" retries="3"/>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_to_approve</bpmn:incoming>
+      <bpmn:outgoing>Flow_to_approved</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="ServiceTask_reject_request" name="Reject request">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="role-request-reject" retries="3"/>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_to_reject</bpmn:incoming>
+      <bpmn:outgoing>Flow_to_rejected</bpmn:outgoing>
+    </bpmn:serviceTask>
     <bpmn:endEvent id="EndEvent_role_approved" name="Role approved">
       <bpmn:incoming>Flow_to_approved</bpmn:incoming>
     </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_role_rejected" name="Role rejected">
+      <bpmn:incoming>Flow_to_rejected</bpmn:incoming>
+    </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_to_review" sourceRef="StartEvent_role_request" targetRef="UserTask_review_role"/>
-    <bpmn:sequenceFlow id="Flow_to_approved" sourceRef="UserTask_review_role" targetRef="EndEvent_role_approved"/>
+    <bpmn:sequenceFlow id="Flow_to_decision" sourceRef="UserTask_review_role" targetRef="Gateway_decision"/>
+    <bpmn:sequenceFlow id="Flow_to_approve" name="APPROVE" sourceRef="Gateway_decision" targetRef="ServiceTask_assign_role">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=decision = "APPROVE"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_to_reject" name="REJECT (default)" sourceRef="Gateway_decision" targetRef="ServiceTask_reject_request"/>
+    <bpmn:sequenceFlow id="Flow_to_approved" sourceRef="ServiceTask_assign_role" targetRef="EndEvent_role_approved"/>
+    <bpmn:sequenceFlow id="Flow_to_rejected" sourceRef="ServiceTask_reject_request" targetRef="EndEvent_role_rejected"/>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_role_approval">
     <bpmndi:BPMNPlane id="BPMNPlane_role_approval" bpmnElement="role-approval">
@@ -36,16 +64,46 @@
       <bpmndi:BPMNShape id="UserTask_review_role_di" bpmnElement="UserTask_review_role">
         <dc:Bounds x="250" y="80" width="120" height="80"/>
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_decision_di" bpmnElement="Gateway_decision" isMarkerVisible="true">
+        <dc:Bounds x="425" y="95" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_assign_role_di" bpmnElement="ServiceTask_assign_role">
+        <dc:Bounds x="530" y="20" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_reject_request_di" bpmnElement="ServiceTask_reject_request">
+        <dc:Bounds x="530" y="160" width="120" height="80"/>
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_role_approved_di" bpmnElement="EndEvent_role_approved">
-        <dc:Bounds x="430" y="102" width="36" height="36"/>
+        <dc:Bounds x="712" y="42" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_role_rejected_di" bpmnElement="EndEvent_role_rejected">
+        <dc:Bounds x="712" y="182" width="36" height="36"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_to_review_di" bpmnElement="Flow_to_review">
         <di:waypoint x="196" y="120"/>
         <di:waypoint x="250" y="120"/>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_to_approved_di" bpmnElement="Flow_to_approved">
+      <bpmndi:BPMNEdge id="Flow_to_decision_di" bpmnElement="Flow_to_decision">
         <di:waypoint x="370" y="120"/>
-        <di:waypoint x="430" y="120"/>
+        <di:waypoint x="425" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_to_approve_di" bpmnElement="Flow_to_approve">
+        <di:waypoint x="450" y="95"/>
+        <di:waypoint x="450" y="60"/>
+        <di:waypoint x="530" y="60"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_to_reject_di" bpmnElement="Flow_to_reject">
+        <di:waypoint x="450" y="145"/>
+        <di:waypoint x="450" y="200"/>
+        <di:waypoint x="530" y="200"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_to_approved_di" bpmnElement="Flow_to_approved">
+        <di:waypoint x="650" y="60"/>
+        <di:waypoint x="712" y="60"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_to_rejected_di" bpmnElement="Flow_to_rejected">
+        <di:waypoint x="650" y="200"/>
+        <di:waypoint x="712" y="200"/>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

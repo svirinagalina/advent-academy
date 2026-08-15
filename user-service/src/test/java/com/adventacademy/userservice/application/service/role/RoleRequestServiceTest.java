@@ -1,6 +1,7 @@
 package com.adventacademy.userservice.application.service.role;
 
 import com.adventacademy.userservice.application.port.AuditTrailPort;
+import com.adventacademy.userservice.application.port.RoleApprovalWorkflowPort;
 import com.adventacademy.userservice.domain.exception.DuplicateActiveRoleRequestException;
 import com.adventacademy.userservice.domain.model.AuditEvent;
 import com.adventacademy.userservice.domain.model.AuditEventType;
@@ -28,6 +29,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -39,6 +41,7 @@ class RoleRequestServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private RoleRepository roleRepository;
     @Mock private AuditTrailPort auditTrailPort;
+    @Mock private RoleApprovalWorkflowPort workflowPort;
 
     private RoleRequestService service;
     private final Clock clock = Clock.fixed(Instant.parse("2026-07-22T10:00:00Z"), ZoneOffset.UTC);
@@ -48,7 +51,8 @@ class RoleRequestServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new RoleRequestService(roleRequestRepository, userRepository, roleRepository, auditTrailPort, clock);
+        service = new RoleRequestService(
+                roleRequestRepository, userRepository, roleRepository, auditTrailPort, workflowPort, clock);
         userId = UUID.randomUUID();
         roleId = UUID.randomUUID();
     }
@@ -63,15 +67,18 @@ class RoleRequestServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(roleRepository.findById(roleId)).thenReturn(Optional.of(role));
         when(roleRequestRepository.existsActiveByUserIdAndRequestedRoleId(userId, roleId)).thenReturn(false);
+        when(workflowPort.start(any(UUID.class), eq(userId), eq(roleId))).thenReturn(9001L);
         when(roleRequestRepository.save(any(RoleRequest.class))).thenAnswer(inv -> {
             RoleRequest request = inv.getArgument(0);
+            UUID id = request.getId() != null ? request.getId() : UUID.randomUUID();
             return RoleRequest.restore(
-                    UUID.randomUUID(),
+                    id,
                     request.getUserId(),
                     request.getRequestedRoleId(),
                     request.getStatus(),
                     request.getReviewerId(),
                     request.getDecisionReason(),
+                    request.getProcessInstanceKey(),
                     request.getCreatedAt(),
                     request.getReviewedAt(),
                     request.getUpdatedAt());
@@ -83,6 +90,7 @@ class RoleRequestServiceTest {
         assertThat(response.id()).isNotNull();
         assertThat(response.userId()).isEqualTo(userId);
         assertThat(response.requestedRoleId()).isEqualTo(roleId);
+        verify(workflowPort).start(response.id(), userId, roleId);
 
         ArgumentCaptor<AuditEvent> auditCaptor = ArgumentCaptor.forClass(AuditEvent.class);
         verify(auditTrailPort).record(auditCaptor.capture());
@@ -107,5 +115,6 @@ class RoleRequestServiceTest {
 
         verify(roleRequestRepository, never()).save(any(RoleRequest.class));
         verify(auditTrailPort, never()).record(any(AuditEvent.class));
+        verify(workflowPort, never()).start(any(), any(), any());
     }
 }

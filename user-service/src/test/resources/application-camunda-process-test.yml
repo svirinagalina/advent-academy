@@ -1,6 +1,14 @@
 spring:
   flyway:
     enabled: false
+  jpa:
+    properties:
+      hibernate:
+        # application.yml forces PostgreSQLDialect for every profile; application-test.yml
+        # never overrides it back for H2, which is normally harmless but breaks schema
+        # generation for tests in this profile that also load a full JPA context (unlike
+        # the ZeebeClient-only RoleApprovalProcessTest, which never hit this).
+        dialect: org.hibernate.dialect.H2Dialect
 
 camunda:
   client:

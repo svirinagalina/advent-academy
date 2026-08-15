@@ -1,5 +1,6 @@
 package com.adventacademy.userservice.adapter.rest.controller;
 
+import com.adventacademy.userservice.application.dto.request.RoleRequestDecisionRequest;
 import com.adventacademy.userservice.application.dto.request.SubmitRoleRequestRequest;
 import com.adventacademy.userservice.application.dto.response.RoleRequestResponse;
 import com.adventacademy.userservice.application.service.role.RoleRequestService;
@@ -97,6 +98,37 @@ public class RoleRequestController {
             @Parameter(description = "Sort format: field,direction", example = "createdAt,desc")
             @RequestParam(defaultValue = "createdAt,desc") String sort) {
         return ResponseEntity.ok(roleRequestService.getForUser(userId, page, size, sort));
+    }
+
+    @PostMapping("/api/role-requests/{id}/decision")
+    @Operation(
+            summary = "Record an admin decision on a role request",
+            description = "Completes the pending Camunda review task with the decision. The request "
+                    + "stays PENDING in this response — approval/rejection is applied asynchronously "
+                    + "by the Camunda job worker once the process routes the gateway.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = RoleRequestDecisionRequest.class),
+                            examples = @ExampleObject(
+                                    name = "Approve",
+                                    value = "{\"decision\":\"APPROVE\",\"reviewerId\":"
+                                            + "\"44444444-4444-4444-4444-444444444444\"}"
+                            )
+                    )
+            )
+    )
+    @ApiResponse(responseCode = "202", description = "Decision accepted, processing asynchronously")
+    @ApiResponse(responseCode = "404", description = "Role request not found")
+    @ApiResponse(responseCode = "409", description = "Role request already decided")
+    public ResponseEntity<RoleRequestResponse> decide(
+            @Parameter(description = "Role request being decided", example = "22222222-2222-2222-2222-222222222222")
+            @PathVariable UUID id,
+            @Valid @RequestBody RoleRequestDecisionRequest request) {
+        RoleRequestResponse response = roleRequestService.submitDecision(
+                id, request.reviewerId(), request.decision(), request.reason());
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
     }
 
     @GetMapping("/api/role-requests")
