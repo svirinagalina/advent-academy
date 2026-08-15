@@ -1,0 +1,28 @@
+# Central place for *plugin* versions, and other bare version strings that
+# aren't dependency coordinates (like checkstyle's toolVersion). This is a
+# Gradle Version Catalog: auto-detected from this exact path, no
+# settings.gradle wiring needed. Every module's plugins {} block references
+# these via alias(libs.plugins.xyz).
+#
+# Dependency *artifact* versions (implementation/testImplementation
+# coordinates) are centralized separately, in the :platform module
+# (build.gradle uses the java-platform plugin) — a version catalog can't
+# manage those the way a real BOM can, and the project explicitly wants an
+# importable BOM module. See platform/build.gradle and the root README's
+# "Dependency management" section for how the two fit together.
+#
+# No io.spring.dependency-management entry here: that plugin does not
+# participate in Gradle's normal constraint-conflict resolution (confirmed by
+# dependencyInsight — it kept winning over :platform's constraints even with
+# a strictly() version), so it has been removed project-wide. Spring Boot's
+# own BOM now reaches every module exclusively through :platform's
+# `api platform('org.springframework.boot:spring-boot-dependencies:...')`.
+
+[versions]
+spring-boot = "3.4.1"
+spotbugs = "6.1.11"
+checkstyle-tool = "10.12.3"
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spotbugs = { id = "com.github.spotbugs", version.ref = "spotbugs" }

@@ -1,9 +1,8 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.4.1'
-    id 'io.spring.dependency-management' version '1.1.7'
+    alias(libs.plugins.spring.boot)
     id 'checkstyle'
-    id("com.github.spotbugs") version "6.1.11"
+    alias(libs.plugins.spotbugs)
 }
 
 group = 'com.adventacademy'
@@ -23,7 +22,7 @@ configurations {
 }
 
 checkstyle {
-    toolVersion = '10.12.3'
+    toolVersion = libs.versions.checkstyle.tool.get()
     configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
 }
 
@@ -46,6 +45,16 @@ repositories {
 }
 
 dependencies {
+    implementation platform(project(':platform'))
+    // annotationProcessor is a separate root configuration that does not
+    // extend implementation, so the platform must be added to it too, or
+    // managed annotationProcessor-only dependencies (lombok here) resolve
+    // with no version at all.
+    annotationProcessor platform(project(':platform'))
+    // developmentOnly is another root configuration (added by the Boot
+    // plugin itself) that doesn't extend implementation.
+    developmentOnly platform(project(':platform'))
+
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'

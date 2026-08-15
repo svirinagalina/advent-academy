@@ -1,7 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.4.1'
-    id 'io.spring.dependency-management' version '1.1.7'
+    alias(libs.plugins.spring.boot)
     id 'checkstyle'
 }
 
@@ -20,7 +19,7 @@ repositories {
 }
 
 checkstyle {
-    toolVersion = '10.12.3'
+    toolVersion = libs.versions.checkstyle.tool.get()
     configFile = rootProject.file('config/checkstyle/checkstyle.xml')
 }
 
@@ -31,17 +30,23 @@ configurations.checkstyle {
 }
 
 dependencies {
+    implementation platform(project(':platform'))
+    // annotationProcessor doesn't extend implementation, so it needs the
+    // platform too, or spring-boot-configuration-processor below resolves
+    // with no version.
+    annotationProcessor platform(project(':platform'))
+
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-api'
 
     // OpenAPI/Swagger, matching user-service/content-service's version.
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui'
 
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson'
 
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 

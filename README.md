@@ -54,6 +54,62 @@ The technology stack may evolve as the project grows.
 
 ---
 
+## 📦 Dependency management
+
+Every module (`user-service`, `content-service`, `meeting-service`, `api-gateway`) consumes one
+project-wide dependency BOM instead of pinning its own library versions. Two mechanisms, because
+they centralize two different things Gradle resolves at different times:
+
+- **`platform/build.gradle`** (Gradle's built-in `java-platform` plugin) — the actual BOM.
+  Manages *dependency artifact* versions: Camunda, Springdoc, JWT, CommonMark, OWASP HTML
+  Sanitizer, p6spy, Testcontainers, ArchUnit, WireMock, plus Spring Boot's and Spring Cloud's own
+  BOMs (imported via `api platform(...)`). Every module depends on it with
+  `implementation platform(project(':platform'))`.
+- **`gradle/libs.versions.toml`** (Gradle Version Catalog) — manages *plugin* versions
+  (`org.springframework.boot`, `com.github.spotbugs`) and the checkstyle tool version. A
+  `java-platform` BOM can't manage plugin versions at all — they're resolved before the
+  dependency graph exists — so this is a separate, complementary file.
+
+**`io.spring.dependency-management` is deliberately not used anywhere in this project.** It
+doesn't participate in Gradle's normal constraint-conflict resolution: testing showed it
+overriding `:platform`'s versions even with a `strictly()` constraint, which is what caused the
+Testcontainers version split this BOM was introduced to fix in the first place. Every module
+keeps only the `org.springframework.boot` plugin (needed for `bootJar`/`bootRun`); Spring Boot's
+own BOM reaches every module exclusively through `:platform`.
+
+### Adding a new managed dependency
+
+Add a constraint to `platform/build.gradle`'s `constraints { }` block:
+
+```groovy
+constraints {
+    api 'some.group:some-artifact:1.2.3'
+}
+```
+
+Then reference it **unversioned** in the consuming module's `dependencies { }` block:
+`implementation 'some.group:some-artifact'`.
+
+### Bumping an existing version
+
+Change it once, in `platform/build.gradle` — never in a service's own `build.gradle`. Confirm
+the new version actually took effect:
+
+```bash
+./gradlew :<module>:dependencyInsight --dependency <group>:<artifact>
+```
+
+### A Gradle quirk worth knowing
+
+`annotationProcessor` and `developmentOnly` are separate root configurations that do **not**
+extend `implementation` — a module using either one (for Lombok, the Boot configuration
+processor, or spring-boot-devtools) needs its own explicit
+`annotationProcessor platform(project(':platform'))` / `developmentOnly platform(project(':platform'))`
+line, or those dependencies resolve with no version at all. Every module that uses either
+configuration already has this; keep it in mind when adding a new one.
+
+---
+
 ## 🚀 Getting Started
 
 ### Prerequisites
