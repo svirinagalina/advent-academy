@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Markdown Preview — Advent Academy</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 1100px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    line-height: 1.5;
+  }
+  h1 { font-size: 1.4rem; }
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 1rem;
+    border: 1px solid #8884;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+  .file-meta { font-size: 0.9rem; opacity: 0.8; }
+  button {
+    padding: 0.5rem 1.2rem;
+    border-radius: 6px;
+    border: 1px solid #8884;
+    cursor: pointer;
+    font-size: 0.95rem;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .error {
+    color: #b00020;
+    background: #b0002014;
+    border: 1px solid #b0002044;
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    white-space: pre-wrap;
+  }
+  .columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .panel {
+    border: 1px solid #8884;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .panel h2 {
+    margin: 0;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid #8884;
+    opacity: 0.75;
+  }
+  .panel pre {
+    margin: 0;
+    padding: 1rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 420px;
+    overflow: auto;
+    font-size: 0.85rem;
+  }
+  .preview-wrap { grid-column: 1 / -1; }
+  iframe {
+    width: 100%;
+    height: 420px;
+    border: 0;
+  }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<h1>Markdown → HTML preview</h1>
+<p class="file-meta">Выберите .md или .markdown файл — предпросмотр не сохраняется в базу данных.</p>
+
+<div class="toolbar">
+  <input id="fileInput" type="file" accept=".md,.markdown">
+  <span id="fileMeta" class="file-meta"></span>
+  <button id="previewBtn" disabled>Preview</button>
+</div>
+
+<div id="errorBox" class="error hidden"></div>
+
+<div id="resultBox" class="columns hidden">
+  <div class="panel">
+    <h2>Исходный Markdown</h2>
+    <pre id="markdownOut"></pre>
+  </div>
+  <div class="panel">
+    <h2>Сгенерированный HTML</h2>
+    <pre id="htmlOut"></pre>
+  </div>
+  <div class="panel preview-wrap">
+    <h2>Визуальный preview</h2>
+    <iframe id="previewFrame" sandbox=""></iframe>
+  </div>
+</div>
+
+<script>
+  const fileInput = document.getElementById('fileInput');
+  const fileMeta = document.getElementById('fileMeta');
+  const previewBtn = document.getElementById('previewBtn');
+  const errorBox = document.getElementById('errorBox');
+  const resultBox = document.getElementById('resultBox');
+  const markdownOut = document.getElementById('markdownOut');
+  const htmlOut = document.getElementById('htmlOut');
+  const previewFrame = document.getElementById('previewFrame');
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  function showError(message) {
+    errorBox.textContent = message;
+    errorBox.classList.remove('hidden');
+    resultBox.classList.add('hidden');
+  }
+
+  function clearError() {
+    errorBox.classList.add('hidden');
+    errorBox.textContent = '';
+  }
+
+  fileInput.addEventListener('change', () => {
+    clearError();
+    resultBox.classList.add('hidden');
+    const file = fileInput.files[0];
+    if (!file) {
+      fileMeta.textContent = '';
+      previewBtn.disabled = true;
+      return;
+    }
+    fileMeta.textContent = `${file.name} · ${formatSize(file.size)}`;
+    previewBtn.disabled = false;
+  });
+
+  previewBtn.addEventListener('click', async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    clearError();
+    previewBtn.disabled = true;
+    previewBtn.textContent = 'Rendering…';
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/markdown/preview', {
+        method: 'POST',
+        body: formData
+      });
+
+      let body;
+      try {
+        body = await response.json();
+      } catch (parseError) {
+        body = null;
+      }
+
+      if (!response.ok) {
+        const message = body && body.message ? body.message : `Неизвестная ошибка (HTTP ${response.status})`;
+        if (response.status === 400) {
+          showError(`Некорректный файл: ${message}`);
+        } else if (response.status === 422) {
+          showError(`Не удалось отрендерить Markdown: ${message}`);
+        } else {
+          showError(`Ошибка сервера: ${message}`);
+        }
+        return;
+      }
+
+      markdownOut.textContent = body.markdown;
+      htmlOut.textContent = body.html;
+      previewFrame.srcdoc = body.html;
+      resultBox.classList.remove('hidden');
+    } catch (networkError) {
+      showError('Не удалось связаться с сервером. Проверьте, что content-service запущен.');
+    } finally {
+      previewBtn.disabled = false;
+      previewBtn.textContent = 'Preview';
+    }
+  });
+</script>
+</body>
+</html>

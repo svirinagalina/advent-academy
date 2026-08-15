@@ -139,6 +139,23 @@ The dependency-free meeting UI, REST room API, and WebSocket signaling endpoint 
 Open http://localhost:8084 in two browser tabs. Detailed architecture, protocol, testing, and
 troubleshooting guidance is in [docs/meeting-service.md](docs/meeting-service.md).
 
+### Run the Markdown preview UI
+
+`content-service` serves a dependency-free static page for checking how a Markdown file renders
+to sanitized HTML before it's ever uploaded — nothing typed or previewed there is saved to the
+database:
+
+```bash
+docker compose up -d postgres
+./gradlew :content-service:bootRun --args='--spring.profiles.active=local'
+```
+
+Open http://localhost:8081/markdown-preview/ directly, or
+http://localhost:8090/markdown-preview/ through `api-gateway` (`./gradlew :api-gateway:bootRun`)
+once all backing services are up. The page posts to `POST /api/markdown/preview`, which reuses
+the same file-size/UTF-8/extension validation and OWASP HTML sanitization as the real lesson
+content upload endpoint.
+
 ### Run user-service with Camunda 8
 
 Create local environment settings and start PostgreSQL, Zeebe, Operate, and Tasklist:
