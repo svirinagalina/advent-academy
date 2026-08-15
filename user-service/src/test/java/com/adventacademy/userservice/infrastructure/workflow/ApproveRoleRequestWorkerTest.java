@@ -2,6 +2,9 @@ package com.adventacademy.userservice.infrastructure.workflow;
 
 import com.adventacademy.userservice.application.service.role.AssignRoleService;
 import com.adventacademy.userservice.application.service.role.RoleRequestService;
+import com.adventacademy.userservice.domain.exception.RoleNotFoundException;
+import com.adventacademy.userservice.domain.exception.UserNotFoundException;
+import com.adventacademy.userservice.domain.model.RoleRequestStatus;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +19,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -52,6 +56,8 @@ class ApproveRoleRequestWorkerTest {
                 "userId", userId.toString(),
                 "requestedRoleId", requestedRoleId.toString(),
                 "reviewerId", reviewerId.toString()));
+        // Not every test reaches this call (e.g. malformed-variables fails before it).
+        lenient().when(roleRequestService.currentStatus(roleRequestId)).thenReturn(RoleRequestStatus.PENDING);
     }
 
     @Test
@@ -87,5 +93,66 @@ class ApproveRoleRequestWorkerTest {
 
         verify(roleRequestService).markFailed(roleRequestId, "role no longer exists");
         verify(client.newFailCommand(555L)).retries(0);
+    }
+
+    @Test
+    void onMissingUserFailsImmediatelyEvenWithRetriesRemaining() {
+        // getRetries() deliberately unstubbed: a permanent failure must not even look at it.
+        when(assignRoleService.assignRoleToUser(any(), any(), any(), anyString()))
+                .thenThrow(new UserNotFoundException(userId));
+
+        worker.handle(client, job);
+
+        verify(roleRequestService).markFailed(roleRequestId, "User not found with id: " + userId);
+        verify(client.newFailCommand(555L)).retries(0);
+    }
+
+    @Test
+    void onMissingRoleFailsImmediatelyEvenWithRetriesRemaining() {
+        when(assignRoleService.assignRoleToUser(any(), any(), any(), anyString()))
+                .thenThrow(new RoleNotFoundException(requestedRoleId));
+
+        worker.handle(client, job);
+
+        verify(roleRequestService).markFailed(roleRequestId, "Role not found with id: " + requestedRoleId);
+        verify(client.newFailCommand(555L)).retries(0);
+    }
+
+    @Test
+    void redeliveredJobForAlreadyApprovedRequestCompletesWithoutReassigningRole() {
+        when(roleRequestService.currentStatus(roleRequestId)).thenReturn(RoleRequestStatus.APPROVED);
+
+        worker.handle(client, job);
+
+        verify(assignRoleService, never()).assignRoleToUser(any(), any(), any(), anyString());
+        verify(roleRequestService, never()).markApproved(any(), any());
+        verify(client).newCompleteCommand(555L);
+    }
+
+    @Test
+    void wrongTerminalStateFailsWithoutEverTouchingRoleAssignment() {
+        when(roleRequestService.currentStatus(roleRequestId)).thenReturn(RoleRequestStatus.REJECTED);
+
+        worker.handle(client, job);
+
+        verify(assignRoleService, never()).assignRoleToUser(any(), any(), any(), anyString());
+        verify(roleRequestService, never()).markApproved(any(), any());
+        verify(roleRequestService).markFailed(any(), anyString());
+        verify(client.newFailCommand(555L)).retries(0);
+    }
+
+    @Test
+    void onMalformedJobVariablesFailsJobImmediatelyWithoutMarkingAnyRequestFailed() {
+        when(job.getVariablesAsMap()).thenReturn(Map.of(
+                "roleRequestId", "not-a-uuid",
+                "userId", userId.toString(),
+                "requestedRoleId", requestedRoleId.toString(),
+                "reviewerId", reviewerId.toString()));
+
+        worker.handle(client, job);
+
+        verify(roleRequestService, never()).markFailed(any(), anyString());
+        verify(client.newFailCommand(555L)).retries(0);
+        verify(client, never()).newCompleteCommand(555L);
     }
 }

@@ -12,6 +12,7 @@ import com.adventacademy.userservice.domain.model.AuditEventType;
 import com.adventacademy.userservice.domain.model.AuditResult;
 import com.adventacademy.userservice.domain.model.RoleRequest;
 import com.adventacademy.userservice.domain.model.RoleRequestDecision;
+import com.adventacademy.userservice.domain.model.RoleRequestStatus;
 import com.adventacademy.userservice.domain.pagination.PageRequest;
 import com.adventacademy.userservice.domain.pagination.PageResult;
 import com.adventacademy.userservice.domain.pagination.Sort;
@@ -100,6 +101,21 @@ public class RoleRequestService {
     }
 
     /**
+     * Read-only status check for the job workers, so a worker can decide whether
+     * to proceed (PENDING), skip as an idempotent redelivery (already in its own
+     * target state), or refuse before causing any side effect (any other
+     * terminal state) — checked <em>before</em> touching {@code AssignRoleService},
+     * not after, so a wrongly-routed job can never leave a role granted for a
+     * request that ends up FAILED.
+     */
+    @Transactional(readOnly = true)
+    public RoleRequestStatus currentStatus(UUID roleRequestId) {
+        return roleRequestRepository.findById(roleRequestId)
+                .orElseThrow(() -> new RoleRequestNotFoundException(roleRequestId))
+                .getStatus();
+    }
+
+    /**
      * Admin entry point: signals the decision to Camunda by completing the pending
      * review user task. The actual {@code APPROVED}/{@code REJECTED} transition is
      * applied asynchronously by the corresponding job worker once the process
@@ -119,12 +135,17 @@ public class RoleRequestService {
 
     /**
      * Called by {@code ApproveRoleRequestWorker} after the role has already been
-     * assigned to the user.
+     * assigned to the user. Idempotent: a redelivered job for a request already
+     * APPROVED is a silent no-op, not a failure — any other non-PENDING state is a
+     * genuine anomaly and still throws via {@link RoleRequest#approve}.
      */
     @Transactional
     public void markApproved(UUID roleRequestId, UUID reviewerId) {
         RoleRequest roleRequest = roleRequestRepository.findById(roleRequestId)
                 .orElseThrow(() -> new RoleRequestNotFoundException(roleRequestId));
+        if (roleRequest.getStatus() == RoleRequestStatus.APPROVED) {
+            return;
+        }
         LocalDateTime now = LocalDateTime.now(clock);
         roleRequest.approve(reviewerId, now);
         roleRequestRepository.save(roleRequest);
@@ -147,11 +168,15 @@ public class RoleRequestService {
 
     /**
      * Called by {@code RejectRoleRequestWorker}. Never changes the user's roles.
+     * Idempotent the same way {@link #markApproved} is.
      */
     @Transactional
     public void markRejected(UUID roleRequestId, UUID reviewerId, String reason) {
         RoleRequest roleRequest = roleRequestRepository.findById(roleRequestId)
                 .orElseThrow(() -> new RoleRequestNotFoundException(roleRequestId));
+        if (roleRequest.getStatus() == RoleRequestStatus.REJECTED) {
+            return;
+        }
         LocalDateTime now = LocalDateTime.now(clock);
         roleRequest.reject(reviewerId, reason, now);
         roleRequestRepository.save(roleRequest);
@@ -178,13 +203,17 @@ public class RoleRequestService {
     }
 
     /**
-     * Called by either worker once the job's retries are exhausted (a clear
-     * terminal failure), never on the first retry attempt.
+     * Called by either worker for a permanent failure (missing user/role, wrong
+     * request state) or once retries are exhausted for a transient one. Idempotent
+     * the same way {@link #markApproved} is.
      */
     @Transactional
     public void markFailed(UUID roleRequestId, String reason) {
         RoleRequest roleRequest = roleRequestRepository.findById(roleRequestId)
                 .orElseThrow(() -> new RoleRequestNotFoundException(roleRequestId));
+        if (roleRequest.getStatus() == RoleRequestStatus.FAILED) {
+            return;
+        }
         LocalDateTime now = LocalDateTime.now(clock);
         roleRequest.markFailed(reason, now);
         roleRequestRepository.save(roleRequest);

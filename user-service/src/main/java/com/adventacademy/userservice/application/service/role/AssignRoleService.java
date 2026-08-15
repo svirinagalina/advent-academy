@@ -39,12 +39,23 @@ public class AssignRoleService {
         this.clock = clock;
     }
 
+    /**
+     * Idempotent: safe to call more than once for the same user/role pair (e.g. a
+     * redelivered Camunda job). {@code Role} has no {@code equals}/{@code hashCode}
+     * override and {@code user_roles} has a composite primary key, so a second
+     * {@code user.addRole(role)} with a freshly-loaded entity is a genuine duplicate
+     * insert, not a harmless Set no-op — checking {@code hasRole} first avoids it.
+     */
     @Transactional
     public UserResponse assignRoleToUser(UUID userId, UUID roleId, String ipAddress, String userAgent) {
         User user = userRepository.findByIdWithRoles(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new RoleNotFoundException(roleId));
+
+        if (user.hasRole(role.getName())) {
+            return mapToUserResponse(user);
+        }
 
         user.addRole(role);
         User savedUser = userRepository.save(user);
