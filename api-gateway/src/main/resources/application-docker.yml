@@ -1,0 +1,7 @@
+# Defaults for running inside docker-compose's advent-network, where each backend's
+# container/service name is its DNS alias. Overridable by a real environment variable
+# of the same name, same as the local profile.
+USER_SERVICE_URL: http://user-service:8080
+CONTENT_SERVICE_URL: http://content-service:8081
+MEETING_SERVICE_URL: http://meeting-service:8084
+MEETING_SERVICE_WS_URL: ws://meeting-service:8084
