@@ -1,11 +1,12 @@
 package com.adventacademy.meetingservice.application.security;
 
+import com.adventacademy.meetingservice.application.service.RoomClosedListener;
 import com.adventacademy.meetingservice.application.service.RoomService;
 import com.adventacademy.meetingservice.domain.exception.MeetingAccessDeniedException;
 import com.adventacademy.meetingservice.domain.exception.RoomNotFoundException;
 import com.adventacademy.meetingservice.domain.model.MeetingRole;
-import com.adventacademy.meetingservice.domain.model.RoomSnapshot;
 import com.adventacademy.meetingservice.domain.model.RoomId;
+import com.adventacademy.meetingservice.domain.model.RoomSnapshot;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -15,7 +16,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Service
-public class MeetingAccessService {
+public class MeetingAccessService implements RoomClosedListener {
 
     private final RoomService roomService;
     private final MeetingCapabilityService capabilityService;
@@ -29,6 +30,7 @@ public class MeetingAccessService {
         this.roomService = roomService;
         this.capabilityService = capabilityService;
         this.rateLimiter = rateLimiter;
+        roomService.registerRoomClosedListener(this);
     }
 
     public synchronized RoomSnapshot createPrivateMeeting(UUID hostId) {
@@ -75,8 +77,19 @@ public class MeetingAccessService {
         return role;
     }
 
+    @Override
+    public synchronized void roomClosed(String roomId) {
+        policies.remove(roomId);
+        capabilityService.revokeRoom(roomId);
+    }
+
+    synchronized int policyCount() {
+        return policies.size();
+    }
+
     private AccessPolicy requirePolicy(String roomId) {
         new RoomId(roomId);
+        roomService.getRoom(roomId);
         final AccessPolicy policy = policies.get(roomId);
         if (policy == null) {
             throw new RoomNotFoundException(roomId);

@@ -74,28 +74,24 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage textMessage) {
-        synchronized (session) {
-            try {
-                final SignalMessage message = parseAndValidate(textMessage);
-                routeMessage(session, message);
-            } catch (MeetingException | IllegalArgumentException exception) {
-                sendFailure(session, exception);
-            } catch (JsonProcessingException exception) {
-                sendError(session, "INVALID_MESSAGE", "Malformed JSON signaling message");
-            } catch (RuntimeException exception) {
-                logger.error("Unexpected meeting signaling failure errorType={}",
-                        exception.getClass().getSimpleName());
-                sendError(session, "INTERNAL_SIGNALING_ERROR", "Unable to process signaling message");
-            }
+        try {
+            final SignalMessage message = parseAndValidate(textMessage);
+            routeMessage(session, message);
+        } catch (MeetingException | IllegalArgumentException exception) {
+            sendFailure(session, exception);
+        } catch (JsonProcessingException exception) {
+            sendError(session, "INVALID_MESSAGE", "Malformed JSON signaling message");
+        } catch (RuntimeException exception) {
+            logger.error("Unexpected meeting signaling failure errorType={}",
+                    exception.getClass().getSimpleName());
+            sendError(session, "INTERNAL_SIGNALING_ERROR", "Unable to process signaling message");
         }
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        synchronized (session) {
-            sessions.remove(session.getId(), session);
-            cleanupBinding(session.getId(), true);
-        }
+        sessions.remove(session.getId(), session);
+        cleanupBinding(session.getId(), true);
         logger.info("Meeting WebSocket disconnected closeCode={}", status.getCode());
     }
 
@@ -115,17 +111,17 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
                 cleanupBinding(binding.sessionId(), true);
                 return;
             }
-            synchronized (session) {
-                sendError(session, "ACCESS_REVOKED", "Meeting access was revoked by the host");
-                sessions.remove(binding.sessionId(), session);
-                cleanupBinding(binding.sessionId(), true);
-                try {
+            sendError(session, "ACCESS_REVOKED", "Meeting access was revoked by the host");
+            sessions.remove(binding.sessionId(), session);
+            cleanupBinding(binding.sessionId(), true);
+            try {
+                synchronized (session) {
                     if (session.isOpen()) {
                         session.close(CloseStatus.POLICY_VIOLATION);
                     }
-                } catch (IOException exception) {
-                    logger.warn("Unable to close revoked meeting WebSocket");
                 }
+            } catch (IOException exception) {
+                logger.warn("Unable to close revoked meeting WebSocket");
             }
         });
     }

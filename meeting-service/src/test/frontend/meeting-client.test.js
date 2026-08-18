@@ -230,6 +230,10 @@ test("requests processed local audio and video then sends a server-identity JOIN
         stream,
         fetchImpl: async (url, options) => {
             requests.push({url, options});
+            if (url.endsWith("/capabilities")) {
+                assert.notEqual(mediaConstraints, undefined);
+                assert.equal(FakeWebSocket.instances.at(-1)?.readyState, 1);
+            }
             return {
                 ok: true,
                 json: async () => url.endsWith("/capabilities")

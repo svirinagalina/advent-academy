@@ -84,7 +84,6 @@ export class MeetingClient {
         this.setState(STATES.REQUESTING_MEDIA);
 
         try {
-            const capability = await this.issueCapability();
             await this.loadConfiguration();
             this.localStream = await this.mediaDevices.getUserMedia({
                 video: true,
@@ -96,6 +95,7 @@ export class MeetingClient {
             });
             this.onLocalStream(this.localStream);
             await this.openSignalingSocket();
+            const capability = await this.issueCapability();
             this.send("JOIN", null, null, capability);
         } catch (error) {
             this.cleanupAll();

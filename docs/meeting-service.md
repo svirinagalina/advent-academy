@@ -72,13 +72,16 @@ sequenceDiagram
     A->>S: POST room with access JWT
     S-->>A: 201 roomId, WAITING
     A->>S: PUT member B
+    A->>A: getUserMedia and show local stream
+    A->>S: Open WebSocket
     A->>S: POST one-time capability
     S-->>A: capability, expiry, HOST
-    A->>A: getUserMedia and show local stream
     A->>S: WebSocket JOIN with capability
     S-->>A: JOINED (no peer, WAITING)
-    B->>S: POST one-time capability with access JWT
     B->>B: getUserMedia and show local stream
+    B->>S: Open WebSocket
+    B->>S: POST one-time capability with access JWT
+    S-->>B: capability, expiry, PARTICIPANT
     B->>S: WebSocket JOIN with capability
     S-->>B: JOINED (peerId=A, ACTIVE)
     S-->>A: PARTICIPANT_JOINED (B, initiator=true)
@@ -211,7 +214,8 @@ Connect to the same-origin endpoint:
 ws://localhost:8084/ws/meetings
 ```
 
-The browser obtains a capability over authenticated REST, opens the WebSocket, and sends `JOIN`.
+The browser obtains media permission, opens the WebSocket, obtains a fresh capability over
+authenticated REST, and immediately sends `JOIN`.
 Protocol version
 1 uses strict JSON objects: missing fields, unknown fields, client-provided server fields, and
 fields belonging to another message type are rejected. A successful join derives an opaque
@@ -317,18 +321,20 @@ by the signaling handler.
 
 1. The browser loads the externalized ICE-server list.
 2. `getUserMedia({video: true, audio: true})` obtains and displays the local stream.
-3. A peer connection is created when a peer appears or a valid signal from the selected peer arrives.
-4. Every local track is added with `addTrack` and the remote stream is attached from `ontrack`.
-5. The existing first participant creates the offer after `PARTICIPANT_JOINED`.
-6. The second participant applies the offer, creates an answer, and returns it through signaling.
-7. Both clients exchange ICE candidates. Candidates received before `remoteDescription` are
+3. The browser opens the signaling WebSocket, obtains a fresh short-lived capability, and sends
+   `JOIN` immediately so a permission prompt cannot consume the capability lifetime.
+4. A peer connection is created when a peer appears or a valid signal from the selected peer arrives.
+5. Every local track is added with `addTrack` and the remote stream is attached from `ontrack`.
+6. The existing first participant creates the offer after `PARTICIPANT_JOINED`.
+7. The second participant applies the offer, creates an answer, and returns it through signaling.
+8. Both clients exchange ICE candidates. Candidates received before `remoteDescription` are
    deduplicated, queued up to 128 entries, and flushed after the remote offer or answer is applied.
    The recent-candidate set is bounded at 512 entries.
-8. Microphone and camera buttons change the matching `MediaStreamTrack.enabled` flag.
-9. Duplicate descriptions and candidates, stale peer signals, and the non-selected peer's offer are
+9. Microphone and camera buttons change the matching `MediaStreamTrack.enabled` flag.
+10. Duplicate descriptions and candidates, stale peer signals, and the non-selected peer's offer are
    ignored or rejected without mutating the active negotiation. Only the selected first
    participant can initiate a renegotiation offer.
-10. Leave closes the peer connection and WebSocket, stops local tracks, clears both video elements,
+11. Leave closes the peer connection and WebSocket, stops local tracks, clears both video elements,
     and empties bounded protocol state. An unexpected socket close performs the same local cleanup.
 
 The UI reports distinct `Waiting`, `Connecting`, `Connected`, `Reconnecting`, `Degraded`,

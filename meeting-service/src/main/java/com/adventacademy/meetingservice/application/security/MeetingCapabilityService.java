@@ -71,6 +71,10 @@ public class MeetingCapabilityService {
         }
     }
 
+    public synchronized void revokeRoom(String roomId) {
+        capabilities.values().removeIf(capability -> capability.roomId().equals(roomId));
+    }
+
     synchronized int activeCapabilityCount() {
         removeExpired();
         return capabilities.size();

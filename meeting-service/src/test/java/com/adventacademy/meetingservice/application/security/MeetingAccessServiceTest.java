@@ -1,8 +1,9 @@
 package com.adventacademy.meetingservice.application.security;
 
 import com.adventacademy.meetingservice.application.service.RoomService;
-import com.adventacademy.meetingservice.domain.exception.MeetingAccessDeniedException;
 import com.adventacademy.meetingservice.domain.exception.InvalidCapabilityException;
+import com.adventacademy.meetingservice.domain.exception.MeetingAccessDeniedException;
+import com.adventacademy.meetingservice.domain.exception.RoomNotFoundException;
 import com.adventacademy.meetingservice.domain.model.MeetingRole;
 import com.adventacademy.meetingservice.domain.model.RoomSnapshot;
 import com.adventacademy.meetingservice.infrastructure.config.MeetingProperties;
@@ -24,13 +25,15 @@ class MeetingAccessServiceTest {
 
     private MeetingAccessService accessService;
     private MeetingCapabilityService capabilityService;
+    private RoomService roomService;
 
     @BeforeEach
     void setUp() {
         final MeetingProperties properties = new MeetingProperties();
         capabilityService = new MeetingCapabilityService(CLOCK, properties);
+        roomService = new RoomService(CLOCK);
         accessService = new MeetingAccessService(
-                new RoomService(CLOCK),
+                roomService,
                 capabilityService,
                 new MeetingRateLimiter(CLOCK, properties));
     }
@@ -68,5 +71,24 @@ class MeetingAccessServiceTest {
                 .isInstanceOf(InvalidCapabilityException.class);
         assertThatThrownBy(() -> accessService.issueCapability(room.roomId().value(), memberId))
                 .isInstanceOf(MeetingAccessDeniedException.class);
+    }
+
+    @Test
+    void closingRoomRemovesPolicyAndRevokesCapabilities() {
+        final UUID hostId = UUID.randomUUID();
+        final UUID memberId = UUID.randomUUID();
+        final RoomSnapshot room = accessService.createPrivateMeeting(hostId);
+        accessService.addMember(room.roomId().value(), hostId, memberId);
+        final IssuedCapability issued = accessService.issueCapability(room.roomId().value(), memberId);
+        roomService.join(room.roomId().value(), "participant-host");
+
+        roomService.leave(room.roomId().value(), "participant-host");
+
+        assertThat(accessService.policyCount()).isZero();
+        assertThat(capabilityService.activeCapabilityCount()).isZero();
+        assertThatThrownBy(() -> accessService.addMember(room.roomId().value(), hostId, UUID.randomUUID()))
+                .isInstanceOf(RoomNotFoundException.class);
+        assertThatThrownBy(() -> capabilityService.consume(issued.token(), room.roomId().value()))
+                .isInstanceOf(InvalidCapabilityException.class);
     }
 }

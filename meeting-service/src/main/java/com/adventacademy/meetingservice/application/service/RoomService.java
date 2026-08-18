@@ -10,6 +10,7 @@ import com.adventacademy.meetingservice.domain.model.RoomStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -18,9 +19,14 @@ public class RoomService {
 
     private final ConcurrentMap<RoomId, MeetingRoom> rooms = new ConcurrentHashMap<>();
     private final Clock clock;
+    private volatile RoomClosedListener roomClosedListener = roomId -> { };
 
     public RoomService(Clock clock) {
         this.clock = clock;
+    }
+
+    public void registerRoomClosedListener(RoomClosedListener listener) {
+        roomClosedListener = Objects.requireNonNull(listener);
     }
 
     public RoomSnapshot createRoom() {
@@ -48,8 +54,8 @@ public class RoomService {
         final MeetingRoom room = getExistingRoom(roomId);
         room.leave(new ParticipantId(rawParticipantId));
         final RoomSnapshot snapshot = room.snapshot();
-        if (snapshot.status() == RoomStatus.CLOSED) {
-            rooms.remove(roomId, room);
+        if (snapshot.status() == RoomStatus.CLOSED && rooms.remove(roomId, room)) {
+            roomClosedListener.roomClosed(roomId.value());
         }
         return snapshot;
     }

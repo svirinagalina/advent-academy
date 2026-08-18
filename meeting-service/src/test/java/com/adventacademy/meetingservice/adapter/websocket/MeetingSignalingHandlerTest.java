@@ -4,6 +4,8 @@ import com.adventacademy.meetingservice.application.service.MeetingSessionRegist
 import com.adventacademy.meetingservice.application.service.RoomService;
 import com.adventacademy.meetingservice.application.security.MeetingCapabilityService;
 import com.adventacademy.meetingservice.application.security.MeetingRateLimiter;
+import com.adventacademy.meetingservice.application.session.MeetingSession;
+import com.adventacademy.meetingservice.application.session.SignalRoute;
 import com.adventacademy.meetingservice.domain.model.MeetingRole;
 import com.adventacademy.meetingservice.domain.model.RoomSnapshot;
 import com.adventacademy.meetingservice.infrastructure.config.MeetingProperties;
@@ -24,6 +26,11 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -83,6 +90,79 @@ class MeetingSignalingHandlerTest {
         send(first, signal("ICE_CANDIDATE", room.roomId().value(), secondId,
                 "{\"candidate\":\"candidate-value\",\"sdpMid\":\"0\",\"sdpMLineIndex\":0}"));
         assertSignal(second, "ICE_CANDIDATE", firstId, "candidate", "candidate-value");
+    }
+
+    @Test
+    void concurrentOppositeDirectionSignalsDoNotDeadlock() throws Exception {
+        final MeetingSessionRegistry concurrentRegistry = mock(MeetingSessionRegistry.class);
+        final MeetingSession firstBinding = new MeetingSession(
+                "session-a", "participant-a", "room-12345", new UUID(0, 1), MeetingRole.HOST);
+        final MeetingSession secondBinding = new MeetingSession(
+                "session-b", "participant-b", "room-12345", new UUID(0, 2), MeetingRole.PARTICIPANT);
+        final MeetingSignalingHandler concurrentHandler = concurrentHandler(
+                concurrentRegistry, firstBinding, secondBinding);
+        final WebSocketSession first = mock(WebSocketSession.class);
+        final WebSocketSession second = mock(WebSocketSession.class);
+        when(first.getId()).thenReturn("session-a");
+        when(second.getId()).thenReturn("session-b");
+        when(first.isOpen()).thenReturn(true);
+        when(second.isOpen()).thenReturn(true);
+        concurrentHandler.afterConnectionEstablished(first);
+        concurrentHandler.afterConnectionEstablished(second);
+        final ExecutorService executor = Executors.newFixedThreadPool(2, runnable -> {
+            final Thread thread = new Thread(runnable);
+            thread.setDaemon(true);
+            return thread;
+        });
+
+        try {
+            final Future<?> firstSignal = executor.submit(() -> concurrentHandler.handleTextMessage(
+                    first,
+                    new TextMessage(signal("ICE_CANDIDATE", "room-12345", "participant-b",
+                            "{\"candidate\":\"candidate-a\",\"sdpMid\":\"0\",\"sdpMLineIndex\":0}"))));
+            final Future<?> secondSignal = executor.submit(() -> concurrentHandler.handleTextMessage(
+                    second,
+                    new TextMessage(signal("ICE_CANDIDATE", "room-12345", "participant-a",
+                            "{\"candidate\":\"candidate-b\",\"sdpMid\":\"0\",\"sdpMLineIndex\":0}"))));
+
+            firstSignal.get(3, TimeUnit.SECONDS);
+            secondSignal.get(3, TimeUnit.SECONDS);
+        } finally {
+            executor.shutdownNow();
+        }
+
+        verify(first).sendMessage(any());
+        verify(second).sendMessage(any());
+    }
+
+    private MeetingSignalingHandler concurrentHandler(
+            MeetingSessionRegistry concurrentRegistry,
+            MeetingSession firstBinding,
+            MeetingSession secondBinding) throws Exception {
+        final CountDownLatch validationsReady = new CountDownLatch(2);
+        final SignalMessageValidator concurrentValidator = mock(SignalMessageValidator.class);
+        org.mockito.Mockito.doAnswer(invocation -> {
+            validationsReady.countDown();
+            if (!validationsReady.await(2, TimeUnit.SECONDS)) {
+                throw new AssertionError("Concurrent signal validation was not reached");
+            }
+            return null;
+        }).when(concurrentValidator).validate(any(), any());
+        when(concurrentRegistry.requireRoute(any(), any(), any(), any())).thenAnswer(invocation -> {
+            if ("session-a".equals(invocation.getArgument(0))) {
+                return new SignalRoute(firstBinding, secondBinding);
+            }
+            return new SignalRoute(secondBinding, firstBinding);
+        });
+        final MeetingProperties properties = new MeetingProperties();
+        return new MeetingSignalingHandler(
+                concurrentRegistry,
+                concurrentValidator,
+                objectMapper,
+                CLOCK,
+                properties,
+                capabilityService,
+                new MeetingRateLimiter(CLOCK, properties));
     }
 
     @Test
