@@ -31,6 +31,12 @@ class MeetingControllerIT {
     private final UUID hostId = UUID.randomUUID();
 
     @Test
+    void servesLocalMediaProcessingAssetsWithoutAuthentication() throws Exception {
+        mockMvc.perform(get("/vendor/mediapipe/selfie_segmentation.js"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void createsRoomWithStableExternalContract() throws Exception {
         mockMvc.perform(post("/api/meetings/rooms")
                         .header(HttpHeaders.AUTHORIZATION, bearer(hostId))

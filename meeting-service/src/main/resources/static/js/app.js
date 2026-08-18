@@ -1,4 +1,5 @@
 import {MeetingClient, STATES} from "./meeting-client.js";
+import {VoiceActivityMonitor} from "./media-effects.js";
 
 const elements = {
     createRoom: document.querySelector("#create-room"),
@@ -9,18 +10,30 @@ const elements = {
     copyUrl: document.querySelector("#copy-url"),
     localVideo: document.querySelector("#local-video"),
     remoteVideo: document.querySelector("#remote-video"),
+    localVideoFrame: document.querySelector("#local-video-frame"),
+    remoteVideoFrame: document.querySelector("#remote-video-frame"),
     microphone: document.querySelector("#toggle-microphone"),
     camera: document.querySelector("#toggle-camera"),
+    noiseSuppression: document.querySelector("#toggle-noise-suppression"),
+    backgroundBlur: document.querySelector("#toggle-background-blur"),
     leave: document.querySelector("#leave-room"),
     status: document.querySelector("#connection-status"),
     error: document.querySelector("#error-message")
 };
 
+const voiceActivity = new VoiceActivityMonitor({
+    onSpeakingChange: (label, speaking) => {
+        const frame = label === "local" ? elements.localVideoFrame : elements.remoteVideoFrame;
+        frame.classList.toggle("speaking", speaking);
+        frame.dataset.speaking = String(speaking);
+    }
+});
+
 const client = new MeetingClient({
     onStateChange: updateState,
     onError: showError,
-    onLocalStream: stream => setVideoStream(elements.localVideo, stream),
-    onRemoteStream: stream => setVideoStream(elements.remoteVideo, stream)
+    onLocalStream: stream => setVideoStream("local", elements.localVideo, stream),
+    onRemoteStream: stream => setVideoStream("remote", elements.remoteVideo, stream)
 });
 
 const roomFromUrl = new URLSearchParams(window.location.search).get("room");
@@ -88,8 +101,44 @@ elements.camera.addEventListener("click", () => {
     elements.camera.setAttribute("aria-pressed", String(!enabled));
 });
 
-elements.leave.addEventListener("click", () => client.leave());
-window.addEventListener("beforeunload", () => client.leave());
+elements.noiseSuppression.addEventListener("click", async () => {
+    const requested = elements.noiseSuppression.getAttribute("aria-pressed") !== "true";
+    elements.noiseSuppression.disabled = true;
+    clearError();
+    try {
+        const enabled = await client.setNoiseSuppression(requested);
+        setToggleState(elements.noiseSuppression, enabled, "Noise suppression");
+    } catch (error) {
+        showError(error.message || "Unable to change noise suppression");
+    } finally {
+        updateMediaControlAvailability();
+    }
+});
+
+elements.backgroundBlur.addEventListener("click", async () => {
+    const requested = elements.backgroundBlur.getAttribute("aria-pressed") !== "true";
+    elements.backgroundBlur.disabled = true;
+    elements.backgroundBlur.textContent = requested ? "Starting background blur..." : "Stopping background blur...";
+    clearError();
+    try {
+        const enabled = await client.setBackgroundBlur(requested);
+        setToggleState(elements.backgroundBlur, enabled, "Background blur");
+    } catch (error) {
+        setToggleState(elements.backgroundBlur, false, "Background blur");
+        showError(error.message || "Unable to change background blur");
+    } finally {
+        updateMediaControlAvailability();
+    }
+});
+
+elements.leave.addEventListener("click", () => {
+    client.leave();
+    resetMediaEffects();
+});
+window.addEventListener("beforeunload", () => {
+    voiceActivity.stop();
+    client.leave();
+});
 
 function updateState(state) {
     elements.status.textContent = state;
@@ -100,6 +149,7 @@ function updateState(state) {
     elements.leave.disabled = !inMeeting;
     elements.createRoom.disabled = inMeeting;
     elements.joinRoom.disabled = inMeeting;
+    updateMediaControlAvailability();
 }
 
 function showShareUrl(roomId) {
@@ -111,8 +161,16 @@ function showShareUrl(roomId) {
     elements.copyUrl.disabled = false;
 }
 
-function setVideoStream(video, stream) {
+function setVideoStream(label, video, stream) {
     video.srcObject = stream;
+    if (label === "local" && !stream) {
+        resetMediaEffects();
+    }
+    voiceActivity.setStream(label, stream).catch(() => {
+        const frame = label === "local" ? elements.localVideoFrame : elements.remoteVideoFrame;
+        frame.classList.remove("speaking");
+        frame.dataset.speaking = "false";
+    });
     if (stream) {
         video.play().catch(() => {
             if (video.srcObject === stream) {
@@ -120,6 +178,28 @@ function setVideoStream(video, stream) {
             }
         });
     }
+    updateMediaControlAvailability();
+}
+
+function updateMediaControlAvailability() {
+    const available = Boolean(client.localStream)
+        && ![STATES.IDLE, STATES.FAILED, STATES.DISCONNECTED].includes(client.state);
+    elements.noiseSuppression.disabled = !available;
+    elements.backgroundBlur.disabled = !available;
+}
+
+function setToggleState(button, enabled, label) {
+    button.setAttribute("aria-pressed", String(enabled));
+    button.textContent = `${label}: ${enabled ? "On" : "Off"}`;
+}
+
+function resetMediaEffects() {
+    setToggleState(elements.noiseSuppression, true, "Noise suppression");
+    setToggleState(elements.backgroundBlur, false, "Background blur");
+    elements.localVideoFrame.classList.remove("speaking");
+    elements.remoteVideoFrame.classList.remove("speaking");
+    elements.localVideoFrame.dataset.speaking = "false";
+    elements.remoteVideoFrame.dataset.speaking = "false";
 }
 
 function setBusy(busy) {

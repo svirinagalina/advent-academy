@@ -44,11 +44,11 @@
     </section>
 
     <section class="video-grid" aria-label="Meeting videos">
-        <figure>
+        <figure id="local-video-frame" class="video-frame" data-speaking="false">
             <video id="local-video" autoplay muted playsinline></video>
             <figcaption>You</figcaption>
         </figure>
-        <figure>
+        <figure id="remote-video-frame" class="video-frame" data-speaking="false">
             <video id="remote-video" autoplay playsinline></video>
             <figcaption>Other participant</figcaption>
         </figure>
@@ -57,11 +57,18 @@
     <section class="controls" aria-label="Media controls">
         <button id="toggle-microphone" type="button" disabled aria-pressed="false">Mute microphone</button>
         <button id="toggle-camera" type="button" disabled aria-pressed="false">Disable camera</button>
+        <button id="toggle-noise-suppression" type="button" disabled aria-pressed="true">
+            Noise suppression: On
+        </button>
+        <button id="toggle-background-blur" type="button" disabled aria-pressed="false">
+            Background blur: Off
+        </button>
         <button id="leave-room" class="danger" type="button" disabled>Leave call</button>
     </section>
 
     <p class="local-note">Local development only. Use headphones when testing both tabs on one device.</p>
 </main>
+<script src="/vendor/mediapipe/selfie_segmentation.js"></script>
 <script type="module" src="/js/app.js"></script>
 </body>
 </html>

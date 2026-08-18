@@ -24,6 +24,16 @@ test("two isolated browser contexts exchange live audio and video tracks", async
         await expectConnectedWithRemoteMedia(first.page);
         await expectConnectedWithRemoteMedia(second.page);
 
+        await expect.poll(async () => first.page.locator(".video-frame.speaking").count())
+            .toBeGreaterThan(0);
+
+        await first.page.getByRole("button", {name: "Noise suppression: On"}).click();
+        await expect(first.page.getByRole("button", {name: "Noise suppression: Off"})).toBeVisible();
+
+        await first.page.getByRole("button", {name: "Background blur: Off"}).click();
+        await expect(first.page.getByRole("button", {name: "Background blur: On"})).toBeVisible();
+        await expectConnectedWithRemoteMedia(second.page);
+
         await first.page.getByRole("button", {name: "Mute microphone"}).click();
         await expect(first.page.getByRole("button", {name: "Unmute microphone"})).toBeVisible();
         await second.page.getByRole("button", {name: "Disable camera"}).click();

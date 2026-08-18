@@ -28,6 +28,7 @@ public class SecurityConfiguration {
                                 "/index.html",
                                 "/styles.css",
                                 "/js/**",
+                                "/vendor/**",
                                 "/actuator/health",
                                 "/actuator/health/**",
                                 "/actuator/info",

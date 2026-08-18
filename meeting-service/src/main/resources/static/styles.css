@@ -157,6 +157,26 @@ figure {
     border: 1px solid #2c3851;
     border-radius: 1rem;
     background: #050913;
+    transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.video-frame.speaking {
+    border-color: #5cf2a4;
+    box-shadow:
+        0 0 0 3px rgba(92, 242, 164, 0.38),
+        0 0 28px rgba(92, 242, 164, 0.32);
+    transform: translateY(-1px);
+}
+
+.video-frame.speaking figcaption::before {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-right: 0.4rem;
+    border-radius: 50%;
+    background: #5cf2a4;
+    content: "";
+    box-shadow: 0 0 0.65rem rgba(92, 242, 164, 0.8);
 }
 
 video {
@@ -176,6 +196,7 @@ figcaption {
 }
 
 .controls {
+    flex-wrap: wrap;
     justify-content: center;
     margin-top: 1rem;
 }

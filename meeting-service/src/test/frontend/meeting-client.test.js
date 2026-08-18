@@ -65,6 +65,15 @@ class FakePeerConnection {
 
     addTrack(track, stream) {
         this.tracks.push({track, stream});
+        const sender = {
+            track,
+            replacements: [],
+            async replaceTrack(replacement) {
+                this.track = replacement;
+                this.replacements.push(replacement);
+            }
+        };
+        return sender;
     }
 
     async createOffer() {
@@ -102,6 +111,15 @@ function track(kind) {
         kind,
         enabled: true,
         stopped: false,
+        constraints: [],
+        settings: kind === "audio" ? {noiseSuppression: true} : {width: 640, height: 480},
+        async applyConstraints(constraints) {
+            this.constraints.push(constraints);
+            this.settings = {...this.settings, ...constraints};
+        },
+        getSettings() {
+            return this.settings;
+        },
         stop() {
             this.stopped = true;
         }
@@ -110,7 +128,30 @@ function track(kind) {
 
 function mediaStream() {
     const tracks = [track("audio"), track("video")];
-    return {tracks, getTracks: () => tracks};
+    return {
+        tracks,
+        getTracks: () => tracks,
+        getAudioTracks: () => tracks.filter(item => item.kind === "audio"),
+        getVideoTracks: () => tracks.filter(item => item.kind === "video")
+    };
+}
+
+class FakeMediaStream {
+    constructor(tracks) {
+        this.tracks = tracks;
+    }
+
+    getTracks() {
+        return this.tracks;
+    }
+
+    getAudioTracks() {
+        return this.tracks.filter(item => item.kind === "audio");
+    }
+
+    getVideoTracks() {
+        return this.tracks.filter(item => item.kind === "video");
+    }
 }
 
 function createClient(overrides = {}) {
@@ -132,6 +173,8 @@ function createClient(overrides = {}) {
         RTCSessionDescriptionImpl: function FakeSessionDescription(value) { return value; },
         RTCIceCandidateImpl: function FakeIceCandidate(value) { return value; },
         mediaDevices: overrides.mediaDevices ?? {getUserMedia: async () => stream},
+        MediaStreamImpl: FakeMediaStream,
+        backgroundBlurFactory: overrides.backgroundBlurFactory,
         location: {protocol: "http:", host: "localhost:8084"},
         setIntervalImpl: () => 1,
         clearIntervalImpl: () => {},
@@ -369,6 +412,53 @@ test("toggles microphone and camera without reacquiring media", async () => {
     assert.equal(client.toggleCamera(), false);
     assert.equal(stream.tracks[1].enabled, false);
     assert.equal(mediaRequests, 1);
+});
+
+test("changes browser noise suppression without reacquiring the microphone", async () => {
+    const stream = mediaStream();
+    const {client} = createClient({stream});
+    await joinClient(client);
+
+    assert.equal(await client.setNoiseSuppression(false), false);
+    assert.deepEqual(stream.getAudioTracks()[0].constraints, [{noiseSuppression: false}]);
+    assert.equal(client.noiseSuppressionEnabled, false);
+});
+
+test("replaces the outbound camera track while background blur is enabled", async () => {
+    const stream = mediaStream();
+    const processedTrack = track("video");
+    const processor = {
+        starts: [],
+        stopped: false,
+        async start(sourceTrack) {
+            this.starts.push(sourceTrack);
+            return processedTrack;
+        },
+        stop() {
+            this.stopped = true;
+        }
+    };
+    const {client, localStreams} = createClient({
+        stream,
+        backgroundBlurFactory: () => processor
+    });
+    const socket = await joinClient(client);
+    await joinResponse(socket);
+    await socket.receive({
+        type: "PARTICIPANT_JOINED",
+        payload: {participantId: "participant-b", initiator: true}
+    });
+
+    const sender = client.videoSender;
+    assert.equal(await client.setBackgroundBlur(true), true);
+    assert.deepEqual(processor.starts, [stream.getVideoTracks()[0]]);
+    assert.deepEqual(sender.replacements, [processedTrack]);
+    assert.equal(localStreams.at(-1).getVideoTracks()[0], processedTrack);
+
+    assert.equal(await client.setBackgroundBlur(false), false);
+    assert.deepEqual(sender.replacements, [processedTrack, stream.getVideoTracks()[0]]);
+    assert.equal(processor.stopped, true);
+    assert.equal(localStreams.at(-1), stream);
 });
 
 test("leave stops tracks, closes peer and socket, and clears streams", async () => {

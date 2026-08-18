@@ -18,6 +18,24 @@ browser uses REST to create or inspect rooms and a plain JSON WebSocket to excha
 The backend validates and forwards SDP and ICE messages but never opens a media track and never
 receives audio or video bytes. After negotiation, browsers exchange media directly through WebRTC.
 
+## Browser media enhancements
+
+The meeting UI provides three local browser-side enhancements. None of them sends media through the
+Java backend:
+
+- browser echo cancellation, automatic gain control, and noise suppression are requested when the
+  microphone is opened; noise suppression can be toggled during the call with media-track
+  constraints;
+- local and remote audio streams are sampled with the Web Audio API. RMS thresholding with release
+  hysteresis adds a green speaking frame without sending audio levels over signaling;
+- background blur uses the locally vendored MediaPipe Selfie Segmentation model, composites the
+  foreground over a blurred camera frame on a canvas, and replaces the outbound WebRTC video track.
+
+Background blur is opt-in because it consumes additional CPU/GPU. Initialization failure leaves the
+original camera track active and displays an error; leaving the meeting stops the processed canvas
+track, segmentation loop, and model instance. Browser-level noise suppression support and quality
+remain device- and browser-dependent.
+
 The backend layers are:
 
 - `domain`: room identifiers, participant identifiers, room state, and transitions;

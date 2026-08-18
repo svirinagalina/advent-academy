@@ -32,7 +32,9 @@ export default defineConfig({
         trace: "retain-on-failure"
     },
     webServer: externalServer ? undefined : {
-        command: "JWT_SECRET=test-secret-key-for-testing-purposes-only-32-bytes ../gradlew :meeting-service:bootRun --no-daemon",
+        command: "GRADLE_USER_HOME=/tmp/advent-academy-gradle-home "
+            + "JWT_SECRET=test-secret-key-for-testing-purposes-only-32-bytes "
+            + "../gradlew :meeting-service:bootRun --no-daemon",
         cwd: ".",
         url: `${baseURL}/actuator/health`,
         reuseExistingServer: true,

@@ -1,3 +1,5 @@
+import {BackgroundBlurProcessor} from "./media-effects.js";
+
 const PROTOCOL_VERSION = 1;
 const MAX_PENDING_ICE_CANDIDATES = 128;
 const MAX_SEEN_ICE_CANDIDATES = 512;
@@ -23,6 +25,9 @@ export class MeetingClient {
         this.RTCSessionDescription = dependencies.RTCSessionDescriptionImpl ?? globalThis.RTCSessionDescription;
         this.RTCIceCandidate = dependencies.RTCIceCandidateImpl ?? globalThis.RTCIceCandidate;
         this.mediaDevices = dependencies.mediaDevices ?? globalThis.navigator?.mediaDevices;
+        this.MediaStream = dependencies.MediaStreamImpl ?? globalThis.MediaStream;
+        this.backgroundBlurFactory = dependencies.backgroundBlurFactory
+            ?? (() => new BackgroundBlurProcessor({onError: message => this.onError(message)}));
         this.location = dependencies.location ?? globalThis.location;
         this.setInterval = dependencies.setIntervalImpl ?? globalThis.setInterval.bind(globalThis);
         this.clearInterval = dependencies.clearIntervalImpl ?? globalThis.clearInterval.bind(globalThis);
@@ -39,6 +44,10 @@ export class MeetingClient {
         this.remoteStream = null;
         this.socket = null;
         this.peerConnection = null;
+        this.videoSender = null;
+        this.backgroundBlur = null;
+        this.processedVideoTrack = null;
+        this.noiseSuppressionEnabled = true;
         this.pendingIceCandidates = [];
         this.seenIceCandidates = new Set();
         this.appliedDescriptions = new Set();
@@ -81,7 +90,7 @@ export class MeetingClient {
                 video: true,
                 audio: {
                     echoCancellation: true,
-                    noiseSuppression: true,
+                    noiseSuppression: this.noiseSuppressionEnabled,
                     autoGainControl: true
                 }
             });
@@ -100,7 +109,52 @@ export class MeetingClient {
     }
 
     toggleCamera() {
-        return this.toggleTrack("video");
+        const enabled = this.toggleTrack("video");
+        if (this.processedVideoTrack) {
+            this.processedVideoTrack.enabled = enabled;
+        }
+        return enabled;
+    }
+
+    async setNoiseSuppression(enabled) {
+        const track = this.localStream?.getAudioTracks?.()[0];
+        if (!track) {
+            throw new Error("Microphone audio is not available");
+        }
+        if (!track.applyConstraints) {
+            throw new Error("This browser cannot change noise suppression during a call");
+        }
+        await track.applyConstraints({noiseSuppression: Boolean(enabled)});
+        this.noiseSuppressionEnabled = Boolean(enabled);
+        return this.noiseSuppressionEnabled;
+    }
+
+    async setBackgroundBlur(enabled) {
+        const sourceTrack = this.localStream?.getVideoTracks?.()[0];
+        if (!sourceTrack) {
+            throw new Error("Camera video is not available");
+        }
+        if (enabled && !this.backgroundBlur) {
+            const processor = this.backgroundBlurFactory();
+            try {
+                const processedTrack = await processor.start(sourceTrack);
+                processedTrack.enabled = sourceTrack.enabled;
+                await this.videoSender?.replaceTrack(processedTrack);
+                this.backgroundBlur = processor;
+                this.processedVideoTrack = processedTrack;
+                this.onLocalStream(this.localPreviewStream());
+            } catch (error) {
+                processor.stop();
+                throw error;
+            }
+        } else if (!enabled && this.backgroundBlur) {
+            await this.videoSender?.replaceTrack(sourceTrack);
+            this.backgroundBlur.stop();
+            this.backgroundBlur = null;
+            this.processedVideoTrack = null;
+            this.onLocalStream(this.localStream);
+        }
+        return Boolean(this.backgroundBlur);
     }
 
     async renegotiate() {
@@ -361,8 +415,12 @@ export class MeetingClient {
             throw new Error("Local media is not available");
         }
         this.peerConnection = new this.RTCPeerConnection({iceServers: this.iceServers});
-        for (const track of this.localStream.getTracks()) {
+        for (const track of this.localStream.getAudioTracks()) {
             this.peerConnection.addTrack(track, this.localStream);
+        }
+        const videoTrack = this.processedVideoTrack ?? this.localStream.getVideoTracks()[0];
+        if (videoTrack) {
+            this.videoSender = this.peerConnection.addTrack(videoTrack, this.localPreviewStream());
         }
         this.peerConnection.ontrack = event => {
             this.remoteStream = event.streams[0];
@@ -460,6 +518,11 @@ export class MeetingClient {
                 socket.close();
             }
         }
+        if (this.backgroundBlur) {
+            this.backgroundBlur.stop();
+            this.backgroundBlur = null;
+            this.processedVideoTrack = null;
+        }
         if (this.localStream) {
             this.localStream.getTracks().forEach(track => track.stop());
             this.localStream = null;
@@ -469,6 +532,7 @@ export class MeetingClient {
         this.peerId = null;
         this.isInitiator = false;
         this.makingOffer = false;
+        this.noiseSuppressionEnabled = true;
         this.pendingIceCandidates = [];
         this.seenIceCandidates.clear();
         this.appliedDescriptions.clear();
@@ -482,6 +546,7 @@ export class MeetingClient {
             this.peerConnection.close();
             this.peerConnection = null;
         }
+        this.videoSender = null;
         this.remoteStream = null;
         this.pendingIceCandidates = [];
         this.seenIceCandidates.clear();
@@ -508,6 +573,19 @@ export class MeetingClient {
 
     createIceCandidate(value) {
         return this.RTCIceCandidate ? new this.RTCIceCandidate(value) : value;
+    }
+
+    localPreviewStream() {
+        if (!this.processedVideoTrack) {
+            return this.localStream;
+        }
+        if (!this.MediaStream) {
+            throw new Error("MediaStream is not supported by this browser");
+        }
+        return new this.MediaStream([
+            this.processedVideoTrack,
+            ...this.localStream.getAudioTracks()
+        ]);
     }
 
     setState(state) {
