@@ -175,14 +175,19 @@ services:
       CAMUNDA_CLIENT_ZEEBE_GRPCADDRESS: http://zeebe:26500
       CAMUNDA_CLIENT_ZEEBE_RESTADDRESS: http://zeebe:8080
       CAMUNDA_CLIENT_ZEEBE_PREFERRESTOVERGRPC: "false"
+      JAVA_TOOL_OPTIONS: ${USER_SERVICE_JAVA_OPTS:--agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005}
     ports:
       - "127.0.0.1:8080:8080"
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health/readiness"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
     networks:
       - advent-network
 
