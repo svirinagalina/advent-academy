@@ -18,3 +18,28 @@ logging:
 content:
   upload:
     max-file-size-bytes: 5242880  # 5 MiB
+
+asset:
+  upload:
+    max-file-size-bytes: 10485760  # 10 MiB
+    allowed-mime-types:
+      - image/png
+      - image/jpeg
+      - image/jpg
+      - image/gif
+      - image/svg+xml
+      - image/webp
+      - application/pdf
+      - application/msword
+      - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+      - application/vnd.ms-excel
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      - application/vnd.ms-powerpoint
+      - application/vnd.openxmlformats-officedocument.presentationml.presentation
+      - application/zip
+      - application/x-zip-compressed
+      - text/plain
+      - video/mp4
+      - video/mpeg
+      - audio/mpeg
+      - audio/mp3

@@ -56,4 +56,32 @@ logging:
 
 content:
   upload:
-    max-file-size-bytes: 5242880  # 5 MiB
+    max-file-size-bytes: 5242880  # 5 MiB, applies to the uploaded .md or .zip file itself
+    archive:
+      max-total-uncompressed-bytes: 20971520  # 20 MiB, protects against zip bombs
+      max-entry-count: 50
+
+asset:
+  upload:
+    max-file-size-bytes: 10485760  # 10 MiB
+    allowed-mime-types:
+      - image/png
+      - image/jpeg
+      - image/jpg
+      - image/gif
+      - image/svg+xml
+      - image/webp
+      - application/pdf
+      - application/msword
+      - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+      - application/vnd.ms-excel
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      - application/vnd.ms-powerpoint
+      - application/vnd.openxmlformats-officedocument.presentationml.presentation
+      - application/zip
+      - application/x-zip-compressed
+      - text/plain
+      - video/mp4
+      - video/mpeg
+      - audio/mpeg
+      - audio/mp3

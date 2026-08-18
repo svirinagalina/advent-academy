@@ -3,8 +3,10 @@ package com.adventacademy.contentservice.adapter.rest.exception;
 import com.adventacademy.contentservice.application.port.MarkdownRenderingException;
 import com.adventacademy.contentservice.application.service.ComponentInUseException;
 import com.adventacademy.contentservice.application.service.CourseInUseException;
+import com.adventacademy.contentservice.application.service.InvalidAssetLinkException;
 import com.adventacademy.contentservice.application.service.LessonContentAlreadyExistsException;
 import com.adventacademy.contentservice.application.service.NotFoundException;
+import com.adventacademy.contentservice.application.validation.InvalidAssetFileException;
 import com.adventacademy.contentservice.application.validation.InvalidMarkdownFileException;
 import com.adventacademy.contentservice.domain.constructor.ComponentNotReadyForPublicationException;
 import com.adventacademy.contentservice.domain.constructor.CourseNotReadyForPublicationException;
@@ -60,8 +62,20 @@ public class GlobalExceptionHandler {
                 .body(new PublicationErrorResponse(e.getMessage(), e.getComponentIds()));
     }
 
+    @ExceptionHandler(InvalidAssetLinkException.class)
+    public ResponseEntity<AssetLinkErrorResponse> handleInvalidAssetLink(InvalidAssetLinkException e) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(new AssetLinkErrorResponse(e.getMessage(), e.getInvalidAssetIds()));
+    }
+
     @ExceptionHandler(InvalidMarkdownFileException.class)
     public ResponseEntity<ErrorResponse> handleInvalidFile(InvalidMarkdownFileException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(e.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidAssetFileException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidAsset(InvalidAssetFileException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse(e.getMessage()));
     }
@@ -71,7 +85,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ErrorResponse(e.getMessage()));
     }
-    
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -82,5 +96,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMarkdownRenderingException(MarkdownRenderingException e) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
                 .body(new ErrorResponse(e.getMessage()));
+    }
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleUnexpected(Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Unexpected error, please contact support"));
     }
 }

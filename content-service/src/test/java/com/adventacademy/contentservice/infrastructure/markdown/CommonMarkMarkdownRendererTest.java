@@ -1,20 +1,20 @@
 package com.adventacademy.contentservice.infrastructure.markdown;
 
 import com.adventacademy.contentservice.application.port.MarkdownRenderer;
+import com.adventacademy.contentservice.application.port.MarkdownRendererContractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class CommonMarkMarkdownRendererTest {
+/**
+ * CommonMark-specific rendering on top of the shared
+ * {@link MarkdownRendererContractTest} guarantees (assets, mermaid, XSS).
+ */
+class CommonMarkMarkdownRendererTest extends MarkdownRendererContractTest {
 
-    private final MarkdownRenderer renderer = new CommonMarkMarkdownRenderer();
-
-    @Test
-    void rendersHeading() {
-        String html = renderer.render("# Заголовок");
-
-        assertThat(html).contains("<h1>Заголовок</h1>");
+    @Override
+    protected MarkdownRenderer createRenderer() {
+        return new CommonMarkMarkdownRenderer();
     }
 
     @Test
@@ -32,55 +32,37 @@ class CommonMarkMarkdownRendererTest {
     }
 
     @Test
-    void rendersBlock() {
-        String html = renderer.render("```\\nint x = 1;\\n```");
+    void rendersFencedCodeBlockWithoutLanguage() {
+        String html = renderer.render("""
+                ```
+                int x = 1;
+                ```
+                """);
 
-        assertThat(html).contains("<code>");
+        assertThat(html).contains("<pre><code>");
+        // The OWASP sanitizer entity-encodes '=' in text nodes; browsers decode it
+        // back, so stored HTML keeps &#61; while the reader still sees "int x = 1;".
+        assertThat(html).contains("int x &#61; 1;");
     }
 
     @Test
     void rendersTable() {
         String html = renderer.render("| a | b |\n| --- | --- |\n| 1 | 2 |");
+
         assertThat(html).contains("<table>");
     }
 
     @Test
     void rendersLink() {
         String html = renderer.render("[сайт](https://example.com)");
+
         assertThat(html).contains("<a href=\"https://example.com\"");
-    }
-
-    @Test
-    void rendersLinkWithLink() {
-        String html = renderer.render("<script>alert(1)</script>обычный текст");
-        assertThat(html).contains("обычный текст");
-        assertThat(html).doesNotContain("<script");
-    }
-
-    @Test
-    void removesEventHandlerAttributes() {
-        String html = renderer.render("<img src=\"x\" onerror=\"alert(1)\">");
-        assertThat(html).doesNotContain("onerror");
-    }
-
-    @Test
-    void removesJavascriptLinks() {
-        String html = renderer.render("[жми](javascript:alert(1))");
-        assertThat(html).doesNotContain("javascript:");
-    }
-
-    @Test
-    void rejectsBlankMarkdown() {
-        assertThatThrownBy(() -> renderer.render(" "))
-                .isInstanceOf(IllegalArgumentException.class);
-
-        assertThatThrownBy(() -> renderer.render(null))
-                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void unsupportedMarkupDoesNotBreakRendering() {
         String html = renderer.render("<blink>мигалка</blink> обычный текст");
+
         assertThat(html).contains("обычный текст");
     }
 }
