@@ -82,7 +82,7 @@ class LoginServiceTest {
         LoginRequest request = new LoginRequest("user@example.com", "password", null, null, null);
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password", "hashed-password")).thenReturn(true);
-        when(jwtProvider.generateAccessToken(any(UUID.class), anyString())).thenReturn("access-token");
+        when(jwtProvider.generateAccessToken(any(UUID.class), anyString(), any())).thenReturn("access-token");
         when(jwtProvider.generateRefreshToken(any(UUID.class))).thenReturn("refresh-token");
         when(userRepository.save(any(User.class))).thenReturn(user);
 
@@ -173,7 +173,7 @@ class LoginServiceTest {
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password", "hashed-password")).thenReturn(true);
         when(mfaProvider.validateCode("mfa-secret", "123456")).thenReturn(true);
-        when(jwtProvider.generateAccessToken(any(UUID.class), anyString())).thenReturn("access-token");
+        when(jwtProvider.generateAccessToken(any(UUID.class), anyString(), any())).thenReturn("access-token");
         when(jwtProvider.generateRefreshToken(any(UUID.class))).thenReturn("refresh-token");
         when(userRepository.save(any(User.class))).thenReturn(user);
 

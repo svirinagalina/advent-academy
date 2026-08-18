@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -48,6 +49,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("#id.toString() == authentication.name or hasRole('ADMIN')")
     @Operation(summary = "Get user by ID", description = "Retrieve user details by user ID")
     @ApiResponse(responseCode = "200", description = "User found")
     @ApiResponse(responseCode = "404", description = "User not found")
@@ -57,6 +59,7 @@ public class UserController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get all users", description = "Retrieve a paginated list of users")
     @ApiResponse(responseCode = "200", description = "Users retrieved successfully")
     public ResponseEntity<PageResult<UserResponse>> getAllUsers(
@@ -74,6 +77,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete user", description = "Soft delete user by ID")
     @ApiResponse(responseCode = "204", description = "User deleted successfully")
     @ApiResponse(responseCode = "404", description = "User not found")
@@ -83,6 +87,7 @@ public class UserController {
     }
 
     @PostMapping("/{id}/unlock")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Unlock user account", description = "Unlock a locked user account")
     @ApiResponse(responseCode = "200", description = "Account unlocked successfully")
     @ApiResponse(responseCode = "404", description = "User not found")
