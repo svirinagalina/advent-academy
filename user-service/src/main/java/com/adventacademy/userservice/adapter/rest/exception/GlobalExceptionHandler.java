@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -102,6 +103,31 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .body(new ErrorResponse("INVALID_ROLE_REQUEST_STATE", ex.getMessage()));
+    }
+
+    @ExceptionHandler(SelfApprovalNotAllowedException.class)
+    public ResponseEntity<ErrorResponse> handleSelfApprovalNotAllowed(SelfApprovalNotAllowedException ex) {
+        logger.warn("Self-approval rejected: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse("SELF_APPROVAL_NOT_ALLOWED", ex.getMessage()));
+    }
+
+    /**
+     * Catches both the classic {@code AccessDeniedException} and Spring Security 6's
+     * {@code AuthorizationDeniedException} (its subclass, thrown by {@code @PreAuthorize}
+     * via {@code AuthorizationManagerBeforeMethodInterceptor}). Method security runs
+     * inside the MVC dispatch, not the servlet filter chain, so without this handler
+     * the catch-all {@link #handleGenericException} below would resolve it first and
+     * return 500 instead of 403 — Spring Security's own {@code ExceptionTranslationFilter}
+     * never gets a chance to see it.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+        logger.warn("Access denied: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse("ACCESS_DENIED", "You do not have permission to perform this action"));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

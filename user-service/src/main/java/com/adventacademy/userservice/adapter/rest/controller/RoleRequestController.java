@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -101,11 +102,13 @@ public class RoleRequestController {
     }
 
     @PostMapping("/api/role-requests/{id}/decision")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(
             summary = "Record an admin decision on a role request",
             description = "Completes the pending Camunda review task with the decision. The request "
                     + "stays PENDING in this response — approval/rejection is applied asynchronously "
-                    + "by the Camunda job worker once the process routes the gateway.",
+                    + "by the Camunda job worker once the process routes the gateway. The reviewer is "
+                    + "the authenticated admin making the call, not a client-supplied value.",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     required = true,
                     content = @Content(
@@ -113,21 +116,24 @@ public class RoleRequestController {
                             schema = @Schema(implementation = RoleRequestDecisionRequest.class),
                             examples = @ExampleObject(
                                     name = "Approve",
-                                    value = "{\"decision\":\"APPROVE\",\"reviewerId\":"
-                                            + "\"44444444-4444-4444-4444-444444444444\"}"
+                                    value = "{\"decision\":\"APPROVE\"}"
                             )
                     )
             )
     )
     @ApiResponse(responseCode = "202", description = "Decision accepted, processing asynchronously")
+    @ApiResponse(responseCode = "401", description = "Missing or invalid authentication")
+    @ApiResponse(responseCode = "403", description = "Authenticated user is not an admin, or is trying to decide their own request")
     @ApiResponse(responseCode = "404", description = "Role request not found")
     @ApiResponse(responseCode = "409", description = "Role request already decided")
     public ResponseEntity<RoleRequestResponse> decide(
             @Parameter(description = "Role request being decided", example = "22222222-2222-2222-2222-222222222222")
             @PathVariable UUID id,
+            Authentication authentication,
             @Valid @RequestBody RoleRequestDecisionRequest request) {
+        UUID reviewerId = UUID.fromString(authentication.getName());
         RoleRequestResponse response = roleRequestService.submitDecision(
-                id, request.reviewerId(), request.decision(), request.reason());
+                id, reviewerId, request.decision(), request.reason());
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
     }
 

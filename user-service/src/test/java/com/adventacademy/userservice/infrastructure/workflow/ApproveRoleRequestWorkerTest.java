@@ -1,10 +1,9 @@
 package com.adventacademy.userservice.infrastructure.workflow;
 
-import com.adventacademy.userservice.application.service.role.AssignRoleService;
 import com.adventacademy.userservice.application.service.role.RoleRequestService;
+import com.adventacademy.userservice.domain.exception.InvalidRoleRequestStateException;
 import com.adventacademy.userservice.domain.exception.RoleNotFoundException;
 import com.adventacademy.userservice.domain.exception.UserNotFoundException;
-import com.adventacademy.userservice.domain.model.RoleRequestStatus;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,7 +18,8 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -28,7 +28,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ApproveRoleRequestWorkerTest {
 
-    @Mock private AssignRoleService assignRoleService;
     @Mock private RoleRequestService roleRequestService;
     @Mock private ActivatedJob job;
 
@@ -43,7 +42,7 @@ class ApproveRoleRequestWorkerTest {
     @BeforeEach
     void setUp() {
         client = mock(JobClient.class, Answers.RETURNS_DEEP_STUBS);
-        worker = new ApproveRoleRequestWorker(assignRoleService, roleRequestService);
+        worker = new ApproveRoleRequestWorker(roleRequestService);
 
         roleRequestId = UUID.randomUUID();
         userId = UUID.randomUUID();
@@ -56,16 +55,15 @@ class ApproveRoleRequestWorkerTest {
                 "userId", userId.toString(),
                 "requestedRoleId", requestedRoleId.toString(),
                 "reviewerId", reviewerId.toString()));
-        // Not every test reaches this call (e.g. malformed-variables fails before it).
-        lenient().when(roleRequestService.currentStatus(roleRequestId)).thenReturn(RoleRequestStatus.PENDING);
     }
 
     @Test
-    void onSuccessAssignsRoleMarksApprovedAndCompletesJob() {
+    void onSuccessDelegatesToApproveAndCompletesJob() {
+        doNothing().when(roleRequestService).approve(roleRequestId, userId, requestedRoleId, reviewerId);
+
         worker.handle(client, job);
 
-        verify(assignRoleService).assignRoleToUser(userId, requestedRoleId, null, "camunda-worker");
-        verify(roleRequestService).markApproved(roleRequestId, reviewerId);
+        verify(roleRequestService).approve(roleRequestId, userId, requestedRoleId, reviewerId);
         verify(client).newCompleteCommand(555L);
         verify(roleRequestService, never()).markFailed(any(), anyString());
     }
@@ -73,8 +71,8 @@ class ApproveRoleRequestWorkerTest {
     @Test
     void onNonTerminalFailureDecrementsRetriesWithoutMarkingFailed() {
         when(job.getRetries()).thenReturn(3);
-        when(assignRoleService.assignRoleToUser(any(), any(), any(), anyString()))
-                .thenThrow(new RuntimeException("db hiccup"));
+        doThrow(new RuntimeException("db hiccup"))
+                .when(roleRequestService).approve(roleRequestId, userId, requestedRoleId, reviewerId);
 
         worker.handle(client, job);
 
@@ -86,8 +84,8 @@ class ApproveRoleRequestWorkerTest {
     @Test
     void onTerminalFailureMarksFailedAndFailsJobWithZeroRetries() {
         when(job.getRetries()).thenReturn(1);
-        when(assignRoleService.assignRoleToUser(any(), any(), any(), anyString()))
-                .thenThrow(new RuntimeException("role no longer exists"));
+        doThrow(new RuntimeException("role no longer exists"))
+                .when(roleRequestService).approve(roleRequestId, userId, requestedRoleId, reviewerId);
 
         worker.handle(client, job);
 
@@ -98,8 +96,8 @@ class ApproveRoleRequestWorkerTest {
     @Test
     void onMissingUserFailsImmediatelyEvenWithRetriesRemaining() {
         // getRetries() deliberately unstubbed: a permanent failure must not even look at it.
-        when(assignRoleService.assignRoleToUser(any(), any(), any(), anyString()))
-                .thenThrow(new UserNotFoundException(userId));
+        doThrow(new UserNotFoundException(userId))
+                .when(roleRequestService).approve(roleRequestId, userId, requestedRoleId, reviewerId);
 
         worker.handle(client, job);
 
@@ -109,8 +107,8 @@ class ApproveRoleRequestWorkerTest {
 
     @Test
     void onMissingRoleFailsImmediatelyEvenWithRetriesRemaining() {
-        when(assignRoleService.assignRoleToUser(any(), any(), any(), anyString()))
-                .thenThrow(new RoleNotFoundException(requestedRoleId));
+        doThrow(new RoleNotFoundException(requestedRoleId))
+                .when(roleRequestService).approve(roleRequestId, userId, requestedRoleId, reviewerId);
 
         worker.handle(client, job);
 
@@ -119,24 +117,26 @@ class ApproveRoleRequestWorkerTest {
     }
 
     @Test
-    void redeliveredJobForAlreadyApprovedRequestCompletesWithoutReassigningRole() {
-        when(roleRequestService.currentStatus(roleRequestId)).thenReturn(RoleRequestStatus.APPROVED);
+    void redeliveredJobForAlreadyApprovedRequestCompletesAsNoOp() {
+        // approve() itself treats an already-APPROVED request as a silent no-op —
+        // nothing more for the worker to check or branch on here.
+        doNothing().when(roleRequestService).approve(roleRequestId, userId, requestedRoleId, reviewerId);
 
         worker.handle(client, job);
 
-        verify(assignRoleService, never()).assignRoleToUser(any(), any(), any(), anyString());
-        verify(roleRequestService, never()).markApproved(any(), any());
         verify(client).newCompleteCommand(555L);
+        verify(roleRequestService, never()).markFailed(any(), anyString());
     }
 
     @Test
-    void wrongTerminalStateFailsWithoutEverTouchingRoleAssignment() {
-        when(roleRequestService.currentStatus(roleRequestId)).thenReturn(RoleRequestStatus.REJECTED);
+    void wrongTerminalStateFailsWithoutRetryAndMarksFailed() {
+        // approve() surfaces this via the domain's own InvalidRoleRequestStateException,
+        // classified permanent by PermanentWorkflowFailure — no role is ever granted.
+        doThrow(new InvalidRoleRequestStateException("Role request " + roleRequestId + " is REJECTED and cannot be changed"))
+                .when(roleRequestService).approve(roleRequestId, userId, requestedRoleId, reviewerId);
 
         worker.handle(client, job);
 
-        verify(assignRoleService, never()).assignRoleToUser(any(), any(), any(), anyString());
-        verify(roleRequestService, never()).markApproved(any(), any());
         verify(roleRequestService).markFailed(any(), anyString());
         verify(client.newFailCommand(555L)).retries(0);
     }

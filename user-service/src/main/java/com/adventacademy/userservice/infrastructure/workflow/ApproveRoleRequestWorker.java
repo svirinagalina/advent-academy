@@ -1,9 +1,7 @@
 package com.adventacademy.userservice.infrastructure.workflow;
 
-import com.adventacademy.userservice.application.service.role.AssignRoleService;
 import com.adventacademy.userservice.application.service.role.RoleRequestService;
 import com.adventacademy.userservice.domain.exception.InvalidRoleRequestStateException;
-import com.adventacademy.userservice.domain.model.RoleRequestStatus;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.spring.client.annotation.JobWorker;
@@ -15,18 +13,12 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Handles the {@code role-request-approve} service task: assigns the requested
- * role to the user, then flips the {@code RoleRequest} to {@code APPROVED}. Both
- * steps go through application services, never through repositories directly,
- * and both are idempotent, so a redelivered job (Zeebe is at-least-once) is safe
- * to run again in full.
- * <p>
- * The request's current status is checked <em>before</em> touching
- * {@code AssignRoleService}: already {@code APPROVED} completes the job as a
- * no-op redelivery, any other non-PENDING state fails without ever granting a
- * role — a wrongly-routed job (should never happen given the single-path BPMN
- * gateway, but is a real anomaly if it ever does) must not leave a role granted
- * for a request that ends up {@code FAILED}.
+ * Handles the {@code role-request-approve} service task. Delegates entirely to
+ * {@link RoleRequestService#approve}, which assigns the role and flips the
+ * {@code RoleRequest} to {@code APPROVED} in a single transaction — this worker
+ * calls that method and nothing else, so there is no window where one half of
+ * that pair can succeed without the other (a redelivered Zeebe job is safe to
+ * run again in full; {@code approve} itself is idempotent).
  * <p>
  * On failure, a permanent problem (missing user/role/request, wrong request
  * state, malformed job variables — see {@link PermanentWorkflowFailure}) marks
@@ -40,11 +32,9 @@ public class ApproveRoleRequestWorker {
 
     private static final Logger logger = LoggerFactory.getLogger(ApproveRoleRequestWorker.class);
 
-    private final AssignRoleService assignRoleService;
     private final RoleRequestService roleRequestService;
 
-    public ApproveRoleRequestWorker(AssignRoleService assignRoleService, RoleRequestService roleRequestService) {
-        this.assignRoleService = assignRoleService;
+    public ApproveRoleRequestWorker(RoleRequestService roleRequestService) {
         this.roleRequestService = roleRequestService;
     }
 
@@ -57,18 +47,7 @@ public class ApproveRoleRequestWorker {
             UUID requestedRoleId = UUID.fromString((String) variables.get("requestedRoleId"));
             UUID reviewerId = UUID.fromString((String) variables.get("reviewerId"));
 
-            RoleRequestStatus status = roleRequestService.currentStatus(roleRequestId);
-            if (status == RoleRequestStatus.APPROVED) {
-                client.newCompleteCommand(job.getKey()).send().join();
-                return;
-            }
-            if (status != RoleRequestStatus.PENDING) {
-                throw new InvalidRoleRequestStateException(
-                        String.format("Role request %s is %s, cannot approve", roleRequestId, status));
-            }
-
-            assignRoleService.assignRoleToUser(userId, requestedRoleId, null, "camunda-worker");
-            roleRequestService.markApproved(roleRequestId, reviewerId);
+            roleRequestService.approve(roleRequestId, userId, requestedRoleId, reviewerId);
             client.newCompleteCommand(job.getKey()).send().join();
         } catch (Exception e) {
             handleFailure(client, job, e);

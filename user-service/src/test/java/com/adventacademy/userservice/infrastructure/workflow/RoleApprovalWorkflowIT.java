@@ -58,9 +58,14 @@ class RoleApprovalWorkflowIT {
 
         var response = roleRequestService.submit(userId, roleId, "127.0.0.1", "JUnit");
 
-        // A real Zeebe process instance key was returned and persisted — if starting the
-        // process instance had failed, submit() itself would have thrown and this line
-        // would never be reached.
+        // The process is started by an AFTER_COMMIT listener on submit()'s own transaction
+        // (see RoleRequestService#onRoleRequestSubmitted), not synchronously inside submit()
+        // itself — but @TransactionalEventListener fires on the same thread as part of the
+        // commit that happens when the submit() proxy call returns, so by the time this line
+        // runs the process instance key is already persisted. A failure to start no longer
+        // makes submit() throw (it's caught and audited instead, see
+        // onRoleRequestSubmittedAuditsFailureAndLeavesRequestPendingForRetry in
+        // RoleRequestServiceTest for that path) — this test only covers the happy path.
         Long processInstanceKey = roleRequestJpaRepository.findById(response.id())
                 .orElseThrow()
                 .getProcessInstanceKey();
