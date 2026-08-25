@@ -32,7 +32,11 @@ public class SecurityConfiguration {
                                 "/actuator/health",
                                 "/actuator/health/**",
                                 "/actuator/info",
-                                "/ws/meetings"
+                                "/ws/meetings",
+                                "/v3/api-docs",
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**"
                         ).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated())

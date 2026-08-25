@@ -1,7 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.4.1'
-    id 'io.spring.dependency-management' version '1.1.7'
+    alias(libs.plugins.spring.boot)
 }
 
 group = 'com.adventacademy'
@@ -25,6 +24,15 @@ repositories {
 }
 
 dependencies {
+    implementation platform(project(':platform'))
+    // annotationProcessor doesn't extend implementation, so it needs the
+    // platform too, or lombok/spring-boot-configuration-processor below
+    // resolve with no version.
+    annotationProcessor platform(project(':platform'))
+    // developmentOnly is another root configuration (added by the Boot
+    // plugin itself) that doesn't extend implementation.
+    developmentOnly platform(project(':platform'))
+
     // Spring Boot Starters
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -38,7 +46,7 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
 
     // OpenAPI/Swagger
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok'
@@ -53,15 +61,15 @@ dependencies {
     implementation 'org.flywaydb:flyway-database-postgresql'
 
     // Markdown
-    implementation 'org.commonmark:commonmark:0.28.0'
-    implementation 'org.commonmark:commonmark-ext-gfm-tables:0.28.0'
-    implementation 'com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer:20260313.1'
+    implementation 'org.commonmark:commonmark'
+    implementation 'org.commonmark:commonmark-ext-gfm-tables'
+    implementation 'com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer'
 
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.testcontainers:testcontainers:1.21.3'
-    testImplementation 'org.testcontainers:postgresql:1.21.3'
-    testImplementation 'org.testcontainers:junit-jupiter:1.21.3'
+    testImplementation 'org.testcontainers:testcontainers'
+    testImplementation 'org.testcontainers:testcontainers-postgresql'
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
     testRuntimeOnly 'com.h2database:h2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

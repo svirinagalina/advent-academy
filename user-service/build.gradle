@@ -1,7 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.4.1'
-    id 'io.spring.dependency-management' version '1.1.7'
+    alias(libs.plugins.spring.boot)
 }
 
 group = 'com.adventacademy'
@@ -25,13 +24,22 @@ repositories {
 }
 
 dependencies {
+    implementation platform(project(':platform'))
+    // annotationProcessor doesn't extend implementation, so it needs the
+    // platform too, or lombok/spring-boot-configuration-processor below
+    // resolve with no version.
+    annotationProcessor platform(project(':platform'))
+    // developmentOnly is another root configuration (added by the Boot
+    // plugin itself) that doesn't extend implementation.
+    developmentOnly platform(project(':platform'))
+
     // Spring Boot Starters
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'io.camunda:spring-boot-starter-camunda-sdk:8.7.35'
+    implementation 'io.camunda:spring-boot-starter-camunda-sdk'
     // Micrometer Prometheus
     implementation 'io.micrometer:micrometer-registry-prometheus'
 
@@ -39,12 +47,12 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
 
     // JWT
-    implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-api'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson'
 
     // OpenAPI/Swagger
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok'
@@ -59,13 +67,13 @@ dependencies {
     // means the requestId MDC entry from RequestIdFilter is attached to each
     // SQL line — the audit trail / error log / SQL log can all be joined by
     // X-Request-Id.
-    runtimeOnly 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.2'
+    runtimeOnly 'com.github.gavlyukovskiy:p6spy-spring-boot-starter'
 
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
-    testImplementation 'io.camunda:spring-boot-starter-camunda-test-testcontainer:8.7.35'
-    testImplementation 'org.testcontainers:testcontainers:2.0.5'
+    testImplementation 'io.camunda:spring-boot-starter-camunda-test-testcontainer'
+    testImplementation 'org.testcontainers:testcontainers'
     testRuntimeOnly 'com.h2database:h2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 

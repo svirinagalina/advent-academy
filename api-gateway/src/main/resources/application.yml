@@ -1,0 +1,105 @@
+spring:
+  application:
+    name: api-gateway
+  profiles:
+    active: docker
+  cloud:
+    gateway:
+      routes:
+        # user-service — its own /api/** resource paths, forwarded unchanged.
+        - id: user-service-api
+          uri: ${USER_SERVICE_URL}
+          predicates:
+            - Path=/api/auth/**,/api/users/**,/api/roles/**,/api/permissions/**,/api/role-requests/**
+
+        # content-service — its own /api/** resource paths, forwarded unchanged.
+        - id: content-service-api
+          uri: ${CONTENT_SERVICE_URL}
+          predicates:
+            - Path=/api/courses/**,/api/directions/**,/api/components/**,/api/catalog/**,/api/lessons/**,/api/assets/**,/api/markdown/**
+
+        # Static Markdown preview page, served directly by content-service.
+        - id: content-service-markdown-preview-ui
+          uri: ${CONTENT_SERVICE_URL}
+          predicates:
+            - Path=/markdown-preview/**
+
+        # meeting-service REST.
+        - id: meeting-service-api
+          uri: ${MEETING_SERVICE_URL}
+          predicates:
+            - Path=/api/meetings/**
+
+        # meeting-service WebSocket signaling. Needs its own ws://-scheme URI: Spring
+        # Cloud Gateway picks WebsocketRoutingFilter vs NettyRoutingFilter from the
+        # route's target scheme, not the incoming request, so an http:// URI here
+        # would silently forward as plain HTTP and break the upgrade.
+        - id: meeting-service-ws
+          uri: ${MEETING_SERVICE_WS_URL}
+          predicates:
+            - Path=/ws/meetings
+
+        # Gateway-only paths backing the aggregated Swagger UI dropdown below — not
+        # real business routes, just each backend's /v3/api-docs under a distinct name.
+        - id: user-service-openapi
+          uri: ${USER_SERVICE_URL}
+          predicates:
+            - Path=/user-service/v3/api-docs
+          filters:
+            - RewritePath=/user-service/v3/api-docs, /v3/api-docs
+
+        - id: content-service-openapi
+          uri: ${CONTENT_SERVICE_URL}
+          predicates:
+            - Path=/content-service/v3/api-docs
+          filters:
+            - RewritePath=/content-service/v3/api-docs, /v3/api-docs
+
+        - id: meeting-service-openapi
+          uri: ${MEETING_SERVICE_URL}
+          predicates:
+            - Path=/meeting-service/v3/api-docs
+          filters:
+            - RewritePath=/meeting-service/v3/api-docs, /v3/api-docs
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: User Service
+        url: /user-service/v3/api-docs
+      - name: Content Service
+        url: /content-service/v3/api-docs
+      - name: Meeting Service
+        url: /meeting-service/v3/api-docs
+
+server:
+  port: 8090
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, gateway
+  endpoint:
+    # The gateway actuator endpoint ships disabled by default
+    # (@RestControllerEndpoint(id="gateway", enableByDefault=false)) — exposure alone
+    # is not enough, it needs enabling explicitly too.
+    gateway:
+      enabled: true
+    health:
+      show-details: always
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: diskSpace
+        liveness:
+          include: ping
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+logging:
+  level:
+    com.adventacademy: INFO
+    org.springframework.cloud.gateway: INFO

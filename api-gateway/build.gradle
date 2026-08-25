@@ -1,0 +1,42 @@
+plugins {
+    id 'java'
+    alias(libs.plugins.spring.boot)
+}
+
+group = 'com.adventacademy'
+version = '0.0.1-SNAPSHOT'
+description = 'API Gateway'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Supplies both Spring Boot's and Spring Cloud's BOMs — no private
+    // dependencyManagement block needed here anymore.
+    implementation platform(project(':platform'))
+
+    implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    // Reactive variant, matching the gateway's WebFlux stack: serves Swagger UI and
+    // reads springdoc.swagger-ui.urls to offer a per-service dropdown without the
+    // gateway needing any REST controllers of its own.
+    implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.projectreactor:reactor-test'
+    // Standalone variant: shades its own Jetty/Jackson so it doesn't clash with the
+    // gateway's own Netty/WebFlux stack.
+    testImplementation 'org.wiremock:wiremock-standalone'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
