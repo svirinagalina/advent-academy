@@ -22,6 +22,7 @@ public class RoleRequest {
     private RoleRequestStatus status;
     private UUID reviewerId;
     private String decisionReason;
+    private Long processInstanceKey;
     private final LocalDateTime createdAt;
     private LocalDateTime reviewedAt;
     private LocalDateTime updatedAt;
@@ -32,6 +33,7 @@ public class RoleRequest {
                         RoleRequestStatus status,
                         UUID reviewerId,
                         String decisionReason,
+                        Long processInstanceKey,
                         LocalDateTime createdAt,
                         LocalDateTime reviewedAt,
                         LocalDateTime updatedAt) {
@@ -41,6 +43,7 @@ public class RoleRequest {
         this.status = Objects.requireNonNull(status, "status");
         this.reviewerId = reviewerId;
         this.decisionReason = decisionReason;
+        this.processInstanceKey = processInstanceKey;
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
         this.reviewedAt = reviewedAt;
         this.updatedAt = Objects.requireNonNull(updatedAt, "updatedAt");
@@ -55,6 +58,7 @@ public class RoleRequest {
                 RoleRequestStatus.PENDING,
                 null,
                 null,
+                null,
                 now,
                 null,
                 now);
@@ -66,11 +70,33 @@ public class RoleRequest {
                                       RoleRequestStatus status,
                                       UUID reviewerId,
                                       String decisionReason,
+                                      Long processInstanceKey,
                                       LocalDateTime createdAt,
                                       LocalDateTime reviewedAt,
                                       LocalDateTime updatedAt) {
         return new RoleRequest(id, userId, requestedRoleId, status, reviewerId, decisionReason,
-                createdAt, reviewedAt, updatedAt);
+                processInstanceKey, createdAt, reviewedAt, updatedAt);
+    }
+
+    /**
+     * Links this request to the Camunda process instance orchestrating its review.
+     * Only meaningful once, right after the process is started for a freshly created request.
+     */
+    public void attachProcessInstance(long processInstanceKey) {
+        requirePending();
+        this.processInstanceKey = processInstanceKey;
+    }
+
+    /**
+     * Guards the admin decision endpoint: the request must still be pending a
+     * review and must have an attached Camunda process to signal the decision to.
+     */
+    public void requireDecidable() {
+        requirePending();
+        if (processInstanceKey == null) {
+            throw new InvalidRoleRequestStateException(
+                    String.format("Role request %s has no attached Camunda process instance", id));
+        }
     }
 
     public void approve(UUID reviewerId, LocalDateTime now) {
@@ -128,6 +154,10 @@ public class RoleRequest {
 
     public String getDecisionReason() {
         return decisionReason;
+    }
+
+    public Long getProcessInstanceKey() {
+        return processInstanceKey;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -45,6 +45,9 @@ public class RoleRequestEntity {
     @Column(length = 500)
     private String decisionReason;
 
+    @Column(name = "process_instance_key")
+    private Long processInstanceKey;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -100,6 +103,14 @@ public class RoleRequestEntity {
 
     public void setDecisionReason(String decisionReason) {
         this.decisionReason = decisionReason;
+    }
+
+    public Long getProcessInstanceKey() {
+        return processInstanceKey;
+    }
+
+    public void setProcessInstanceKey(Long processInstanceKey) {
+        this.processInstanceKey = processInstanceKey;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -98,6 +98,46 @@ Stop the stack without deleting process and database data:
 docker compose down
 ```
 
+### Role approval smoke test
+
+With the stack above running, exercise the full approve/reject flow through the actual
+application API (not the raw Zeebe API used above) — submit a request, have an admin decide
+on it, and watch the process complete in Tasklist/Operate.
+
+Submit a role request for an existing user and role (see `db/demo/demo_users_seed.sql` for
+ready-made ids, or create your own via `/api/auth/register` and `/api/roles`):
+
+```bash
+curl -fsS -X POST http://localhost:8080/api/users/{userId}/role-requests \
+  -H 'Content-Type: application/json' \
+  -d '{"requestedRoleId":"{roleId}"}'
+```
+
+The response's `id` is the role request id; the request now has a real Camunda process instance
+behind it, waiting at the `Review role request` user task — visible in Tasklist. Record an admin
+decision (`APPROVE` grants the role, `REJECT` leaves it untouched):
+
+```bash
+curl -fsS -X POST http://localhost:8080/api/role-requests/{roleRequestId}/decision \
+  -H 'Content-Type: application/json' \
+  -d '{"decision":"APPROVE","reviewerId":"{adminUserId}"}'
+```
+
+This returns `202 Accepted` with the request still `PENDING` — the actual transition happens
+asynchronously once the corresponding job worker (`ApproveRoleRequestWorker`/
+`RejectRoleRequestWorker`) picks up the routed job. There is no single-request lookup endpoint;
+poll the user's request list (or `GET /api/role-requests` for the admin view) until it settles:
+
+```bash
+curl -fsS http://localhost:8080/api/users/{userId}/role-requests
+```
+
+`status` moves to `APPROVED` or `REJECTED` within a second or two; for `APPROVE`, the target
+user's roles (`GET /api/users/{userId}`) now include the requested role. The completed process
+instance is visible in Operate. Submitting the same decision twice (a redelivered job, or a
+manual retry) is safe — both workers are idempotent and will not reassign the role or flip an
+already-decided request again.
+
 ### Running Locally (Development)
 
 Run the infrastructure in Docker and `user-service` on the host:
