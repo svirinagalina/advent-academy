@@ -1,5 +1,6 @@
 package com.adventacademy.contentservice.application.service;
 
+import com.adventacademy.contentservice.application.port.CurrentUserProvider;
 import com.adventacademy.contentservice.application.validation.PlainTextNormalizer;
 import com.adventacademy.contentservice.domain.constructor.Course;
 import com.adventacademy.contentservice.domain.constructor.CoursePublicationPolicy;
@@ -24,23 +25,26 @@ public class CourseAssemblyService {
     private final ComponentRepository componentRepository;
     private final DirectionRepository directionRepository;
     private final CoursePublicationPolicy publicationPolicy;
+    private final CurrentUserProvider currentUserProvider;
     private final Clock clock;
 
     public CourseAssemblyService(CourseRepository courseRepository,
                                  ComponentRepository componentRepository,
                                  DirectionRepository directionRepository,
-                                 CoursePublicationPolicy publicationPolicy) {
+                                 CoursePublicationPolicy publicationPolicy,
+                                 CurrentUserProvider currentUserProvider) {
         this.courseRepository = courseRepository;
         this.componentRepository = componentRepository;
         this.directionRepository = directionRepository;
         this.publicationPolicy = publicationPolicy;
+        this.currentUserProvider = currentUserProvider;
         this.clock = Clock.systemUTC();
     }
 
     public Course create(String title, String description) {
         String safeTitle = PlainTextNormalizer.normalizeTitle(title);
         String safeDescription = PlainTextNormalizer.normalizeDescription(description);
-        return courseRepository.save(Course.create(safeTitle, safeDescription, clock));
+        return courseRepository.save(Course.create(safeTitle, safeDescription, currentUserProvider.requireCurrentUserId(), clock));
     }
 
     @Transactional(readOnly = true)

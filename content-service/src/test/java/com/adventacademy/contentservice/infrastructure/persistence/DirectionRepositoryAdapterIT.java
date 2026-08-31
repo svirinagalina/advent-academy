@@ -22,6 +22,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Transactional
 class DirectionRepositoryAdapterIT extends AbstractPostgresIT {
 
+    private static final UUID OWNER_ID = UUID.randomUUID();
+
+
     private static final Clock CLOCK = Clock.systemUTC();
 
     @Autowired
@@ -35,8 +38,8 @@ class DirectionRepositoryAdapterIT extends AbstractPostgresIT {
 
     @Test
     void saveAndLoadPreservesCourseRefOrder() {
-        Course c1 = courseRepository.save(Course.create("Java Basics", null, CLOCK));
-        Course c2 = courseRepository.save(Course.create("Java Advanced", null, CLOCK));
+        Course c1 = courseRepository.save(Course.create("Java Basics", null, OWNER_ID, CLOCK));
+        Course c2 = courseRepository.save(Course.create("Java Advanced", null, OWNER_ID, CLOCK));
 
         Direction direction = Direction.create("Java Backend", "Path", CLOCK);
         direction.addCourse(c1.getId(), CLOCK);
@@ -56,8 +59,8 @@ class DirectionRepositoryAdapterIT extends AbstractPostgresIT {
 
     @Test
     void reorderAndSaveDoesNotViolateUniquePositionConstraint() {
-        Course c1 = courseRepository.save(Course.create("Java Basics", null, CLOCK));
-        Course c2 = courseRepository.save(Course.create("Java Advanced", null, CLOCK));
+        Course c1 = courseRepository.save(Course.create("Java Basics", null, OWNER_ID, CLOCK));
+        Course c2 = courseRepository.save(Course.create("Java Advanced", null, OWNER_ID, CLOCK));
 
         Direction direction = Direction.create("Java Backend", "Path", CLOCK);
         direction.addCourse(c1.getId(), CLOCK);
@@ -80,7 +83,7 @@ class DirectionRepositoryAdapterIT extends AbstractPostgresIT {
 
     @Test
     void foreignKeyPreventsDeletingCourseUsedByDirection() {
-        Course course = courseRepository.save(Course.create("Java Basics", null, CLOCK));
+        Course course = courseRepository.save(Course.create("Java Basics", null, OWNER_ID, CLOCK));
         Direction direction = Direction.create("Java Backend", "Path", CLOCK);
         direction.addCourse(course.getId(), CLOCK);
         directionRepository.save(direction);
@@ -94,8 +97,8 @@ class DirectionRepositoryAdapterIT extends AbstractPostgresIT {
 
     @Test
     void existsByCourseIdSeesReferencedCourses() {
-        Course used = courseRepository.save(Course.create("Used", null, CLOCK));
-        Course unused = courseRepository.save(Course.create("Unused", null, CLOCK));
+        Course used = courseRepository.save(Course.create("Used", null, OWNER_ID, CLOCK));
+        Course unused = courseRepository.save(Course.create("Unused", null, OWNER_ID, CLOCK));
         Direction direction = Direction.create("Java Backend", null, CLOCK);
         direction.addCourse(used.getId(), CLOCK);
         directionRepository.save(direction);
@@ -107,7 +110,7 @@ class DirectionRepositoryAdapterIT extends AbstractPostgresIT {
 
     @Test
     void deletingDirectionCascadesToCourseRefsButKeepsCourses() {
-        Course course = courseRepository.save(Course.create("Java Basics", null, CLOCK));
+        Course course = courseRepository.save(Course.create("Java Basics", null, OWNER_ID, CLOCK));
         Direction direction = Direction.create("Java Backend", null, CLOCK);
         direction.addCourse(course.getId(), CLOCK);
         directionRepository.save(direction);

@@ -1,5 +1,6 @@
 package com.adventacademy.contentservice.application.service;
 
+import com.adventacademy.contentservice.application.port.CurrentUserProvider;
 import com.adventacademy.contentservice.domain.LessonContent;
 import com.adventacademy.contentservice.domain.constructor.Component;
 import com.adventacademy.contentservice.domain.constructor.ComponentPublicationPolicy;
@@ -25,16 +26,19 @@ public class ComponentLifecycleService {
     private final CourseRepository courseRepository;
     private final LessonContentRepository lessonContentRepository;
     private final ComponentPublicationPolicy publicationPolicy;
+    private final CurrentUserProvider currentUserProvider;
     private final Clock clock;
 
     public ComponentLifecycleService(ComponentRepository componentRepository,
                                      CourseRepository courseRepository,
                                      LessonContentRepository lessonContentRepository,
-                                     ComponentPublicationPolicy publicationPolicy) {
+                                     ComponentPublicationPolicy publicationPolicy,
+                                     CurrentUserProvider currentUserProvider) {
         this.componentRepository = componentRepository;
         this.courseRepository = courseRepository;
         this.lessonContentRepository = lessonContentRepository;
         this.publicationPolicy = publicationPolicy;
+        this.currentUserProvider = currentUserProvider;
         this.clock = Clock.systemUTC();
     }
 
@@ -74,7 +78,7 @@ public class ComponentLifecycleService {
      */
     public Course promote(UUID id) {
         Component component = get(id);
-        Course course = Course.create(component.getTitle(), component.getDescription(), clock);
+        Course course = Course.create(component.getTitle(), component.getDescription(), currentUserProvider.requireCurrentUserId(), clock);
         course.addComponent(component.getId(), clock);
         return courseRepository.save(course);
     }

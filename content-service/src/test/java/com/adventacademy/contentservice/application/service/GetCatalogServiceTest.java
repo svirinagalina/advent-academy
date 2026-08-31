@@ -11,14 +11,18 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import java.util.UUID;
 
 class CatalogResponseTest {
+
+    private static final UUID OWNER_ID = UUID.randomUUID();
+
 
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-17T12:00:00Z"), ZoneOffset.UTC);
 
     @Test
     void directionWithoutPublishedCoursesIsHiddenFromCatalog() {
-        Course draft = Course.create("Python course", "About python", CLOCK);
+        Course draft = Course.create("Python course", "About python", OWNER_ID, CLOCK);
         Direction direction = Direction.create("Backend", "About backend", CLOCK);
         direction.addCourse(draft.getId(), CLOCK);
 
@@ -30,7 +34,7 @@ class CatalogResponseTest {
 
     @Test
     void directionWithPublishedCourseStaysInCatalog() {
-        Course published = Course.create("Java course", "About java", CLOCK);
+        Course published = Course.create("Java course", "About java", OWNER_ID, CLOCK);
         Direction direction = Direction.create("Backend", "About backend", CLOCK);
         direction.addCourse(published.getId(), CLOCK);
 
