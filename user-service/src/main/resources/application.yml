@@ -48,6 +48,24 @@ security:
     totp-window-size: 1          # ±1 window (total ±30 seconds tolerance)
     recovery-code-count: 8       # Number of recovery codes to generate per MFA enrollment
 
+spring:
+  mail:
+    enabled: ${MAIL_ENABLED:false}
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    protocol: smtp
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: false
+
+app:
+  email:
+    from: ${EMAIL_FROM:noreply@adventacademy.com}
+  baseurl: ${APP_BASE_URL:http://localhost:3000}
+
 management:
   health:
     zeebe:
