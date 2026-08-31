@@ -43,6 +43,10 @@ security:
   account-lock:
     max-failed-attempts: 5
     lock-duration-minutes: 30
+  mfa:
+    totp-time-step-seconds: 30
+    totp-window-size: 1          # ±1 window (total ±30 seconds tolerance)
+    recovery-code-count: 8       # Number of recovery codes to generate per MFA enrollment
 
 management:
   health:
