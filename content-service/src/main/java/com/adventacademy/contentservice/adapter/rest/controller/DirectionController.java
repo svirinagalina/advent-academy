@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -35,6 +36,7 @@ public class DirectionController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "Create a direction")
     public ResponseEntity<DirectionResponse> create(@Valid @RequestBody DirectionRequest request) {
         var direction = assemblyService.create(request.title(), request.description());
@@ -42,24 +44,28 @@ public class DirectionController {
     }
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "List all directions")
     public List<DirectionResponse> findAll() {
         return assemblyService.findAll().stream().map(DirectionResponse::from).toList();
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get a direction with its course references")
     public DirectionResponse get(@PathVariable UUID id) {
         return DirectionResponse.from(assemblyService.get(id));
     }
 
     @PatchMapping("/{id}")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "Rename a direction / update description")
     public DirectionResponse rename(@PathVariable UUID id, @Valid @RequestBody DirectionRequest request) {
         return DirectionResponse.from(assemblyService.rename(id, request.title(), request.description()));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "Delete a direction")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         assemblyService.delete(id);
@@ -67,6 +73,7 @@ public class DirectionController {
     }
 
     @PostMapping("/{id}/courses")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "Add an existing course to the end of the direction")
     public ResponseEntity<DirectionResponse> addCourse(@PathVariable UUID id,
                                                        @Valid @RequestBody AddCourseRequest request) {
@@ -75,12 +82,14 @@ public class DirectionController {
     }
 
     @DeleteMapping("/{id}/courses/{courseId}")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "Remove a course from the direction (positions are renumbered)")
     public DirectionResponse removeCourse(@PathVariable UUID id, @PathVariable UUID courseId) {
         return DirectionResponse.from(assemblyService.removeCourse(id, courseId));
     }
 
     @PutMapping("/{id}/courses/order")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "Reorder courses")
     public DirectionResponse reorderCourses(@PathVariable UUID id,
                                             @Valid @RequestBody ReorderRequest request) {

@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -47,6 +48,7 @@ public class CourseController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "Create a course in DRAFT status")
     public ResponseEntity<CourseResponse> create(@Valid @RequestBody CourseRequest request) {
         var course = assemblyService.create(request.title(), request.description());
@@ -54,12 +56,14 @@ public class CourseController {
     }
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "List all courses")
     public List<CourseResponse> findAll() {
         return assemblyService.findAll().stream().map(CourseResponse::from).toList();
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get a course expanded into components and lessons")
     public CourseTreeResponse get(@PathVariable UUID id) {
         GetCatalogService.CourseTree tree = catalogService.getCourseTree(id);
@@ -67,12 +71,14 @@ public class CourseController {
     }
 
     @PatchMapping("/{id}")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "Rename a course / update description")
     public CourseResponse rename(@PathVariable UUID id, @Valid @RequestBody CourseRequest request) {
         return CourseResponse.from(assemblyService.rename(id, request.title(), request.description()));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "Delete a DRAFT course that is not used by any direction")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         assemblyService.delete(id);
@@ -80,6 +86,7 @@ public class CourseController {
     }
 
     @PostMapping("/{id}/components")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "Add an existing component to the end of the course")
     public ResponseEntity<CourseResponse> addComponent(@PathVariable UUID id,
                                                        @Valid @RequestBody AddComponentRequest request) {
@@ -88,12 +95,14 @@ public class CourseController {
     }
 
     @DeleteMapping("/{id}/components/{componentId}")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "Remove a component from the course (positions are renumbered)")
     public CourseResponse removeComponent(@PathVariable UUID id, @PathVariable UUID componentId) {
         return CourseResponse.from(assemblyService.removeComponent(id, componentId));
     }
 
     @PutMapping("/{id}/components/order")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "Reorder components")
     public CourseResponse reorderComponents(@PathVariable UUID id,
                                             @Valid @RequestBody ReorderRequest request) {
@@ -101,12 +110,14 @@ public class CourseController {
     }
 
     @PostMapping("/{id}/publish")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "Publish the course when all its components are published")
     public CourseResponse publish(@PathVariable UUID id) {
         return CourseResponse.from(assemblyService.publish(id));
     }
 
     @PostMapping("/{id}/archive")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "Archive the course")
     public CourseResponse archive(@PathVariable UUID id) {
         return CourseResponse.from(assemblyService.archive(id));

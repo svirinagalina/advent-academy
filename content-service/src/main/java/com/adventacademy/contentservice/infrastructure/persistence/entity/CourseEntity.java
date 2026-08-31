@@ -36,6 +36,9 @@ public class CourseEntity {
     @Column(nullable = false, length = 20)
     private PublicationStatus status;
 
+    @Column(name = "owner_id")
+    private UUID ownerId;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "course_components", joinColumns = @JoinColumn(name = "course_id"))
     @OrderBy("position ASC")
@@ -69,6 +72,10 @@ public class CourseEntity {
         return status;
     }
 
+    public UUID getOwnerId() {
+        return ownerId;
+    }
+
     public List<ComponentRefEmbeddable> getComponents() {
         return components;
     }
@@ -99,6 +106,10 @@ public class CourseEntity {
 
     public void setStatus(PublicationStatus status) {
         this.status = status;
+    }
+
+    public void setOwnerId(UUID ownerId) {
+        this.ownerId = ownerId;
     }
 
     public void setComponents(List<ComponentRefEmbeddable> components) {
