@@ -14,13 +14,16 @@ import org.junit.jupiter.api.Test;
 
 class CourseTest {
 
+    private static final UUID OWNER_ID = UUID.randomUUID();
+
+
     private static final Instant FIXED_INSTANT = Instant.parse("2026-06-29T12:00:00Z");
     private static final Clock CLOCK = Clock.fixed(FIXED_INSTANT, ZoneOffset.UTC);
     private static final CoursePublicationPolicy ALL_PUBLISHED = componentIds -> Set.of();
 
     @Test
     void createShouldInitializeEmptyDraftCourse() {
-        Course course = Course.create("Java", "About java", CLOCK);
+        Course course = Course.create("Java", "About java", OWNER_ID, CLOCK);
 
         assertThat(course.getId()).isNotNull();
         assertThat(course.getTitle()).isEqualTo("Java");
@@ -32,14 +35,14 @@ class CourseTest {
 
     @Test
     void createShouldRejectBlankTitle() {
-        assertThatThrownBy(() -> Course.create("", null, CLOCK))
+        assertThatThrownBy(() -> Course.create("", null, OWNER_ID, CLOCK))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("title must not be blank");
     }
 
     @Test
     void addComponentShouldAppendWithContiguousPositions() {
-        Course course = Course.create("Java", "About java", CLOCK);
+        Course course = Course.create("Java", "About java", OWNER_ID, CLOCK);
         UUID c1 = UUID.randomUUID();
         UUID c2 = UUID.randomUUID();
 
@@ -56,7 +59,7 @@ class CourseTest {
 
     @Test
     void addComponentShouldRejectDuplicate() {
-        Course course = Course.create("Java", "About java", CLOCK);
+        Course course = Course.create("Java", "About java", OWNER_ID, CLOCK);
         UUID c1 = UUID.randomUUID();
         course.addComponent(c1, CLOCK);
 
@@ -67,7 +70,7 @@ class CourseTest {
 
     @Test
     void addComponentShouldRejectNull() {
-        Course course = Course.create("Java", "About java", CLOCK);
+        Course course = Course.create("Java", "About java", OWNER_ID, CLOCK);
 
         assertThatThrownBy(() -> course.addComponent(null, CLOCK))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -76,7 +79,7 @@ class CourseTest {
 
     @Test
     void getComponentsShouldReturnUnmodifiableList() {
-        Course course = Course.create("Java", "About java", CLOCK);
+        Course course = Course.create("Java", "About java", OWNER_ID, CLOCK);
         course.addComponent(UUID.randomUUID(), CLOCK);
 
         List<ComponentRef> refs = course.getComponents();
@@ -98,7 +101,7 @@ class CourseTest {
 
     @Test
     void removeComponentShouldRenumberRemaining() {
-        Course course = Course.create("Java", "About java", CLOCK);
+        Course course = Course.create("Java", "About java", OWNER_ID, CLOCK);
         UUID c1 = UUID.randomUUID();
         UUID c2 = UUID.randomUUID();
         UUID c3 = UUID.randomUUID();
@@ -118,7 +121,7 @@ class CourseTest {
 
     @Test
     void reorderComponentsShouldApplyNewOrder() {
-        Course course = Course.create("Java", "About java", CLOCK);
+        Course course = Course.create("Java", "About java", OWNER_ID, CLOCK);
         UUID c1 = UUID.randomUUID();
         UUID c2 = UUID.randomUUID();
         course.addComponent(c1, CLOCK);
@@ -133,7 +136,7 @@ class CourseTest {
 
     @Test
     void reorderComponentsShouldRejectForeignIds() {
-        Course course = Course.create("Java", "About java", CLOCK);
+        Course course = Course.create("Java", "About java", OWNER_ID, CLOCK);
         course.addComponent(UUID.randomUUID(), CLOCK);
         course.addComponent(UUID.randomUUID(), CLOCK);
 
@@ -144,7 +147,7 @@ class CourseTest {
 
     @Test
     void reorderComponentsShouldRejectDuplicateIds() {
-        Course course = Course.create("Java", "About java", CLOCK);
+        Course course = Course.create("Java", "About java", OWNER_ID, CLOCK);
         UUID c1 = UUID.randomUUID();
         UUID c2 = UUID.randomUUID();
         course.addComponent(c1, CLOCK);
@@ -157,7 +160,7 @@ class CourseTest {
 
     @Test
     void reorderComponentsShouldRejectMissingIds() {
-        Course course = Course.create("Java", "About java", CLOCK);
+        Course course = Course.create("Java", "About java", OWNER_ID, CLOCK);
         UUID c1 = UUID.randomUUID();
         UUID c2 = UUID.randomUUID();
         course.addComponent(c1, CLOCK);
@@ -170,7 +173,7 @@ class CourseTest {
 
     @Test
     void publishShouldReportUnpublishedComponents() {
-        Course course = Course.create("Java", "About java", CLOCK);
+        Course course = Course.create("Java", "About java", OWNER_ID, CLOCK);
         UUID componentId = UUID.randomUUID();
         course.addComponent(componentId, CLOCK);
         CoursePublicationPolicy notReady = componentIds -> Set.of(componentId);
@@ -184,7 +187,7 @@ class CourseTest {
 
     @Test
     void modificationShouldBeRejectedWhenNotDraft() {
-        Course course = Course.create("Java", "About java", CLOCK);
+        Course course = Course.create("Java", "About java", OWNER_ID, CLOCK);
         UUID componentId = UUID.randomUUID();
         course.addComponent(componentId, CLOCK);
         course.publish(ALL_PUBLISHED, CLOCK);

@@ -39,12 +39,12 @@ public class JjwtProvider implements JwtProvider {
     @Override
     public ValidatedToken validate(String token) throws JwtException {
         try {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
-                    .setAllowedClockSkewSeconds(clockSkewSeconds)
+            Claims claims = Jwts.parser()
+                    .verifyWith(secretKey)
+                    .clockSkewSeconds(clockSkewSeconds)
                     .build()
-                    .parseClaimsJws(token)
-                    .getBody();
+                    .parseSignedClaims(token)
+                    .getPayload();
 
             validateClaims(claims);
 
@@ -68,7 +68,8 @@ public class JjwtProvider implements JwtProvider {
             throw new JwtException("Invalid issuer");
         }
 
-        if (!audience.equals(claims.getAudience())) {
+        Set<String> tokenAudience = claims.getAudience();
+        if (tokenAudience == null || !tokenAudience.contains(audience)) {
             throw new JwtException("Invalid audience");
         }
     }

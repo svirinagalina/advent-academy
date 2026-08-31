@@ -17,9 +17,13 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import java.util.UUID;
 
 @Transactional
 class CourseRepositoryAdapterIT extends AbstractPostgresIT {
+
+    private static final UUID OWNER_ID = UUID.randomUUID();
+
 
     private static final Clock CLOCK = Clock.systemUTC();
 
@@ -37,7 +41,7 @@ class CourseRepositoryAdapterIT extends AbstractPostgresIT {
         Component c1 = componentRepository.save(Component.create("Intro", null, CLOCK));
         Component c2 = componentRepository.save(Component.create("Collections", null, CLOCK));
 
-        Course course = Course.create("Java Basics", "About java", CLOCK);
+        Course course = Course.create("Java Basics", "About java", OWNER_ID, CLOCK);
         course.addComponent(c1.getId(), CLOCK);
         course.addComponent(c2.getId(), CLOCK);
         courseRepository.save(course);
@@ -58,7 +62,7 @@ class CourseRepositoryAdapterIT extends AbstractPostgresIT {
         Component c1 = componentRepository.save(Component.create("Intro", null, CLOCK));
         Component c2 = componentRepository.save(Component.create("Collections", null, CLOCK));
 
-        Course course = Course.create("Java Basics", "About java", CLOCK);
+        Course course = Course.create("Java Basics", "About java", OWNER_ID, CLOCK);
         course.addComponent(c1.getId(), CLOCK);
         course.addComponent(c2.getId(), CLOCK);
         courseRepository.save(course);
@@ -80,7 +84,7 @@ class CourseRepositoryAdapterIT extends AbstractPostgresIT {
     @Test
     void foreignKeyPreventsDeletingComponentUsedByCourse() {
         Component component = componentRepository.save(Component.create("Intro", null, CLOCK));
-        Course course = Course.create("Java Basics", "About java", CLOCK);
+        Course course = Course.create("Java Basics", "About java", OWNER_ID, CLOCK);
         course.addComponent(component.getId(), CLOCK);
         courseRepository.save(course);
         em.flush();
@@ -95,7 +99,7 @@ class CourseRepositoryAdapterIT extends AbstractPostgresIT {
     void existsByComponentIdSeesReferencedComponents() {
         Component used = componentRepository.save(Component.create("Used", null, CLOCK));
         Component unused = componentRepository.save(Component.create("Unused", null, CLOCK));
-        Course course = Course.create("Java Basics", null, CLOCK);
+        Course course = Course.create("Java Basics", null, OWNER_ID, CLOCK);
         course.addComponent(used.getId(), CLOCK);
         courseRepository.save(course);
         em.flush();

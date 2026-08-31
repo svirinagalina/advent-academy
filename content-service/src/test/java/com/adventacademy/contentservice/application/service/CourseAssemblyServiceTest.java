@@ -17,17 +17,22 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import com.adventacademy.contentservice.application.port.CurrentUserProvider;
 
 
 public class CourseAssemblyServiceTest {
+
+    private static final UUID OWNER_ID = UUID.randomUUID();
+
     private final ComponentRepository componentRepository = mock(ComponentRepository.class);
     private final CourseRepository courseRepository = mock(CourseRepository.class);
     private final DirectionRepository directionRepository = mock(DirectionRepository.class);
     private final CoursePublicationPolicy coursePublicationPolicy = mock(CoursePublicationPolicy.class);
+    private final CurrentUserProvider currentUserProvider = mock(CurrentUserProvider.class);
 
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-17T12:00:00Z"), ZoneOffset.UTC);
     private final CourseAssemblyService service = new CourseAssemblyService(
-            courseRepository, componentRepository, directionRepository, coursePublicationPolicy);
+            courseRepository, componentRepository, directionRepository, coursePublicationPolicy, currentUserProvider);
 
     @Test
     void addComponentShouldThrowWhenComponentDoesNotExist() {
@@ -43,7 +48,7 @@ public class CourseAssemblyServiceTest {
 
     @Test
     void deleteShouldThrowWhenCourseIsUsedByDirection() {
-        Course course = Course.create("Java course", "About java", CLOCK);
+        Course course = Course.create("Java course", "About java", OWNER_ID, CLOCK);
         when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
         when(directionRepository.existsByCourseId(course.getId())).thenReturn(true);
 
@@ -55,7 +60,7 @@ public class CourseAssemblyServiceTest {
 
     @Test
     void deleteShouldDeleteWhenCoursetIsNotUsed() {
-        Course course = Course.create("Basics", "About basics", CLOCK);
+        Course course = Course.create("Basics", "About basics", OWNER_ID, CLOCK);
         when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
         when(directionRepository.existsByCourseId(course.getId())).thenReturn(false);
 
@@ -67,7 +72,7 @@ public class CourseAssemblyServiceTest {
     @Test
     void publishShouldThrowWhenComponentsAreNotPublished() {
         UUID componentId = UUID.randomUUID();
-        Course course = Course.create("Java course", "About java", CLOCK);
+        Course course = Course.create("Java course", "About java", OWNER_ID, CLOCK);
         course.addComponent(componentId, CLOCK);
         when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
         when(coursePublicationPolicy.findUnpublishedComponents(List.of(componentId)))
@@ -82,7 +87,7 @@ public class CourseAssemblyServiceTest {
     @Test
     void publishShouldPublishWhenAllComponentsArePublished() {
         UUID componentId = UUID.randomUUID();
-        Course course = Course.create("Java course", "About java", CLOCK);
+        Course course = Course.create("Java course", "About java", OWNER_ID, CLOCK);
         course.addComponent(componentId, CLOCK);
         when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
         when(coursePublicationPolicy.findUnpublishedComponents(List.of(componentId))).thenReturn(Set.of());
