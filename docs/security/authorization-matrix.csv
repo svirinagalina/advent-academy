@@ -22,6 +22,7 @@ user-service;GET;/api/permissions/{id};admin;admin;Identity team;user-service/sr
 user-service;GET;/api/permissions;admin;admin;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/PermissionController.java;SEC-101
 user-service;POST;/api/users/{userId}/role-requests;self-or-admin;self-or-admin;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/RoleRequestController.java;SEC-109
 user-service;GET;/api/users/{userId}/role-requests;self-or-admin;self-or-admin;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/RoleRequestController.java;SEC-101
+user-service;POST;/api/role-requests/{id}/decision;admin;admin;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/RoleRequestController.java;SEC-109
 user-service;GET;/api/role-requests;admin;admin;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/RoleRequestController.java;SEC-101
 content-service;POST;/api/directions;public;content-editor-or-admin;Content team;content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/controller/DirectionController.java;SEC-102
 content-service;GET;/api/directions;public;content-owner-editor-or-admin;Content team;content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/controller/DirectionController.java;SEC-102

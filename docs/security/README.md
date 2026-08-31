@@ -1,7 +1,7 @@
 # Advent Academy security baseline
 
-This directory is the source of truth for the SEC-101 security architecture baseline assessed at
-commit `48bd774` on 2026-08-25.
+This directory is the source of truth for the SEC-101 security architecture baseline refreshed at
+commit `131a624` on 2026-08-31.
 
 - [`threat-model.md`](threat-model.md) defines assets, actors, data flows, trust boundaries, threats,
   and abuse cases.

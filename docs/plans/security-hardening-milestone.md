@@ -3,9 +3,9 @@
 ## Milestone control
 
 - **Status:** proposed
-- **Assessment date:** 2026-08-25 (Europe/Moscow)
-- **Assessed branch/commit:** `dev` / `48bd774`
-- **Locally available base:** `origin/dev` / `48bd774`
+- **Assessment date:** 2026-08-31 (Europe/Moscow)
+- **Assessed branch/commit:** `dev` / `131a624`
+- **Locally available base:** `origin/dev` / `131a624`
 - **Proposed duration:** 4 weeks
 - **Suggested dates:** 2026-08-31 — 2026-09-25
 - **Owner:** platform/backend team; every service owner participates
@@ -13,8 +13,8 @@
 - **Source of truth:** this file until the milestone is created in GitLab
 - **Delivery status:** SEC-101 implemented on `feature/43-threat-model`; SEC-102..SEC-110 not started
 
-`git fetch --prune origin` could not authenticate to GitLab on the assessment date. The local branch
-and local `origin/dev` were equal, but remote freshness was not independently confirmed.
+HTTPS fetch could not authenticate to GitLab. An SSH `ls-remote` and fetch on 2026-08-31 confirmed
+the remote `dev` tip as `131a624`, and the feature branch was rebased onto that commit.
 
 ## Goal
 
@@ -32,10 +32,10 @@ This is a stabilization milestone. It does not add student-facing product featur
 
 | Check | Result |
 | --- | --- |
-| `git status --short --branch` | At the initial assessment, `dev` tracked local `origin/dev`; the only new file was this plan |
-| `git fetch --prune origin` | Blocked: GitLab credentials unavailable, so remote freshness is unverified |
-| `GRADLE_USER_HOME=/tmp/advent-academy-gradle-home ./gradlew :user-service:test :content-service:test :meeting-service:test :api-gateway:test --rerun-tasks --no-daemon --stacktrace` | Passed: `BUILD SUCCESSFUL in 2m 35s`, 19 tasks executed |
-| `npm audit --audit-level=high` in `meeting-service` | Passed: 0 reported vulnerabilities |
+| `git status --short --branch` | Feature branch rebased onto the confirmed remote `dev` tip |
+| SSH `git ls-remote` and fetch | Passed: remote and local `origin/dev` resolve to `131a624` |
+| `GRADLE_USER_HOME=/tmp/advent-academy-gradle-home ./gradlew test checkstyleTest spotbugsTest --rerun-tasks --no-daemon --stacktrace` | Passed on the rebased branch: `BUILD SUCCESSFUL in 58s`, 26 tasks executed |
+| `npm audit --audit-level=high` in `meeting-service` | Passed on 2026-08-31: 0 reported vulnerabilities |
 | CI/config inspection | No SAST, SCA, secret, SBOM, container, IaC, or DAST gate is configured |
 
 Green functional tests do not change the findings below: the missing content-service authorization,

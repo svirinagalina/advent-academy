@@ -11,7 +11,7 @@ externally reachable route or one operational/static route family.
 | `surface` | Component that owns or exposes the route |
 | `method` | HTTP method, `WS`, or `ANY` for a gateway route family |
 | `path` | Normalized Spring path pattern |
-| `current_access` | Effective access at commit `48bd774` |
+| `current_access` | Effective access at commit `131a624` |
 | `target_access` | Required policy after the linked security work is complete |
 | `owner` | Team responsible for enforcing the target policy |
 | `source` | Source file or configuration defining the route |

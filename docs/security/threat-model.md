@@ -4,8 +4,8 @@
 
 - **Scope:** API gateway, user-service, content-service, meeting-service, PostgreSQL, Camunda local
   integration, uploaded content, CI/CD, and container runtime.
-- **Assessment date:** 2026-08-25.
-- **Assessed commit:** `48bd774`.
+- **Assessment date:** 2026-08-31.
+- **Assessed commit:** `131a624`.
 - **Method:** data-flow review plus STRIDE.
 - **Review trigger:** new external route, trust boundary, identity mechanism, file type, datastore,
   third-party integration, deployment topology, or material authorization change.
