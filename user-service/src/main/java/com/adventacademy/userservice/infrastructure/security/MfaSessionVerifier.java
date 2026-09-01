@@ -1,8 +1,8 @@
 package com.adventacademy.userservice.infrastructure.security;
 
+import com.adventacademy.userservice.application.port.PasswordEncoder;
 import com.adventacademy.userservice.domain.model.User;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 /**
