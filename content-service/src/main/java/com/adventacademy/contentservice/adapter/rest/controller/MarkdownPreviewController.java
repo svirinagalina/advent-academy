@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
@@ -17,7 +16,6 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/lessons/{lessonId}/markdown-preview")
 @Tag(name = "Markdown Preview", description = "Preview Markdown rendering with XSS protection")
-@PreAuthorize("isAuthenticated()")
 public class MarkdownPreviewController {
 
     @PostMapping
