@@ -108,7 +108,7 @@ class FileTypeDetectorTest {
     }
 
     @Test
-    void validatesSVGWithPNGExtension() {
+    void validatesSVGWithPNGExtension() throws IOException {
         // SVG file pretending to be PNG
         AllowedFileType detectedType = AllowedFileType.PNG;
         String filename = "image.png";
