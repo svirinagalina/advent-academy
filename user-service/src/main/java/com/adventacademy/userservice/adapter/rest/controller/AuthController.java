@@ -42,6 +42,7 @@ public class AuthController {
     private final ChangePasswordService changePasswordService;
     private final PasswordResetService passwordResetService;
     private final MfaService mfaService;
+    private final SessionLifecycleService sessionLifecycleService;
 
     public AuthController(
             RegisterUserService registerUserService,
@@ -50,7 +51,8 @@ public class AuthController {
             ConfirmEmailService confirmEmailService,
             ChangePasswordService changePasswordService,
             PasswordResetService passwordResetService,
-            MfaService mfaService) {
+            MfaService mfaService,
+            SessionLifecycleService sessionLifecycleService) {
         this.registerUserService = registerUserService;
         this.loginService = loginService;
         this.refreshTokenService = refreshTokenService;
@@ -58,6 +60,7 @@ public class AuthController {
         this.changePasswordService = changePasswordService;
         this.passwordResetService = passwordResetService;
         this.mfaService = mfaService;
+        this.sessionLifecycleService = sessionLifecycleService;
     }
 
     @PostMapping("/register")
@@ -189,6 +192,33 @@ public class AuthController {
             Authentication authentication) {
         MessageResponse response = mfaService.disableMfa(userId(authentication), code);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "Logout current session", description = "Logout the current session only")
+    @ApiResponse(responseCode = "200", description = "Logged out successfully")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    public ResponseEntity<MessageResponse> logout(
+            @RequestParam String jti,
+            HttpServletRequest httpRequest,
+            Authentication authentication) {
+        String ipAddress = httpRequest.getRemoteAddr();
+        String userAgent = httpRequest.getHeader("User-Agent");
+        sessionLifecycleService.logoutCurrentSession(userId(authentication), jti, userAgent, ipAddress);
+        return ResponseEntity.ok(new MessageResponse("Session logged out successfully"));
+    }
+
+    @PostMapping("/logout-all")
+    @Operation(summary = "Logout all sessions", description = "Logout all active sessions for the user")
+    @ApiResponse(responseCode = "200", description = "All sessions logged out successfully")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    public ResponseEntity<MessageResponse> logoutAll(
+            HttpServletRequest httpRequest,
+            Authentication authentication) {
+        String ipAddress = httpRequest.getRemoteAddr();
+        String userAgent = httpRequest.getHeader("User-Agent");
+        sessionLifecycleService.logoutAllSessions(userId(authentication), userAgent, ipAddress);
+        return ResponseEntity.ok(new MessageResponse("All sessions logged out successfully"));
     }
 
     private UUID userId(Authentication authentication) {

@@ -24,16 +24,19 @@ public class ChangePasswordService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuditTrailPort auditTrailPort;
+    private final SessionRevocationService sessionRevocationService;
     private final Clock clock;
 
     public ChangePasswordService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             AuditTrailPort auditTrailPort,
+            SessionRevocationService sessionRevocationService,
             Clock clock) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.auditTrailPort = auditTrailPort;
+        this.sessionRevocationService = sessionRevocationService;
         this.clock = clock;
     }
 
@@ -60,6 +63,9 @@ public class ChangePasswordService {
 
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
+
+        // Revoke all sessions when password changes
+        sessionRevocationService.revokeSessionsOnPasswordChange(user.getId());
 
         auditTrailPort.record(new AuditEvent(
                 UUID.randomUUID(),
