@@ -9,7 +9,7 @@ public record PasswordResetResponse(
     boolean success,
     long timestamp
 ) {
-    public static PasswordResetResponse success() {
+    public static PasswordResetResponse ok() {
         return new PasswordResetResponse(
                 "Password has been reset successfully. Please log in with your new password.",
                 true,
