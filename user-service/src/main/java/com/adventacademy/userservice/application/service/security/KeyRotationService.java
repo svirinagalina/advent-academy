@@ -1,8 +1,8 @@
 package com.adventacademy.userservice.application.service.security;
 
+import com.adventacademy.userservice.application.port.RsaKeyPairGeneratorPort;
 import com.adventacademy.userservice.domain.model.RsaKeyPair;
 import com.adventacademy.userservice.domain.repository.RsaKeyRepository;
-import com.adventacademy.userservice.infrastructure.security.RsaKeyPairGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -18,14 +18,14 @@ import java.util.List;
 public class KeyRotationService {
 
     private final RsaKeyRepository rsaKeyRepository;
-    private final RsaKeyPairGenerator keyPairGenerator;
+    private final RsaKeyPairGeneratorPort keyPairGenerator;
     private final long rotationWindowSeconds;
     private final long keyRetentionDays;
     private final Clock clock;
 
     public KeyRotationService(
             RsaKeyRepository rsaKeyRepository,
-            RsaKeyPairGenerator keyPairGenerator,
+            RsaKeyPairGeneratorPort keyPairGenerator,
             @Value("${security.key-management.rotation-window-seconds:3600}") long rotationWindowSeconds,
             @Value("${security.key-management.key-retention-days:7}") long keyRetentionDays,
             Clock clock) {

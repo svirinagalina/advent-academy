@@ -1,5 +1,6 @@
 package com.adventacademy.userservice.infrastructure.security;
 
+import com.adventacademy.userservice.application.port.RsaKeyPairGeneratorPort;
 import com.adventacademy.userservice.domain.model.RsaKeyPair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -14,11 +15,12 @@ import java.util.UUID;
 
 @Slf4j
 @Component
-public class RsaKeyPairGenerator {
+public class RsaKeyPairGenerator implements RsaKeyPairGeneratorPort {
 
     private static final int KEY_SIZE = 2048;
     private static final String ALGORITHM = "RS256";
 
+    @Override
     public RsaKeyPair generateNewKeyPair() {
         try {
             KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
