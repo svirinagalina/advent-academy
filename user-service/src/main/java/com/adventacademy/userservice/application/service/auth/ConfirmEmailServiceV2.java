@@ -2,6 +2,9 @@ package com.adventacademy.userservice.application.service.auth;
 
 import com.adventacademy.userservice.application.port.AuditTrailPort;
 import com.adventacademy.userservice.application.port.EmailService;
+import com.adventacademy.userservice.domain.model.AuditEvent;
+import com.adventacademy.userservice.domain.model.AuditEventType;
+import com.adventacademy.userservice.domain.model.AuditResult;
 import com.adventacademy.userservice.domain.model.User;
 import com.adventacademy.userservice.domain.model.VerificationToken;
 import com.adventacademy.userservice.domain.repository.UserRepository;
@@ -12,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -61,13 +65,17 @@ public class ConfirmEmailServiceV2 {
         if (!token.isValid(now, "email_verification")) {
             String reason = token.isExpired(now) ? "expired" : token.isUsed() ? "already_used" : "wrong_purpose";
             log.warn("Email verification failed: token {}", reason);
-            auditTrail.record(new AuditTrailPort.AuditEvent(
-                    "EMAIL_VERIFICATION_FAILED",
+            auditTrail.record(new AuditEvent(
+                    UUID.randomUUID(),
+                    AuditEventType.EMAIL_CONFIRMED,
                     token.getUserId(),
-                    "CONFIRM_EMAIL",
-                    token.getId().toString(),
-                    "FAILED",
-                    reason
+                    token.getUserId(),
+                    LocalDateTime.now(clock),
+                    ipAddress,
+                    null,
+                    AuditResult.FAILED,
+                    reason,
+                    null
             ));
             throw new IllegalArgumentException("Verification token is " + reason);
         }
@@ -80,16 +88,21 @@ public class ConfirmEmailServiceV2 {
         User user = userRepository.findById(token.getUserId())
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        user.confirmEmail();
+        user.setEmailVerified(true);
+        user.activate();
         userRepository.save(user);
 
         log.info("Email confirmed for user {}", token.getUserId());
-        auditTrail.record(new AuditTrailPort.AuditEvent(
-                "EMAIL_VERIFIED",
+        auditTrail.record(new AuditEvent(
+                UUID.randomUUID(),
+                AuditEventType.EMAIL_CONFIRMED,
                 token.getUserId(),
-                "CONFIRM_EMAIL",
-                token.getUserId().toString(),
-                "SUCCESS",
+                token.getUserId(),
+                LocalDateTime.now(clock),
+                ipAddress,
+                null,
+                AuditResult.SUCCESS,
+                null,
                 null
         ));
     }

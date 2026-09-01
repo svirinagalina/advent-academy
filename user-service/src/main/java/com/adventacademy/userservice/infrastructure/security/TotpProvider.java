@@ -9,8 +9,8 @@ import dev.samstevens.totp.code.CodeGenerator;
 import dev.samstevens.totp.code.CodeVerifier;
 import dev.samstevens.totp.code.DefaultCodeGenerator;
 import dev.samstevens.totp.code.DefaultCodeVerifier;
+import dev.samstevens.totp.code.HashingAlgorithm;
 import dev.samstevens.totp.exceptions.CodeGenerationException;
-import dev.samstevens.totp.exceptions.QrGenerationException;
 import dev.samstevens.totp.qr.QrData;
 import dev.samstevens.totp.qr.QrDataFactory;
 import dev.samstevens.totp.secret.DefaultSecretGenerator;
@@ -31,10 +31,13 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @Component
 public class TotpProvider {
+    private static final int TIME_STEP_SECONDS = 30;
+
     private final SecretGenerator secretGenerator;
     private final CodeGenerator codeGenerator;
     private final CodeVerifier codeVerifier;
     private final TimeProvider timeProvider;
+    private final QrDataFactory qrDataFactory;
     private final int windowSize;
 
     // Store last used TOTP to prevent replay attacks: secret -> (code, timestamp)
@@ -43,10 +46,14 @@ public class TotpProvider {
     public TotpProvider(
             @Value("${security.mfa.totp-window-size:1}") int windowSize
     ) {
-        this.secretGenerator = new DefaultSecretGenerator(256);  // 256-bit secret = 32 chars base32
+        this.secretGenerator = new DefaultSecretGenerator(32); // 32 base32 characters (160-bit secret)
         this.codeGenerator = new DefaultCodeGenerator();
-        this.codeVerifier = new DefaultCodeVerifier();
         this.timeProvider = new SystemTimeProvider();
+        final DefaultCodeVerifier verifier = new DefaultCodeVerifier(this.codeGenerator, this.timeProvider);
+        verifier.setTimePeriod(TIME_STEP_SECONDS);
+        verifier.setAllowedTimePeriodDiscrepancy(windowSize);
+        this.codeVerifier = verifier;
+        this.qrDataFactory = new QrDataFactory(HashingAlgorithm.SHA1, 6, TIME_STEP_SECONDS);
         this.windowSize = windowSize;
     }
 
@@ -63,20 +70,13 @@ public class TotpProvider {
      * Format: otpauth://totp/UserService:email?secret=...&issuer=...
      */
     public String generateQrCodeUrl(String email, String secret) {
-        try {
-            QrData qrData = new QrDataFactory()
-                    .newBuilder()
-                    .label(email)
-                    .secret(secret)
-                    .issuer("UserService")
-                    .accountName(email)
-                    .build();
+        QrData qrData = qrDataFactory.newBuilder()
+                .label(email)
+                .secret(secret)
+                .issuer("UserService")
+                .build();
 
-            return qrData.getUri();
-        } catch (QrGenerationException e) {
-            log.error("Failed to generate QR code URL", e);
-            throw new RuntimeException("QR code generation failed", e);
-        }
+        return qrData.getUri();
     }
 
     /**
@@ -125,7 +125,7 @@ public class TotpProvider {
 
         try {
             // Verify code is valid for current time (with ±windowSize window)
-            boolean isCodeValid = codeVerifier.isValidCode(secret, code, windowSize);
+            boolean isCodeValid = codeVerifier.isValidCode(secret, code);
             if (!isCodeValid) {
                 log.debug("TOTP code validation failed for time window");
                 return false;
@@ -143,8 +143,8 @@ public class TotpProvider {
 
             log.debug("TOTP code validated successfully");
             return true;
-        } catch (CodeGenerationException e) {
-            log.error("TOTP code generation error during validation", e);
+        } catch (RuntimeException e) {
+            log.error("TOTP code validation error", e);
             return false;
         }
     }
@@ -155,7 +155,7 @@ public class TotpProvider {
      */
     public String getCurrentCode(String secret) {
         try {
-            return codeGenerator.generate(secret);
+            return codeGenerator.generate(secret, timeProvider.getTime() / TIME_STEP_SECONDS);
         } catch (CodeGenerationException e) {
             log.error("Failed to generate current TOTP code", e);
             throw new RuntimeException("TOTP code generation failed", e);

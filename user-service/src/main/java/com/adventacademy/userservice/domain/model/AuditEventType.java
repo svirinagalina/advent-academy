@@ -5,7 +5,10 @@ public enum AuditEventType {
     // Auth
     LOGIN_SUCCESS,
     LOGIN_FAILED,
+    LOGOUT,
+    LOGOUT_ALL,
     REFRESH_TOKEN_UPDATED,
+    TOKEN_REFRESHED,
 
     // Registration & Email
     USER_REGISTERED,
@@ -26,5 +29,9 @@ public enum AuditEventType {
 
     // Account status
     USER_BLOCKED,
-    USER_UNBLOCKED
+    USER_UNBLOCKED,
+
+    // Sessions & security
+    SESSIONS_REVOKED,
+    SECURITY_INCIDENT
 }

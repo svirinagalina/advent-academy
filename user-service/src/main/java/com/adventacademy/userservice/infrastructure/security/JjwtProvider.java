@@ -1,18 +1,24 @@
 package com.adventacademy.userservice.infrastructure.security;
 
 import com.adventacademy.userservice.application.port.JwtProvider;
+import com.adventacademy.userservice.domain.model.RsaKeyPair;
 import com.adventacademy.userservice.domain.repository.RsaKeyRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.LocatorAdapter;
+import io.jsonwebtoken.ProtectedHeader;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.StringReader;
+import java.security.Key;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -174,7 +180,12 @@ public class JjwtProvider implements JwtProvider {
 
     private Claims parseClaims(String token) {
         final Claims claims = Jwts.parser()
-                .verifyWith(signingKey)
+                .keyLocator(new LocatorAdapter<Key>() {
+                    @Override
+                    protected Key locate(ProtectedHeader header) {
+                        return resolveVerificationKey(header.getKeyId());
+                    }
+                })
                 .requireIssuer(issuer)
                 .clockSkewSeconds(clockSkewSeconds)
                 .clock(() -> Date.from(clock.instant()))
@@ -185,6 +196,33 @@ public class JjwtProvider implements JwtProvider {
             throw new JwtException("Invalid token audience");
         }
         return claims;
+    }
+
+    private PublicKey resolveVerificationKey(String kid) {
+        if (kid == null) {
+            throw new JwtException("Token header does not contain a kid");
+        }
+        final RsaKeyPair keyPair = rsaKeyRepository.findByKid(kid)
+                .orElseThrow(() -> new JwtException("Unknown signing key: " + kid));
+        if (keyPair.isRevoked()) {
+            throw new JwtException("Signing key has been revoked: " + kid);
+        }
+        return loadPublicKeyFromPem(keyPair.getPublicKeyPem());
+    }
+
+    private PublicKey loadPublicKeyFromPem(String pemKey) {
+        try {
+            String publicKeyPem = pemKey
+                    .replace("-----BEGIN PUBLIC KEY-----", "")
+                    .replace("-----END PUBLIC KEY-----", "")
+                    .replaceAll("\\s", "");
+            byte[] decodedKey = Base64.getDecoder().decode(publicKeyPem);
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            return keyFactory.generatePublic(new X509EncodedKeySpec(decodedKey));
+        } catch (Exception e) {
+            log.error("Failed to load public key from PEM", e);
+            throw new JwtException("Failed to load public key", e);
+        }
     }
 
     private void removeExpiredRefreshTokens() {
