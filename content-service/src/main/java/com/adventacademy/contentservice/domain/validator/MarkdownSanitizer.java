@@ -2,6 +2,7 @@ package com.adventacademy.contentservice.domain.validator;
 
 import lombok.extern.slf4j.Slf4j;
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -16,6 +17,9 @@ public class MarkdownSanitizer {
     private static final Pattern JAVASCRIPT_URL = Pattern.compile("(?i)javascript:");
     private static final Pattern DATA_HTML_URL = Pattern.compile("(?i)data:text/html");
     private static final Pattern STYLE_JAVASCRIPT = Pattern.compile("(?i)background-image\\s*:\\s*url\\s*\\(.*?javascript");
+
+    private static final Pattern NUMERIC_ENTITY = Pattern.compile("&#(\\d+);");
+    private static final Pattern HEX_ENTITY = Pattern.compile("&#x([0-9a-fA-F]+);");
 
     // Allowed HTML tags for rendering
     private static final Set<String> ALLOWED_TAGS = new HashSet<>(Arrays.asList(
@@ -104,22 +108,22 @@ public class MarkdownSanitizer {
         String decoded = html;
 
         // Decode numeric entities
-        decoded = decoded.replaceAll("&#(\\d+);", match -> {
+        decoded = NUMERIC_ENTITY.matcher(decoded).replaceAll(match -> {
             try {
-                int code = Integer.parseInt(match.substring(2, match.length() - 1));
-                return String.valueOf((char) code);
+                int code = Integer.parseInt(match.group(1));
+                return Matcher.quoteReplacement(String.valueOf((char) code));
             } catch (NumberFormatException e) {
-                return match;
+                return Matcher.quoteReplacement(match.group());
             }
         });
 
         // Decode hex entities
-        decoded = decoded.replaceAll("&#x([0-9a-fA-F]+);", match -> {
+        decoded = HEX_ENTITY.matcher(decoded).replaceAll(match -> {
             try {
-                int code = Integer.parseInt(match.substring(3, match.length() - 1), 16);
-                return String.valueOf((char) code);
+                int code = Integer.parseInt(match.group(1), 16);
+                return Matcher.quoteReplacement(String.valueOf((char) code));
             } catch (NumberFormatException e) {
-                return match;
+                return Matcher.quoteReplacement(match.group());
             }
         });
 

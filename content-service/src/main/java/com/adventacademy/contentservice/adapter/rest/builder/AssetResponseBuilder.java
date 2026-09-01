@@ -11,6 +11,8 @@ import java.nio.charset.StandardCharsets;
 @Component
 public class AssetResponseBuilder {
 
+    private static final MediaType APPLICATION_ZIP = new MediaType("application", "zip");
+
     /**
      * Build response entity with proper headers based on file type
      * Potentially dangerous files (HTML, SVG, XML) are served as attachment
@@ -72,7 +74,7 @@ public class AssetResponseBuilder {
             case JPEG -> MediaType.IMAGE_JPEG;
             case GIF -> MediaType.IMAGE_GIF;
             case PDF -> MediaType.APPLICATION_PDF;
-            case ZIP -> MediaType.APPLICATION_ZIP;
+            case ZIP -> APPLICATION_ZIP;
             default -> MediaType.APPLICATION_OCTET_STREAM;
         };
     }
