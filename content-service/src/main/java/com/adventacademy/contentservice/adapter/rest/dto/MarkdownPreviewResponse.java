@@ -1,4 +1,7 @@
 package com.adventacademy.contentservice.adapter.rest.dto;
 
-public record MarkdownPreviewResponse(String markdown, String html) {
-}
+public record MarkdownPreviewResponse(
+    String html,
+    String plainText,
+    boolean safe
+) {}
