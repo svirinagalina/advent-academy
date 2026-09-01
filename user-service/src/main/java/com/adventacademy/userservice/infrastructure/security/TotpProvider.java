@@ -9,10 +9,9 @@ import dev.samstevens.totp.code.CodeGenerator;
 import dev.samstevens.totp.code.CodeVerifier;
 import dev.samstevens.totp.code.DefaultCodeGenerator;
 import dev.samstevens.totp.code.DefaultCodeVerifier;
+import dev.samstevens.totp.code.HashingAlgorithm;
 import dev.samstevens.totp.exceptions.CodeGenerationException;
-import dev.samstevens.totp.exceptions.QrGenerationException;
 import dev.samstevens.totp.qr.QrData;
-import dev.samstevens.totp.qr.QrDataFactory;
 import dev.samstevens.totp.secret.DefaultSecretGenerator;
 import dev.samstevens.totp.secret.SecretGenerator;
 import dev.samstevens.totp.time.SystemTimeProvider;
@@ -31,6 +30,12 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @Component
 public class TotpProvider {
+
+    private static final int TIME_PERIOD_SECONDS = 30;
+    private static final int CODE_DIGITS = 6;
+    private static final int SECRET_LENGTH_CHARS = 32; // 32 base32 chars = 160 bits of entropy
+    private static final String ISSUER = "UserService";
+
     private final SecretGenerator secretGenerator;
     private final CodeGenerator codeGenerator;
     private final CodeVerifier codeVerifier;
@@ -43,10 +48,15 @@ public class TotpProvider {
     public TotpProvider(
             @Value("${security.mfa.totp-window-size:1}") int windowSize
     ) {
-        this.secretGenerator = new DefaultSecretGenerator(256);  // 256-bit secret = 32 chars base32
+        this.secretGenerator = new DefaultSecretGenerator(SECRET_LENGTH_CHARS);
         this.codeGenerator = new DefaultCodeGenerator();
-        this.codeVerifier = new DefaultCodeVerifier();
         this.timeProvider = new SystemTimeProvider();
+
+        DefaultCodeVerifier verifier = new DefaultCodeVerifier(this.codeGenerator, this.timeProvider);
+        verifier.setTimePeriod(TIME_PERIOD_SECONDS);
+        verifier.setAllowedTimePeriodDiscrepancy(windowSize);
+        this.codeVerifier = verifier;
+
         this.windowSize = windowSize;
     }
 
@@ -63,20 +73,15 @@ public class TotpProvider {
      * Format: otpauth://totp/UserService:email?secret=...&issuer=...
      */
     public String generateQrCodeUrl(String email, String secret) {
-        try {
-            QrData qrData = new QrDataFactory()
-                    .newBuilder()
-                    .label(email)
-                    .secret(secret)
-                    .issuer("UserService")
-                    .accountName(email)
-                    .build();
-
-            return qrData.getUri();
-        } catch (QrGenerationException e) {
-            log.error("Failed to generate QR code URL", e);
-            throw new RuntimeException("QR code generation failed", e);
-        }
+        return new QrData.Builder()
+                .label(email)
+                .secret(secret)
+                .issuer(ISSUER)
+                .algorithm(HashingAlgorithm.SHA1)
+                .digits(CODE_DIGITS)
+                .period(TIME_PERIOD_SECONDS)
+                .build()
+                .getUri();
     }
 
     /**
@@ -101,7 +106,7 @@ public class TotpProvider {
             return "data:image/png;base64," + base64;
         } catch (WriterException | IOException e) {
             log.error("Failed to generate QR code image", e);
-            throw new RuntimeException("QR code image generation failed", e);
+            throw new IllegalStateException("QR code image generation failed", e);
         }
     }
 
@@ -118,35 +123,29 @@ public class TotpProvider {
      * @return true if code is valid and fresh, false otherwise
      */
     public boolean validateCode(String secret, String code) {
-        if (secret == null || code == null || code.length() != 6) {
+        if (secret == null || code == null || code.length() != CODE_DIGITS) {
             log.debug("Invalid TOTP code format");
             return false;
         }
 
-        try {
-            // Verify code is valid for current time (with ±windowSize window)
-            boolean isCodeValid = codeVerifier.isValidCode(secret, code, windowSize);
-            if (!isCodeValid) {
-                log.debug("TOTP code validation failed for time window");
-                return false;
-            }
-
-            // Check for replay: ensure this code wasn't used before
-            String codeKey = secret + ":" + code;
-            if (lastUsedCodes.containsKey(codeKey)) {
-                log.warn("TOTP replay attack detected: code reused for secret");
-                return false;
-            }
-
-            // Mark code as used (prevent replay)
-            lastUsedCodes.put(codeKey, code);
-
-            log.debug("TOTP code validated successfully");
-            return true;
-        } catch (CodeGenerationException e) {
-            log.error("TOTP code generation error during validation", e);
+        // Verify code is valid for current time (with ±windowSize window)
+        if (!codeVerifier.isValidCode(secret, code)) {
+            log.debug("TOTP code validation failed for time window");
             return false;
         }
+
+        // Check for replay: ensure this code wasn't used before
+        String codeKey = secret + ":" + code;
+        if (lastUsedCodes.containsKey(codeKey)) {
+            log.warn("TOTP replay attack detected: code reused for secret");
+            return false;
+        }
+
+        // Mark code as used (prevent replay)
+        lastUsedCodes.put(codeKey, code);
+
+        log.debug("TOTP code validated successfully");
+        return true;
     }
 
     /**
@@ -155,10 +154,10 @@ public class TotpProvider {
      */
     public String getCurrentCode(String secret) {
         try {
-            return codeGenerator.generate(secret);
+            return codeGenerator.generate(secret, timeProvider.getTime() / TIME_PERIOD_SECONDS);
         } catch (CodeGenerationException e) {
             log.error("Failed to generate current TOTP code", e);
-            throw new RuntimeException("TOTP code generation failed", e);
+            throw new IllegalStateException("TOTP code generation failed", e);
         }
     }
 
@@ -175,8 +174,9 @@ public class TotpProvider {
      * Called during application shutdown or maintenance.
      */
     public void clearUsedCodes() {
+        int cleared = lastUsedCodes.size();
         lastUsedCodes.clear();
-        log.info("Cleared {} cached TOTP codes", lastUsedCodes.size());
+        log.info("Cleared {} cached TOTP codes", cleared);
     }
 
     /**
@@ -190,8 +190,8 @@ public class TotpProvider {
             info.put("provided_code", code);
             info.put("match", currentCode.equals(code));
             info.put("window_size", windowSize);
-            info.put("time_step_seconds", 30);
-        } catch (Exception e) {
+            info.put("time_step_seconds", TIME_PERIOD_SECONDS);
+        } catch (RuntimeException e) {
             info.put("error", e.getMessage());
         }
         return info;
