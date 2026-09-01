@@ -103,6 +103,12 @@ public class User {
         }
     }
 
+    public void confirmEmail() {
+        this.emailVerified = true;
+        this.emailVerificationToken = null;
+        activate();
+    }
+
     public void activate() {
         if (status == UserStatus.DELETED) {
             throw new InvalidUserStateException("Cannot activate deleted user");

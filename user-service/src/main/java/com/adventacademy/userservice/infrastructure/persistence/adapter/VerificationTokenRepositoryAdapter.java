@@ -43,6 +43,11 @@ public class VerificationTokenRepositoryAdapter implements VerificationTokenRepo
     }
 
     @Override
+    public void deleteById(UUID id) {
+        jpaRepository.deleteById(id);
+    }
+
+    @Override
     public void deleteExpired() {
         jpaRepository.deleteExpired();
     }

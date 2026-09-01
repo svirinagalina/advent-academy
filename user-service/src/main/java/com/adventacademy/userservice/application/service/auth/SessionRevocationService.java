@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -81,7 +82,7 @@ public class SessionRevocationService {
                 null,
                 AuditResult.SUCCESS,
                 reason + " (" + revokedCount + " sessions revoked)",
-                reasonCode
+                Map.of("reasonCode", reasonCode)
         ));
     }
 }

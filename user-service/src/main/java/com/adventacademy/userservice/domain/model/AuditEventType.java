@@ -5,7 +5,10 @@ public enum AuditEventType {
     // Auth
     LOGIN_SUCCESS,
     LOGIN_FAILED,
+    LOGOUT,
+    LOGOUT_ALL,
     REFRESH_TOKEN_UPDATED,
+    TOKEN_REFRESHED,
 
     // Registration & Email
     USER_REGISTERED,
@@ -23,6 +26,10 @@ public enum AuditEventType {
     ROLE_REQUEST_REJECTED,
     ROLE_REQUEST_FAILED,
     ROLE_REQUEST_WORKFLOW_START_FAILED,
+
+    // Sessions and security
+    SESSIONS_REVOKED,
+    SECURITY_INCIDENT,
 
     // Account status
     USER_BLOCKED,

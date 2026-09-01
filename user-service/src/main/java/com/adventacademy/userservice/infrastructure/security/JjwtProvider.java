@@ -1,8 +1,10 @@
 package com.adventacademy.userservice.infrastructure.security;
 
 import com.adventacademy.userservice.application.port.JwtProvider;
+import com.adventacademy.userservice.domain.model.RsaKeyPair;
 import com.adventacademy.userservice.domain.repository.RsaKeyRepository;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Header;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +14,9 @@ import org.springframework.stereotype.Component;
 import java.io.StringReader;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -164,6 +168,33 @@ public class JjwtProvider implements JwtProvider {
         }
     }
 
+    private PublicKey resolveVerificationKey(Header header) {
+        final Object kid = header.get("kid");
+        if (kid == null) {
+            throw new JwtException("Token does not carry a kid header");
+        }
+        final RsaKeyPair keyPair = rsaKeyRepository.findByKid(kid.toString())
+            .orElseThrow(() -> new JwtException("Unknown signing key: " + kid));
+        return loadPublicKeyFromPem(keyPair.getPublicKeyPem());
+    }
+
+    private PublicKey loadPublicKeyFromPem(String pemKey) {
+        try {
+            String publicKeyPem = pemKey
+                    .replace("-----BEGIN PUBLIC KEY-----", "")
+                    .replace("-----END PUBLIC KEY-----", "")
+                    .replaceAll("\\s", "");
+
+            byte[] decodedKey = Base64.getDecoder().decode(publicKeyPem);
+            X509EncodedKeySpec spec = new X509EncodedKeySpec(decodedKey);
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            return keyFactory.generatePublic(spec);
+        } catch (Exception e) {
+            log.error("Failed to load public key from PEM", e);
+            throw new RuntimeException("Failed to load public key", e);
+        }
+    }
+
     private boolean hasType(String token, String expectedType) {
         try {
             return expectedType.equals(parseClaims(token).get(TOKEN_TYPE_CLAIM, String.class));
@@ -174,7 +205,7 @@ public class JjwtProvider implements JwtProvider {
 
     private Claims parseClaims(String token) {
         final Claims claims = Jwts.parser()
-                .verifyWith(signingKey)
+                .keyLocator(this::resolveVerificationKey)
                 .requireIssuer(issuer)
                 .clockSkewSeconds(clockSkewSeconds)
                 .clock(() -> Date.from(clock.instant()))

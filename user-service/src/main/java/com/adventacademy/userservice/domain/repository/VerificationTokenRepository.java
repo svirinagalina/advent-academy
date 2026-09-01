@@ -10,5 +10,7 @@ public interface VerificationTokenRepository {
     Optional<VerificationToken> findById(UUID id);
     Optional<VerificationToken> findByTokenDigest(String digest);
     Optional<VerificationToken> findActiveByUserIdAndPurpose(UUID userId, String purpose);
+    void deleteById(UUID id);
+
     void deleteExpired();
 }
