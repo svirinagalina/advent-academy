@@ -14,8 +14,11 @@ commit `131a624` on 2026-08-31.
   owned, expiring risk decision.
 
 The `securityContract` Gradle task checks that every annotated REST controller route and every API
-gateway path is represented in the matrix. It also rejects known local/debug settings from any
-future `application-production*.yml`, `application-prod*.yml`, or production Dockerfile.
+gateway path is represented in the matrix. It also requires at least one production-specific
+configuration to be covered and rejects known local/debug settings from
+`application-production*.yml`, `application-prod*.yml`, or production Dockerfiles. Base, `local`,
+`docker`, Compose, `.git`, and build-output files are intentionally outside this static check;
+SEC-106 owns runtime and deployment verification for those files.
 
 Changes to controllers, gateway routes, trust boundaries, or production security defaults must
 update these documents in the same merge request.

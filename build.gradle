@@ -72,7 +72,10 @@ dependencies {
 }
 
 tasks.named('test') {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        // The dedicated securityContract task is the single CI owner of this suite.
+        excludeTags 'security-contract'
+    }
 }
 
 tasks.register('securityContract', Test) {

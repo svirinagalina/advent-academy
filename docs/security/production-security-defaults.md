@@ -66,7 +66,8 @@ SQL tracing, synthetic credentials, or JDWP when explicitly enabled. They must:
 
 ## CI enforcement
 
-`./gradlew securityContract` rejects forbidden local/debug settings in files named
+`./gradlew securityContract` requires at least one production-specific configuration and rejects
+forbidden local/debug settings in files named
 `application-production*.yml`, `application-prod*.yml`, `Dockerfile.production*`, or
 `Dockerfile.prod*`. The check intentionally targets production-specific files so existing local
 Compose behavior remains documented evidence rather than being silently reclassified as secure.

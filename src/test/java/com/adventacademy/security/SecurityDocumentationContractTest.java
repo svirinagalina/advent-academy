@@ -2,6 +2,7 @@ package com.adventacademy.security;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -45,14 +46,18 @@ class SecurityDocumentationContractTest {
             "delegated-and-edge-policy"
     );
     private static final Pattern CLASS_REQUEST_MAPPING = Pattern.compile(
-            "@RequestMapping\\s*\\(\\s*(?:value\\s*=\\s*)?\"([^\"]*)\"\\s*\\)"
-                    + "[\\s\\S]*?(?:public\\s+)?class\\s+\\w+"
+            "@RequestMapping\\s*\\((.*?)\\)[\\s\\S]*?(?:public\\s+)?class\\s+\\w+",
+            Pattern.DOTALL
     );
     private static final Pattern METHOD_MAPPING = Pattern.compile(
             "@(Get|Post|Put|Patch|Delete)Mapping(?:\\s*\\((.*?)\\))?",
             Pattern.DOTALL
     );
     private static final Pattern QUOTED_VALUE = Pattern.compile("\"([^\"]*)\"");
+    private static final Pattern NAMED_PATH_ATTRIBUTE = Pattern.compile(
+            "(?:^|,)\\s*(?:value|path)\\s*=\\s*(\\{[^}]*}|\"[^\"]*\")",
+            Pattern.DOTALL
+    );
     private static final Pattern THREAT_ROW = Pattern.compile("^\\| T-\\d{2} .+\\| SEC-\\d{3}.*\\|$");
     private static final Pattern RISK_ROW = Pattern.compile(
             "^\\| R-\\d{3} .+\\| .+\\| .+\\| SEC-\\d{3}(?:[^|]*)\\| 20\\d{2}-\\d{2}-\\d{2} \\| (?:Open|Accepted|Closed) \\|$"
@@ -140,27 +145,20 @@ class SecurityDocumentationContractTest {
     void everyGatewayPathPredicateIsInAuthorizationMatrix() throws IOException {
         final Set<RouteKey> documented = matrixKeys();
         final Path gatewayConfig = ROOT.resolve("api-gateway/src/main/resources/application.yml");
-        final List<String> lines = Files.readAllLines(gatewayConfig);
-        int discovered = 0;
+        final List<String> gatewayPaths = gatewayPaths(Files.readString(gatewayConfig));
 
-        for (String line : lines) {
-            final String trimmed = line.trim();
-            if (!trimmed.startsWith("- Path=")) {
-                continue;
+        for (String path : gatewayPaths) {
+            final String normalizedPath = normalizePath(path);
+            String method = "ANY";
+            if ("/ws/meetings".equals(normalizedPath)) {
+                method = "WS";
             }
-            final String predicates = trimmed.substring("- Path=".length());
-            for (String path : predicates.split(",")) {
-                final String normalizedPath = normalizePath(path.trim());
-                String method = "ANY";
-                if ("/ws/meetings".equals(normalizedPath)) {
-                    method = "WS";
-                }
-                final RouteKey route = new RouteKey("api-gateway", method, normalizedPath);
-                assertTrue(documented.contains(route), "Undocumented gateway route: " + route);
-                discovered++;
-            }
+            final RouteKey route = new RouteKey("api-gateway", method, normalizedPath);
+            assertTrue(documented.contains(route), "Undocumented gateway route: " + route);
         }
-        assertTrue(discovered >= 18, "Expected all configured gateway path predicates to be discovered");
+        // These floors intentionally preserve the reviewed baseline against accidental deletion;
+        // an intentional inventory reduction must update the floor in the same change.
+        assertTrue(gatewayPaths.size() >= 18, "Expected all configured gateway path predicates to be discovered");
     }
 
     @Test
@@ -169,12 +167,14 @@ class SecurityDocumentationContractTest {
         final long threats = threatLines.stream().filter(line -> line.startsWith("| T-")).count();
         final long treatedThreats = threatLines.stream().filter(line -> THREAT_ROW.matcher(line).matches()).count();
         assertEquals(threats, treatedThreats, "Every threat row must end in a SEC tracking issue");
+        // Intentional deletion guard: an approved scope reduction must update this reviewed baseline.
         assertTrue(threats >= 20, "Threat model unexpectedly lost baseline threats");
 
         final List<String> riskLines = Files.readAllLines(ROOT.resolve("docs/security/risk-register.md"));
         final long risks = riskLines.stream().filter(line -> line.startsWith("| R-")).count();
         final long ownedRisks = riskLines.stream().filter(line -> RISK_ROW.matcher(line).matches()).count();
         assertEquals(risks, ownedRisks, "Every risk must have owner, SEC treatment, review date, and status");
+        // Intentional deletion guard: an approved scope reduction must update this reviewed baseline.
         assertTrue(risks >= 12, "Risk register unexpectedly lost baseline risks");
     }
 
@@ -202,17 +202,14 @@ class SecurityDocumentationContractTest {
                     "Unsafe or missing production policy: " + requirement.getKey());
         }
 
-        try (Stream<Path> paths = Files.walk(ROOT)) {
-            final List<Path> productionFiles = paths
-                    .filter(Files::isRegularFile)
-                    .filter(this::isProductionConfiguration)
-                    .toList();
-            for (Path productionFile : productionFiles) {
-                final String content = Files.readString(productionFile);
-                assertTrue(findForbiddenProductionPatterns(content).isEmpty(),
-                        "Forbidden local/debug production setting in " + ROOT.relativize(productionFile)
-                                + ": " + findForbiddenProductionPatterns(content));
-            }
+        final List<Path> productionFiles = discoverProductionConfigurations();
+        assertFalse(productionFiles.isEmpty(),
+                "No production configuration is covered by the security guard");
+        for (Path productionFile : productionFiles) {
+            final String content = Files.readString(productionFile);
+            assertTrue(findForbiddenProductionPatterns(content).isEmpty(),
+                    "Forbidden local/debug production setting in " + ROOT.relativize(productionFile)
+                            + ": " + findForbiddenProductionPatterns(content));
         }
     }
 
@@ -248,6 +245,35 @@ class SecurityDocumentationContractTest {
 
         assertTrue(findForbiddenProductionPatterns(safeExample).isEmpty(),
                 "Production guard rejected fail-closed settings");
+    }
+
+    @Test
+    void mappingPathExtractionIgnoresNonPathStringAttributes() {
+        assertEquals(List.of("/x"), mappingPaths("path = \"/x\", produces = \"text/csv\""));
+        assertEquals(List.of("/a", "/b"), mappingPaths("{\"/a\", \"/b\"}"));
+        assertEquals(List.of("/x"), mappingPaths("value = \"/x\", consumes = \"application/json\""));
+    }
+
+    @Test
+    void gatewayPathExtractionSupportsShortcutAndExpandedPredicates() {
+        final String yaml = """
+                spring:
+                  cloud:
+                    gateway:
+                      routes:
+                        - id: shortcut
+                          predicates:
+                            - Path=/api/**,Method=GET
+                        - id: expanded
+                          predicates:
+                            - name: Path
+                              args:
+                                patterns:
+                                  - /admin/**
+                                  - /ops/**
+                """;
+
+        assertEquals(List.of("/api/**", "/admin/**", "/ops/**"), gatewayPaths(yaml));
     }
 
     private List<MatrixEntry> readMatrix() throws IOException {
@@ -292,7 +318,7 @@ class SecurityDocumentationContractTest {
             final List<Path> controllers = paths
                     .filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().endsWith("Controller.java"))
-                    .filter(path -> path.toString().contains("/src/main/java/"))
+                    .filter(path -> containsPathSequence(path, "src", "main", "java"))
                     .toList();
             for (Path controller : controllers) {
                 routes.addAll(discoverControllerRoutes(controller));
@@ -304,9 +330,12 @@ class SecurityDocumentationContractTest {
     private List<RouteKey> discoverControllerRoutes(Path controller) throws IOException {
         final String source = Files.readString(controller);
         final Matcher classMapping = CLASS_REQUEST_MAPPING.matcher(source);
-        String basePath = "";
+        List<String> basePaths = List.of("");
         if (classMapping.find()) {
-            basePath = classMapping.group(1);
+            basePaths = mappingPaths(classMapping.group(1));
+            if (basePaths.isEmpty()) {
+                basePaths = List.of("");
+            }
         }
         final Matcher methodMappings = METHOD_MAPPING.matcher(source);
         final List<RouteKey> routes = new ArrayList<>();
@@ -315,27 +344,134 @@ class SecurityDocumentationContractTest {
         while (methodMappings.find()) {
             final String method = methodMappings.group(1).toUpperCase();
             final String arguments = methodMappings.group(2);
-            final List<String> paths = quotedPaths(arguments);
+            final List<String> paths = mappingPaths(arguments);
             if (paths.isEmpty()) {
                 paths.add("");
             }
-            for (String path : paths) {
-                routes.add(new RouteKey(surface, method, normalizePath(basePath + path)));
+            for (String basePath : basePaths) {
+                for (String path : paths) {
+                    routes.add(new RouteKey(surface, method, normalizePath(basePath + path)));
+                }
             }
         }
         return routes;
     }
 
-    private List<String> quotedPaths(String arguments) {
+    private List<String> mappingPaths(String arguments) {
         final List<String> paths = new ArrayList<>();
         if (arguments == null) {
             return paths;
         }
-        final Matcher values = QUOTED_VALUE.matcher(arguments);
+        final String trimmed = arguments.trim();
+        final Matcher namedPath = NAMED_PATH_ATTRIBUTE.matcher(trimmed);
+        final String pathExpression;
+        if (namedPath.find()) {
+            pathExpression = namedPath.group(1);
+        } else if (trimmed.startsWith("\"") || trimmed.startsWith("{")) {
+            if (trimmed.startsWith("{")) {
+                pathExpression = trimmed.substring(0, trimmed.indexOf('}') + 1);
+            } else {
+                pathExpression = trimmed.substring(0, trimmed.indexOf('"', 1) + 1);
+            }
+        } else {
+            return paths;
+        }
+        final Matcher values = QUOTED_VALUE.matcher(pathExpression);
         while (values.find()) {
             paths.add(values.group(1));
         }
         return paths;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> gatewayPaths(String yamlSource) {
+        final Map<String, Object> document = new Yaml().load(yamlSource);
+        Object current = document;
+        for (String key : List.of("spring", "cloud", "gateway", "routes")) {
+            assertTrue(current instanceof Map<?, ?>, "Missing gateway YAML section: " + key);
+            current = ((Map<String, Object>) current).get(key);
+        }
+        assertTrue(current instanceof List<?>, "Gateway routes must be a YAML list");
+
+        final List<String> paths = new ArrayList<>();
+        for (Object routeValue : (List<?>) current) {
+            assertTrue(routeValue instanceof Map<?, ?>, "Gateway route must be a YAML object");
+            final Object predicatesValue = ((Map<String, Object>) routeValue).get("predicates");
+            if (!(predicatesValue instanceof List<?> predicates)) {
+                continue;
+            }
+            for (Object predicate : predicates) {
+                if (predicate instanceof String shortcut && shortcut.startsWith("Path=")) {
+                    for (String argument : shortcut.substring("Path=".length()).split(",")) {
+                        if (argument.trim().startsWith("/")) {
+                            paths.add(argument.trim());
+                        }
+                    }
+                } else if (predicate instanceof Map<?, ?> expanded
+                        && "Path".equals(expanded.get("name"))) {
+                    final int before = paths.size();
+                    collectPathArguments(expanded.get("args"), paths);
+                    assertTrue(paths.size() > before, "Expanded Path predicate has no path arguments");
+                }
+            }
+        }
+        return paths;
+    }
+
+    private void collectPathArguments(Object value, List<String> paths) {
+        if (value instanceof String text && text.trim().startsWith("/")) {
+            paths.add(text.trim());
+        } else if (value instanceof Map<?, ?> map) {
+            map.values().forEach(nested -> collectPathArguments(nested, paths));
+        } else if (value instanceof List<?> list) {
+            list.forEach(nested -> collectPathArguments(nested, paths));
+        }
+    }
+
+    private List<Path> discoverProductionConfigurations() throws IOException {
+        final List<Path> productionFiles = new ArrayList<>();
+        collectProductionConfigurations(ROOT, productionFiles);
+        try (Stream<Path> modules = Files.list(ROOT)) {
+            for (Path module : modules.filter(Files::isDirectory).toList()) {
+                final String name = module.getFileName().toString();
+                if (!name.startsWith(".") && !"build".equals(name)) {
+                    collectProductionConfigurations(module, productionFiles);
+                }
+            }
+        }
+        return productionFiles;
+    }
+
+    private void collectProductionConfigurations(Path project, List<Path> productionFiles) throws IOException {
+        final Path resources = project.resolve("src/main/resources");
+        if (Files.isDirectory(resources)) {
+            try (Stream<Path> files = Files.walk(resources, 2)) {
+                files.filter(Files::isRegularFile)
+                        .filter(this::isProductionConfiguration)
+                        .forEach(productionFiles::add);
+            }
+        }
+        try (Stream<Path> files = Files.list(project)) {
+            files.filter(Files::isRegularFile)
+                    .filter(this::isProductionConfiguration)
+                    .forEach(productionFiles::add);
+        }
+    }
+
+    private boolean containsPathSequence(Path path, String... sequence) {
+        for (int start = 0; start <= path.getNameCount() - sequence.length; start++) {
+            boolean matches = true;
+            for (int index = 0; index < sequence.length; index++) {
+                if (!path.getName(start + index).toString().equals(sequence[index])) {
+                    matches = false;
+                    break;
+                }
+            }
+            if (matches) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isProductionConfiguration(Path path) {

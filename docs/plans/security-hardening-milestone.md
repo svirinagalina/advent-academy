@@ -2,7 +2,7 @@
 
 ## Milestone control
 
-- **Status:** proposed
+- **Status:** active; SEC-101 complete, SEC-102..SEC-110 planned
 - **Assessment date:** 2026-08-31 (Europe/Moscow)
 - **Assessed branch/commit:** `dev` / `131a624`
 - **Locally available base:** `origin/dev` / `131a624`
@@ -10,11 +10,8 @@
 - **Suggested dates:** 2026-08-31 — 2026-09-25
 - **Owner:** platform/backend team; every service owner participates
 - **Priority:** P0 before exposing the platform outside a trusted development environment
-- **Source of truth:** this file until the milestone is created in GitLab
+- **Source of truth:** the GitLab milestone; this file is its detailed execution plan
 - **Delivery status:** SEC-101 implemented on `feature/43-threat-model`; SEC-102..SEC-110 not started
-
-HTTPS fetch could not authenticate to GitLab. An SSH `ls-remote` and fetch on 2026-08-31 confirmed
-the remote `dev` tip as `131a624`, and the feature branch was rebased onto that commit.
 
 ## Goal
 

@@ -23,6 +23,8 @@ class GatewayRouteConfigTest {
         registry.add("CONTENT_SERVICE_URL", () -> "http://localhost:1");
         registry.add("MEETING_SERVICE_URL", () -> "http://localhost:1");
         registry.add("MEETING_SERVICE_WS_URL", () -> "ws://localhost:1");
+        registry.add("management.endpoints.web.exposure.include", () -> "health,info,gateway");
+        registry.add("management.endpoint.gateway.enabled", () -> "true");
     }
 
     @Autowired
