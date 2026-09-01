@@ -1,5 +1,6 @@
 package com.adventacademy.contentservice.adapter.rest.controller;
 
+import com.adventacademy.contentservice.support.WithContentEditor;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
+@WithContentEditor
 class AssetApiIT {
 
     @Autowired

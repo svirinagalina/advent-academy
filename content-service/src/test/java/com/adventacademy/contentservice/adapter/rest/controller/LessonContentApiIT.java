@@ -1,5 +1,6 @@
 package com.adventacademy.contentservice.adapter.rest.controller;
 
+import com.adventacademy.contentservice.support.WithContentEditor;
 import java.util.Map;
 
 import com.jayway.jsonpath.JsonPath;
@@ -26,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
+@WithContentEditor
 class LessonContentApiIT {
 
     @Autowired
