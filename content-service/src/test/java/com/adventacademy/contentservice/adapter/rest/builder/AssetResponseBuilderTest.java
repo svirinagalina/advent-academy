@@ -68,7 +68,7 @@ class AssetResponseBuilderTest {
                 "archive.zip"
         );
 
-        assertEquals(MediaType.APPLICATION_ZIP, response.getHeaders().getContentType());
+        assertEquals(MediaType.parseMediaType("application/zip"), response.getHeaders().getContentType());
         assertFalse(response.getHeaders().getContentDisposition().isInline());
         assertTrue(response.getHeaders().getFirst("Content-Disposition").contains("attachment"));
     }
