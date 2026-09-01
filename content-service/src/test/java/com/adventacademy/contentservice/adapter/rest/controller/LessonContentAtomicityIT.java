@@ -1,6 +1,7 @@
 package com.adventacademy.contentservice.adapter.rest.controller;
 
 import com.adventacademy.contentservice.domain.repository.AssetStorage;
+import com.adventacademy.contentservice.support.WithContentEditor;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@WithContentEditor
 class LessonContentAtomicityIT {
 
     @Autowired

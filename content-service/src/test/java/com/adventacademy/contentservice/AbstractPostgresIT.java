@@ -32,5 +32,8 @@ public abstract class AbstractPostgresIT {
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
+        // The "test" profile is not active here, so the signing key that application.yml
+        // expects from the environment has to be supplied explicitly.
+        registry.add("security.jwt.secret", () -> "test-secret-key-for-testing-purposes-only-32-bytes");
     }
 }

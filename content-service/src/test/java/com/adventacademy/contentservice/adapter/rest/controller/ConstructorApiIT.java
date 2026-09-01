@@ -4,6 +4,7 @@ import com.adventacademy.contentservice.AbstractPostgresIT;
 import com.adventacademy.contentservice.domain.ContentStatus;
 import com.adventacademy.contentservice.domain.LessonContent;
 import com.adventacademy.contentservice.domain.repository.LessonContentRepository;
+import com.adventacademy.contentservice.support.WithContentEditor;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * exactly like a frontend would do it.
  */
 @AutoConfigureMockMvc
+@WithContentEditor
 class ConstructorApiIT extends AbstractPostgresIT {
 
     @Autowired
