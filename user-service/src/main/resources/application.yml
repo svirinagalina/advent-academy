@@ -40,6 +40,7 @@ security:
     access-token-expiration-minutes: 15
     refresh-token-expiration-days: 7
     clock-skew-seconds: 30
+    jwks-url: ${JWT_JWKS_URL:http://user-service:8081/api/auth/jwks}
   account-lock:
     max-failed-attempts: 5
     lock-duration-minutes: 30
@@ -47,6 +48,20 @@ security:
     totp-time-step-seconds: 30
     totp-window-size: 1          # ±1 window (total ±30 seconds tolerance)
     recovery-code-count: 8       # Number of recovery codes to generate per MFA enrollment
+  refresh-session:
+    max-age-days: 30                    # Absolute expiry
+    idle-timeout-minutes: 20            # Inactivity timeout
+    session-retention-days: 90          # How long to keep expired sessions
+  key-management:
+    rotation-interval-days: 90          # How often to rotate keys
+    rotation-window-seconds: 3600       # Window during which both old and new keys are accepted
+    key-retention-days: 7               # How long to keep revoked keys before deletion
+  session:
+    cleanup-interval-minutes: 60        # How often to cleanup expired sessions
+  rate-limit:
+    register-per-ip-per-hour: 10
+    login-per-email-per-hour: 10
+    password-reset-per-ip-per-hour: 5
 
 spring:
   mail:
