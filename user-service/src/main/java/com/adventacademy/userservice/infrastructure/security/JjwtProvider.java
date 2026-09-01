@@ -1,24 +1,29 @@
 package com.adventacademy.userservice.infrastructure.security;
 
 import com.adventacademy.userservice.application.port.JwtProvider;
+import com.adventacademy.userservice.domain.repository.RsaKeyRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
+import java.io.StringReader;
+import java.security.KeyFactory;
+import java.security.PrivateKey;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Date;
 import java.util.UUID;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+@Slf4j
 @Component
 public class JjwtProvider implements JwtProvider {
 
@@ -26,7 +31,7 @@ public class JjwtProvider implements JwtProvider {
     private static final String ACCESS_TOKEN = "access";
     private static final String REFRESH_TOKEN = "refresh";
 
-    private final SecretKey signingKey;
+    private final RsaKeyRepository rsaKeyRepository;
     private final String issuer;
     private final String audience;
     private final Duration accessTokenLifetime;
@@ -36,17 +41,14 @@ public class JjwtProvider implements JwtProvider {
     private final ConcurrentMap<String, Instant> activeRefreshTokens = new ConcurrentHashMap<>();
 
     public JjwtProvider(
-            @Value("${security.jwt.secret}") String secret,
+            RsaKeyRepository rsaKeyRepository,
             @Value("${security.jwt.issuer:advent-academy-user-service}") String issuer,
             @Value("${security.jwt.audience:advent-academy-services}") String audience,
             @Value("${security.jwt.access-token-expiration-minutes:15}") long accessTokenMinutes,
             @Value("${security.jwt.refresh-token-expiration-days:7}") long refreshTokenDays,
             @Value("${security.jwt.clock-skew-seconds:30}") long clockSkewSeconds,
             Clock clock) {
-        if (secret == null || secret.getBytes(StandardCharsets.UTF_8).length < 32) {
-            throw new IllegalArgumentException("security.jwt.secret must contain at least 32 UTF-8 bytes");
-        }
-        this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.rsaKeyRepository = rsaKeyRepository;
         this.issuer = issuer;
         this.audience = audience;
         this.accessTokenLifetime = Duration.ofMinutes(accessTokenMinutes);
@@ -120,8 +122,17 @@ public class JjwtProvider implements JwtProvider {
             Duration lifetime,
             String email,
             Set<String> roles) {
+        var activeKey = rsaKeyRepository.findActive().stream()
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No active RSA key available"));
+
+        PrivateKey privateKey = loadPrivateKeyFromPem(activeKey.getPrivateKeyPem());
+
         final Instant issuedAt = clock.instant();
         final var builder = Jwts.builder()
+                .header()
+                .add("kid", activeKey.getKid())
+                .and()
                 .subject(userId.toString())
                 .issuer(issuer)
                 .audience().add(audience).and()
@@ -133,7 +144,24 @@ public class JjwtProvider implements JwtProvider {
         if (email != null) {
             builder.claim("email", email);
         }
-        return builder.signWith(signingKey).compact();
+        return builder.signWith(privateKey).compact();
+    }
+
+    private PrivateKey loadPrivateKeyFromPem(String pemKey) {
+        try {
+            String privateKeyPem = pemKey
+                    .replace("-----BEGIN PRIVATE KEY-----", "")
+                    .replace("-----END PRIVATE KEY-----", "")
+                    .replaceAll("\\s", "");
+
+            byte[] decodedKey = Base64.getDecoder().decode(privateKeyPem);
+            PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(decodedKey);
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            return keyFactory.generatePrivate(spec);
+        } catch (Exception e) {
+            log.error("Failed to load private key from PEM", e);
+            throw new RuntimeException("Failed to load private key", e);
+        }
     }
 
     private boolean hasType(String token, String expectedType) {
