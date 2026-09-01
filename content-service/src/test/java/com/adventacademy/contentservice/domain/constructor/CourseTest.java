@@ -94,7 +94,7 @@ class CourseTest {
         ComponentRef first = ComponentRef.restore(UUID.randomUUID(), 0);
 
         Course course = Course.restore(UUID.randomUUID(), "Java", "About Java", PublicationStatus.PUBLISHED,
-                List.of(second, first), FIXED_INSTANT, FIXED_INSTANT, 0L);
+                OWNER_ID, List.of(second, first), FIXED_INSTANT, FIXED_INSTANT, 0L);
 
         assertThat(course.getComponents()).containsExactly(first, second);
     }
