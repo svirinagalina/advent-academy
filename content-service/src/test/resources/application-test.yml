@@ -43,3 +43,10 @@ asset:
       - video/mpeg
       - audio/mpeg
       - audio/mp3
+
+security:
+  jwt:
+    secret: test-secret-key-for-testing-purposes-only-32-bytes
+    issuer: advent-academy-user-service
+    audience: advent-academy-services
+    clock-skew-seconds: 30
