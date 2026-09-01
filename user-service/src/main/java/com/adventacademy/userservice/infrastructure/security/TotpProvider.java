@@ -3,7 +3,7 @@ package com.adventacademy.userservice.infrastructure.security;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
-import com.google.zxing.client.j2se.MatrixToImageEncoder;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import dev.samstevens.totp.code.CodeGenerator;
 import dev.samstevens.totp.code.CodeVerifier;
@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -92,13 +93,13 @@ public class TotpProvider {
 
             // Convert to PNG bytes
             ByteArrayOutputStream pngOutputStream = new ByteArrayOutputStream();
-            MatrixToImageEncoder.writeToPng(bitMatrix, pngOutputStream);
+            MatrixToImageWriter.writeToStream(bitMatrix, "PNG", pngOutputStream);
 
             // Encode as data URL
             byte[] pngBytes = pngOutputStream.toByteArray();
             String base64 = Base64.getEncoder().encodeToString(pngBytes);
             return "data:image/png;base64," + base64;
-        } catch (WriterException e) {
+        } catch (WriterException | IOException e) {
             log.error("Failed to generate QR code image", e);
             throw new RuntimeException("QR code image generation failed", e);
         }
