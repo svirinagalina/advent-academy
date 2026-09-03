@@ -1,6 +1,8 @@
 package com.adventacademy.contentservice.application.port;
 
+import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -17,11 +19,42 @@ public interface CurrentUserProvider {
     Optional<UUID> currentUserId();
 
     /**
+     * @return the roles granted to the authenticated user, without the {@code ROLE_} prefix and in
+     *         upper case; an empty set for anonymous requests
+     */
+    default Set<String> currentRoles() {
+        return Set.of();
+    }
+
+    /**
      * @return the id of the authenticated user
      * @throws IllegalStateException when there is no authenticated user in the current context
      */
     default UUID requireCurrentUserId() {
         return currentUserId().orElseThrow(
                 () -> new IllegalStateException("No authenticated user in the current security context"));
+    }
+
+    /**
+     * @return {@code true} when the authenticated user holds the given role (case-insensitive,
+     *         without the {@code ROLE_} prefix)
+     */
+    default boolean hasRole(String role) {
+        return role != null && currentRoles().contains(role.toUpperCase(Locale.ROOT));
+    }
+
+    /**
+     * @return {@code true} when the authenticated user holds at least one of the given roles
+     */
+    default boolean hasAnyRole(String... roles) {
+        if (roles == null) {
+            return false;
+        }
+        for (String role : roles) {
+            if (hasRole(role)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
