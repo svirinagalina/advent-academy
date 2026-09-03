@@ -433,7 +433,11 @@ class SecurityDocumentationContractTest {
         collectProductionConfigurations(ROOT, productionFiles);
         try (Stream<Path> modules = Files.list(ROOT)) {
             for (Path module : modules.filter(Files::isDirectory).toList()) {
-                final String name = module.getFileName().toString();
+                final Path fileName = module.getFileName();
+                if (fileName == null) {
+                    continue;
+                }
+                final String name = fileName.toString();
                 if (!name.startsWith(".") && !"build".equals(name)) {
                     collectProductionConfigurations(module, productionFiles);
                 }
