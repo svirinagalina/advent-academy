@@ -1,61 +1,62 @@
 package com.adventacademy.contentservice.adapter.rest.controller;
 
-import com.adventacademy.contentservice.adapter.rest.dto.MarkdownPreviewRequest;
 import com.adventacademy.contentservice.adapter.rest.dto.MarkdownPreviewResponse;
-import com.adventacademy.contentservice.domain.validator.MarkdownSanitizer;
+import com.adventacademy.contentservice.adapter.rest.exception.ErrorResponse;
+import com.adventacademy.contentservice.application.command.UploadLessonContentCommand;
+import com.adventacademy.contentservice.application.service.MarkdownPreviewResult;
+import com.adventacademy.contentservice.application.service.MarkdownPreviewService;
+import com.adventacademy.contentservice.application.validation.InvalidMarkdownFileException;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
-@Slf4j
+import java.io.IOException;
+
 @RestController
-@RequestMapping("/api/lessons/{lessonId}/markdown-preview")
-@Tag(name = "Markdown Preview", description = "Preview Markdown rendering with XSS protection")
+@RequestMapping("/api/markdown")
+@Tag(name = "Markdown Preview", description = "Rendering Markdown files to sanitized HTML without persisting anything")
 public class MarkdownPreviewController {
 
-    @PostMapping
-    @Operation(
-            summary = "Preview Markdown with sanitization",
-            description = "Render Markdown to HTML with XSS protection and CSP headers"
-    )
-    @ApiResponse(responseCode = "200", description = "Preview generated")
-    @ApiResponse(responseCode = "401", description = "Unauthorized")
-    @ApiResponse(responseCode = "400", description = "Invalid markdown")
-    public ResponseEntity<MarkdownPreviewResponse> previewMarkdown(
-            @PathVariable String lessonId,
-            @Valid @RequestBody MarkdownPreviewRequest request) {
+    private final MarkdownPreviewService previewService;
 
-        log.debug("Generating markdown preview for lesson: {}", lessonId);
+    public MarkdownPreviewController(MarkdownPreviewService previewService) {
+        this.previewService = previewService;
+    }
 
-        String markdown = request.markdown();
+    @PostMapping(value = "/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Preview a Markdown file as sanitized HTML",
+            description = "Accepts a .md or .markdown file, validates it with the same rules as the real "
+                    + "upload endpoint, and renders it to sanitized HTML. Nothing is persisted: no LessonContent "
+                    + "is created and no lesson id is required.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Rendered preview"),
+            @ApiResponse(responseCode = "400", description = "Invalid file (format, size or encoding)"),
+            @ApiResponse(responseCode = "422", description = "Markdown could not be rendered",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<MarkdownPreviewResponse> preview(@RequestParam("file") MultipartFile file) {
+        MarkdownPreviewResult result = previewService.preview(toCommand(file));
+        return ResponseEntity.ok(new MarkdownPreviewResponse(result.markdown(), result.html()));
+    }
 
-        // Sanitize HTML (remove scripts, dangerous tags)
-        String sanitized = MarkdownSanitizer.sanitizeHtml(markdown);
-
-        // Check if content is still safe
-        boolean isSafe = MarkdownSanitizer.isHtmlSafe(sanitized);
-
-        // Get plain text version
-        String plainText = MarkdownSanitizer.getPlainText(sanitized);
-
-        MarkdownPreviewResponse response = new MarkdownPreviewResponse(sanitized, plainText, isSafe);
-
-        // Add CSP header to prevent inline scripts
-        return ResponseEntity.ok()
-                .header("Content-Security-Policy",
-                        "default-src 'none'; " +
-                        "img-src 'self' data:; " +
-                        "style-src 'self' 'unsafe-inline'; " +
-                        "script-src 'none'; " +
-                        "object-src 'none'; " +
-                        "base-uri 'none'; " +
-                        "form-action 'none'")
-                .header("X-Content-Type-Options", "nosniff")
-                .body(response);
+    private UploadLessonContentCommand toCommand(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new InvalidMarkdownFileException("file must not be empty");
+        }
+        try {
+            return new UploadLessonContentCommand(null, file.getOriginalFilename(), file.getContentType(), file.getBytes());
+        } catch (IOException e) {
+            throw new InvalidMarkdownFileException("cannot read file content", e);
+        }
     }
 }
