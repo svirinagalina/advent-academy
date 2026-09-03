@@ -11,6 +11,17 @@ spring:
       hibernate:
         format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  mail:
+    enabled: ${MAIL_ENABLED:false}
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    protocol: smtp
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: false
 
 # DataSource decoration (p6spy) is off by default — only the local profile
 # turns it on, so production runs with a plain HikariDataSource and zero
@@ -62,19 +73,6 @@ security:
     register-per-ip-per-hour: 10
     login-per-email-per-hour: 10
     password-reset-per-ip-per-hour: 5
-
-spring:
-  mail:
-    enabled: ${MAIL_ENABLED:false}
-    host: ${SMTP_HOST:localhost}
-    port: ${SMTP_PORT:1025}
-    username: ${SMTP_USERNAME:}
-    password: ${SMTP_PASSWORD:}
-    protocol: smtp
-    properties:
-      mail.smtp.auth: true
-      mail.smtp.starttls.enable: true
-      mail.smtp.starttls.required: false
 
 app:
   email:
