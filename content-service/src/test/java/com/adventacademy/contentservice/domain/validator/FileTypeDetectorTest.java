@@ -102,7 +102,7 @@ class FileTypeDetectorTest {
     void extractsExtensionCorrectly() {
         assertEquals("png", FileTypeDetector.extractExtension("image.png"));
         assertEquals("jpg", FileTypeDetector.extractExtension("photo.jpg"));
-        assertEquals("tar", FileTypeDetector.extractExtension("archive.tar.gz"));
+        assertEquals("gz", FileTypeDetector.extractExtension("archive.tar.gz"));
         assertNull(FileTypeDetector.extractExtension("noextension"));
         assertNull(FileTypeDetector.extractExtension(".hiddenfile"));
     }
