@@ -32,6 +32,9 @@ import java.util.UUID;
  * Covers course assembly (create, rename, delete, add/remove/reorder components and
  * publish/archive) via {@link CourseAssemblyService}, and reading a course expanded into
  * its component-and-lesson tree via {@link GetCatalogService}.
+ * <p>
+ * The role checks below are only the coarse gate; whether the caller may touch <em>this</em>
+ * course is decided by {@link CourseAssemblyService} against the course owner.
  */
 @RestController
 @RequestMapping("/api/courses")
@@ -57,7 +60,7 @@ public class CourseController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "List all courses")
+    @Operation(summary = "List all courses visible to the caller")
     public List<CourseResponse> findAll() {
         return assemblyService.findAll().stream().map(CourseResponse::from).toList();
     }
@@ -66,6 +69,8 @@ public class CourseController {
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get a course expanded into components and lessons")
     public CourseTreeResponse get(@PathVariable UUID id) {
+        // Refuses drafts that belong to somebody else before the tree is assembled.
+        assemblyService.get(id);
         GetCatalogService.CourseTree tree = catalogService.getCourseTree(id);
         return CourseTreeResponse.from(tree.course(), tree.componentsById());
     }
