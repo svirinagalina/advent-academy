@@ -14,6 +14,7 @@ public class MarkdownSanitizer {
     private static final Pattern EMBED_TAG = Pattern.compile("<embed[^>]*>", Pattern.CASE_INSENSITIVE);
     private static final Pattern OBJECT_TAG = Pattern.compile("<object[^>]*>.*?</object>", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
     private static final Pattern EVENT_HANDLER = Pattern.compile("\\s+on\\w+\\s*=", Pattern.CASE_INSENSITIVE);
+    private static final Pattern EVENT_HANDLER_ANYWHERE = Pattern.compile("\\bon\\w+\\s*=", Pattern.CASE_INSENSITIVE);
     private static final Pattern JAVASCRIPT_URL = Pattern.compile("(?i)javascript:");
     private static final Pattern DATA_HTML_URL = Pattern.compile("(?i)data:text/html");
     private static final Pattern STYLE_JAVASCRIPT = Pattern.compile("(?i)background-image\\s*:\\s*url\\s*\\(.*?javascript");
@@ -92,7 +93,7 @@ public class MarkdownSanitizer {
                IFRAME_TAG.matcher(text).find() ||
                EMBED_TAG.matcher(text).find() ||
                OBJECT_TAG.matcher(text).find() ||
-               EVENT_HANDLER.matcher(text).find() ||
+               EVENT_HANDLER_ANYWHERE.matcher(text).find() ||
                JAVASCRIPT_URL.matcher(text).find() ||
                DATA_HTML_URL.matcher(text).find();
     }
