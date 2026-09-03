@@ -34,6 +34,7 @@ class ChangePasswordServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private AuditTrailPort auditTrailPort;
+    @Mock private SessionRevocationService sessionRevocationService;
 
     private ChangePasswordService service;
     private final Clock clock = Clock.fixed(Instant.parse("2026-05-28T10:00:00Z"), ZoneId.of("UTC"));
@@ -43,7 +44,7 @@ class ChangePasswordServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ChangePasswordService(userRepository, passwordEncoder, auditTrailPort, clock);
+        service = new ChangePasswordService(userRepository, passwordEncoder, auditTrailPort, sessionRevocationService, clock);
         userId = UUID.randomUUID();
         user = new User();
         user.setId(userId);
