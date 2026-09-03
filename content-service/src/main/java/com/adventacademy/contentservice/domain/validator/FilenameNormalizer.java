@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 public class FilenameNormalizer {
 
     private static final Pattern UNSAFE_PATTERN = Pattern.compile(
-            ".*(\\.\\.|\\\\|/|\0|;|\\$|`|\\||&|<|>|\\*|\\?).*",
+            ".*(\\.\\.|\0|;|`|\\||<|>).*",
             Pattern.CASE_INSENSITIVE
     );
 
@@ -50,8 +50,8 @@ public class FilenameNormalizer {
         // Remove null bytes and other dangerous characters
         filename = filename.replaceAll("[\0\r\n]", "_");
 
-        // Reject if matches unsafe pattern
-        if (UNSAFE_PATTERN.matcher(filename).matches()) {
+        // Reject the original name: the replacements above would hide null bytes here
+        if (UNSAFE_PATTERN.matcher(originalFilename).matches()) {
             log.warn("Rejecting unsafe filename: {}", originalFilename);
             throw new IllegalArgumentException("Filename contains invalid characters");
         }
