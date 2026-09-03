@@ -14,6 +14,7 @@ public class AssetMapper {
         AssetEntity entity = new AssetEntity();
         entity.setId(asset.getId());
         entity.setLessonId(asset.getLessonId());
+        entity.setOwnerId(asset.getOwnerId());
         entity.setFilename(asset.getFilename());
         entity.setContentType(asset.getContentType());
         entity.setFileSize(asset.getFileSize());
@@ -30,6 +31,7 @@ public class AssetMapper {
         return StoredAsset.restore(
                 entity.getId(),
                 entity.getLessonId(),
+                entity.getOwnerId(),
                 entity.getFilename(),
                 entity.getContentType(),
                 entity.getFileSize(),
