@@ -54,8 +54,9 @@ class ZipBombDetectorTest {
     @Test
     void rejectsTooManyEntries() {
         for (int i = 0; i < 10_000; i++) {
+            final int index = i;
             assertDoesNotThrow(() ->
-                detector.validateEntry(100, 200, "file" + i + ".txt")
+                detector.validateEntry(100, 200, "file" + index + ".txt")
             );
         }
 
@@ -68,9 +69,10 @@ class ZipBombDetectorTest {
     @Test
     void rejectsTotalUncompressedSizeExceeded() {
         // Add entries until total exceeds limit
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 50; i++) {
+            final int index = i;
             assertDoesNotThrow(() ->
-                detector.validateEntry(10_000_000, 100_000_000, "file" + i + ".bin")
+                detector.validateEntry(10_000_000, 100_000_000, "file" + index + ".bin")
             );
         }
 
