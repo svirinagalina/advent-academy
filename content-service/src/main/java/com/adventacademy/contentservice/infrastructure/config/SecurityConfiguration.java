@@ -40,7 +40,6 @@ public class SecurityConfiguration {
                         // Public endpoints - no authentication required
                         .requestMatchers(HttpMethod.GET, "/api/catalog").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/catalog/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/assets/**").permitAll()
                         // Swagger/Actuator
                         .requestMatchers("/swagger-ui.html", "/v3/api-docs", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
