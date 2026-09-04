@@ -48,13 +48,28 @@ public class JjwtProvider implements JwtProvider {
 
             validateClaims(claims);
 
-            UUID userId = UUID.fromString(claims.getSubject());
+            UUID userId = parseUserId(claims);
             Set<String> roles = extractRoles(claims);
 
             return new ValidatedToken(userId, roles);
         } catch (JwtException e) {
             log.debug("JWT validation failed: {}", e.getMessage());
             throw e;
+        } catch (Exception e) {
+            log.debug("Token validation error: {}", e.getMessage());
+            throw new JwtException("Invalid subject");
+        }
+    }
+
+    private UUID parseUserId(Claims claims) throws JwtException {
+        String subject = claims.getSubject();
+        if (subject == null) {
+            throw new JwtException("Invalid subject");
+        }
+        try {
+            return UUID.fromString(subject);
+        } catch (IllegalArgumentException e) {
+            throw new JwtException("Invalid subject");
         }
     }
 
