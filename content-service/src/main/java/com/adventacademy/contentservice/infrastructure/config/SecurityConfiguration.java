@@ -3,6 +3,8 @@ package com.adventacademy.contentservice.infrastructure.config;
 import com.adventacademy.contentservice.application.port.JwtProvider;
 import com.adventacademy.contentservice.infrastructure.security.JwtAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -19,12 +21,16 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.List;
 
+@Slf4j
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfiguration {
+
+    @Value("${security.cors.allowed-origins}")
+    private String allowedOrigins;
 
     @Bean
     public SecurityFilterChain securityFilterChain(
@@ -43,6 +49,7 @@ public class SecurityConfiguration {
                         // Swagger/Actuator
                         .requestMatchers("/swagger-ui.html", "/v3/api-docs", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers("/actuator/prometheus").permitAll()
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
@@ -50,20 +57,15 @@ public class SecurityConfiguration {
                         new JwtAuthenticationFilter(jwtProvider, objectMapper),
                         UsernamePasswordAuthenticationFilter.class
                 )
-                .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            response.setStatus(HttpStatus.UNAUTHORIZED.value());
-                            response.setContentType("application/json");
-                            response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"" +
-                                    authException.getMessage() + "\"}");
-                        })
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            response.setStatus(HttpStatus.FORBIDDEN.value());
-                            response.setContentType("application/json");
-                            response.getWriter().write("{\"error\":\"Forbidden\",\"message\":\"" +
-                                    accessDeniedException.getMessage() + "\"}");
-                        })
-                );
+                .exceptionHandling()
+                .authenticationEntryPoint((request, response, authException) -> {
+                    log.debug("Authentication failed: {}", authException.getMessage());
+                    sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "Unauthorized", objectMapper);
+                })
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    log.debug("Access denied: {}", accessDeniedException.getMessage());
+                    sendErrorResponse(response, HttpStatus.FORBIDDEN, "Access denied", objectMapper);
+                });
 
         return http.build();
     }
@@ -71,13 +73,30 @@ public class SecurityConfiguration {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Collections.singletonList("*"));
+        List<String> origins = Arrays.asList(allowedOrigins.split(","));
+        configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(false);
+        configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private static void sendErrorResponse(
+            jakarta.servlet.http.HttpServletResponse response,
+            HttpStatus status,
+            String message,
+            ObjectMapper objectMapper
+    ) throws java.io.IOException {
+        response.setStatus(status.value());
+        response.setContentType("application/json");
+
+        java.util.Map<String, Object> body = new java.util.HashMap<>();
+        body.put("error", message);
+        body.put("status", status.value());
+
+        response.getWriter().write(objectMapper.writeValueAsString(body));
     }
 }

@@ -40,7 +40,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 JwtProvider.ValidatedToken validatedToken = jwtProvider.validate(token);
 
                 var authorities = validatedToken.roles().stream()
-                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                        .map(JwtAuthenticationFilter::normalizeRole)
+                        .map(SimpleGrantedAuthority::new)
                         .collect(Collectors.toList());
 
                 var authentication = new UsernamePasswordAuthenticationToken(
@@ -68,14 +69,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private void sendUnauthorizedError(HttpServletResponse response, String message) throws IOException {
+        log.debug("JWT error: {}", message);
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
         Map<String, Object> body = new HashMap<>();
         body.put("error", "Unauthorized");
-        body.put("message", message);
         body.put("status", HttpServletResponse.SC_UNAUTHORIZED);
 
         response.getWriter().write(objectMapper.writeValueAsString(body));
+    }
+
+    private static String normalizeRole(String role) {
+        if (role.startsWith("ROLE_")) {
+            return role;
+        }
+        return "ROLE_" + role;
     }
 }

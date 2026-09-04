@@ -36,7 +36,7 @@ public class CourseEntity {
     @Column(nullable = false, length = 20)
     private PublicationStatus status;
 
-    @Column(name = "owner_id")
+    @Column(name = "owner_id", nullable = false)
     private UUID ownerId;
 
     @ElementCollection(fetch = FetchType.EAGER)
