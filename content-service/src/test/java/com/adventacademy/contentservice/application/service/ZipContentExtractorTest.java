@@ -1,5 +1,6 @@
 package com.adventacademy.contentservice.application.service;
 
+import com.adventacademy.contentservice.application.port.CurrentUserProvider;
 import com.adventacademy.contentservice.application.validation.AssetFileValidator;
 import com.adventacademy.contentservice.application.validation.InvalidMarkdownFileException;
 import com.adventacademy.contentservice.config.ArchiveUploadProperties;
@@ -53,6 +54,9 @@ class ZipContentExtractorTest {
         }
     };
 
+    private final CurrentUserProvider currentUserProvider =
+            () -> Optional.of(UUID.fromString("00000000-0000-0000-0000-000000000001"));
+
     private UploadAssetService uploadAssetService;
     private ArchiveUploadProperties properties;
     private ZipContentExtractor extractor;
@@ -62,7 +66,7 @@ class ZipContentExtractorTest {
         AssetFileValidator assetFileValidator = new AssetFileValidator(
                 10 * 1024 * 1024,
                 Set.of("image/png", "image/jpeg", "text/plain"));
-        uploadAssetService = new UploadAssetService(assetFileValidator, fakeAssetStorage, fakeLessonRepository);
+        uploadAssetService = new UploadAssetService(assetFileValidator, fakeAssetStorage, fakeLessonRepository, currentUserProvider);
 
         properties = new ArchiveUploadProperties();
         properties.setMaxTotalUncompressedBytes(1024 * 1024);
