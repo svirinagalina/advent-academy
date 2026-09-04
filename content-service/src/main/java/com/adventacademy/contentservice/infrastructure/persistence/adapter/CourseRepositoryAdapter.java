@@ -58,4 +58,9 @@ public class CourseRepositoryAdapter implements CourseRepository {
     public void deleteById(UUID id) {
         jpaRepository.deleteById(id);
     }
+
+    @Override
+    public List<Course> findAllVisibleByOwnerId(UUID ownerId) {
+        return jpaRepository.findAllVisibleByOwnerId(ownerId).stream().map(mapper::toDomain).toList();
+    }
 }

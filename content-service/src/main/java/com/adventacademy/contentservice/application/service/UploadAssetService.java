@@ -34,6 +34,7 @@ public class UploadAssetService {
 
     @Transactional
     public StoredAsset uploadAsset(UploadAssetCommand command) {
+        currentUserProvider.requireCurrentUserId();
         assetFileValidator.validate(command);
 
         if (!lessonRepository.existsById(command.lessonId())) {

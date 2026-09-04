@@ -25,4 +25,9 @@ public interface CourseRepository {
     void deleteById(UUID id);
 
     List<Course> findAllById(Collection<UUID> ids);
+
+    /**
+     * Find all published and archived courses owned by the given user (excludes drafts).
+     */
+    List<Course> findAllVisibleByOwnerId(UUID ownerId);
 }
