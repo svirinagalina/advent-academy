@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @Slf4j
 @RestControllerAdvice
@@ -122,6 +123,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMarkdownRenderingException(MarkdownRenderingException e) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
                 .body(new ErrorResponse(e.getMessage()));
+    }
+
+    /**
+     * Unmapped URLs reach the static-resource handler, which throws instead of returning a 404.
+     * Without this the catch-all below would answer every unknown path with a 500.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("Not found"));
     }
 
     @ExceptionHandler(Exception.class)

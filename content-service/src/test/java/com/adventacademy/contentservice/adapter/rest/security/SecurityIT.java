@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -33,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 6. Public endpoints (published assets, /actuator/prometheus) allow anonymous access
  */
 @AutoConfigureMockMvc
+@AutoConfigureObservability
 public class SecurityIT extends AbstractPostgresIT {
 
     @Autowired
@@ -91,12 +93,11 @@ public class SecurityIT extends AbstractPostgresIT {
                 .andExpect(status().isUnauthorized());
     }
 
-    // Test 6: Public endpoints allow anonymous access
+    // Test 6: Asset downloads require authentication (AssetController is @PreAuthorize("isAuthenticated()"))
     @Test
-    void publicAssetsAllowAnonymousAccess() throws Exception {
-        // GET /api/assets/{id} should allow anonymous access for published content
+    void anonymousAssetDownloadReturnsUnauthorized() throws Exception {
         mvc.perform(get("/api/assets/" + UUID.randomUUID()))
-                .andExpect(status().isNotFound()); // 404 is OK, not 401
+                .andExpect(status().isUnauthorized());
     }
 
     // Test 7: Prometheus endpoint allows anonymous access
@@ -162,7 +163,7 @@ public class SecurityIT extends AbstractPostgresIT {
     }
 
     private String buildTokenWithWrongSecret() {
-        SecretKey wrongKey = Keys.hmacShaKeyFor("wrong-secret-key-very-long".getBytes(StandardCharsets.UTF_8));
+        SecretKey wrongKey = Keys.hmacShaKeyFor("wrong-secret-key-that-is-long-enough-for-hs256-but-still-invalid".getBytes(StandardCharsets.UTF_8));
         Instant now = Instant.now();
 
         return Jwts.builder()
