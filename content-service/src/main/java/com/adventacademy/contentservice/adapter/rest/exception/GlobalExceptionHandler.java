@@ -25,6 +25,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * Role-based refusals raised by {@code @PreAuthorize}. Without this handler the catch-all
+     * below would turn every denied request into a 500.
+     */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException e) {
         log.debug("Access denied: {}", e.getMessage());
@@ -62,16 +66,6 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler({CourseAccessDeniedException.class, AssetAccessDeniedException.class})
     public ResponseEntity<ErrorResponse> handleResourceAccessDenied(RuntimeException e) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(new ErrorResponse("Access denied"));
-    }
-
-    /**
-     * Role-based refusals raised by {@code @PreAuthorize}. Without this handler the catch-all
-     * below would turn every denied request into a 500.
-     */
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException e) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(new ErrorResponse("Access denied"));
     }
