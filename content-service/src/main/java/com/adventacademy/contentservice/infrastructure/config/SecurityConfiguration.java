@@ -57,15 +57,16 @@ public class SecurityConfiguration {
                         new JwtAuthenticationFilter(jwtProvider, objectMapper),
                         UsernamePasswordAuthenticationFilter.class
                 )
-                .exceptionHandling()
-                .authenticationEntryPoint((request, response, authException) -> {
-                    log.debug("Authentication failed: {}", authException.getMessage());
-                    sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "Unauthorized", objectMapper);
-                })
-                .accessDeniedHandler((request, response, accessDeniedException) -> {
-                    log.debug("Access denied: {}", accessDeniedException.getMessage());
-                    sendErrorResponse(response, HttpStatus.FORBIDDEN, "Access denied", objectMapper);
-                });
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            log.debug("Authentication failed: {}", authException.getMessage());
+                            sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "Unauthorized", objectMapper);
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            log.debug("Access denied: {}", accessDeniedException.getMessage());
+                            sendErrorResponse(response, HttpStatus.FORBIDDEN, "Access denied", objectMapper);
+                        })
+                );
 
         return http.build();
     }
