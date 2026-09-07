@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.MockMvc;
@@ -31,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 5. Asymmetric algorithm attacks (alg: none, RS256 confusion) are rejected
  * 6. Public endpoints (published assets, /actuator/prometheus) allow anonymous access
  */
+@AutoConfigureMockMvc
 public class SecurityIT extends AbstractPostgresIT {
 
     @Autowired
