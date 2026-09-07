@@ -65,13 +65,6 @@ security:
 
 content:
   upload:
-    max-file-size-bytes: 5242880
-    archive:
-      max-total-uncompressed-bytes: 20971520
-      max-entry-count: 50
-
-content:
-  upload:
     max-file-size-bytes: 5242880  # 5 MiB, applies to the uploaded .md or .zip file itself
     archive:
       max-total-uncompressed-bytes: 20971520  # 20 MiB, protects against zip bombs
