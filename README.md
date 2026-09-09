@@ -151,7 +151,8 @@ docker compose up -d postgres
 ```
 
 Open http://localhost:8081/markdown-preview/ directly, or
-http://localhost:8090/markdown-preview/ through `api-gateway` (`./gradlew :api-gateway:bootRun`)
+http://localhost:8090/markdown-preview/ through `api-gateway`
+(`./gradlew :api-gateway:bootRun --args='--spring.profiles.active=local'`)
 once all backing services are up. The page posts to `POST /api/markdown/preview`, which reuses
 the same file-size/UTF-8/extension validation and OWASP HTML sanitization as the real lesson
 content upload endpoint.

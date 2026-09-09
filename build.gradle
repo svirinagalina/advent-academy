@@ -70,3 +70,21 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testRuntimeOnly 'com.h2database:h2'
 }
+
+tasks.named('test') {
+    useJUnitPlatform {
+        // The dedicated securityContract task is the single CI owner of this suite.
+        excludeTags 'security-contract'
+    }
+}
+
+tasks.register('securityContract', Test) {
+    group = 'verification'
+    description = 'Validates the SEC-101 route inventory and production security policy.'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+
+    useJUnitPlatform {
+        includeTags 'security-contract'
+    }
+}

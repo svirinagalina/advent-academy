@@ -1,8 +1,6 @@
 spring:
   application:
     name: api-gateway
-  profiles:
-    active: docker
   cloud:
     gateway:
       routes:
@@ -79,15 +77,15 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, info, gateway
+        include: health, info
   endpoint:
     # The gateway actuator endpoint ships disabled by default
     # (@RestControllerEndpoint(id="gateway", enableByDefault=false)) — exposure alone
     # is not enough, it needs enabling explicitly too.
     gateway:
-      enabled: true
+      enabled: false
     health:
-      show-details: always
+      show-details: never
       probes:
         enabled: true
       group:
