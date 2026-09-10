@@ -3,6 +3,7 @@ package com.adventacademy.contentservice.adapter.rest.exception;
 import com.adventacademy.contentservice.application.port.MarkdownRenderingException;
 import com.adventacademy.contentservice.application.service.AssetAccessDeniedException;
 import com.adventacademy.contentservice.application.service.ComponentInUseException;
+import com.adventacademy.contentservice.application.service.ContentAccessDeniedException;
 import com.adventacademy.contentservice.application.service.CourseAccessDeniedException;
 import com.adventacademy.contentservice.application.service.CourseInUseException;
 import com.adventacademy.contentservice.application.service.InvalidAssetLinkException;
@@ -65,7 +66,8 @@ public class GlobalExceptionHandler {
      * Resource-based refusals raised by the application layer (the course or asset belongs to
      * somebody else). The message deliberately stays generic so ids cannot be probed.
      */
-    @ExceptionHandler({CourseAccessDeniedException.class, AssetAccessDeniedException.class})
+    @ExceptionHandler({CourseAccessDeniedException.class, AssetAccessDeniedException.class,
+            ContentAccessDeniedException.class})
     public ResponseEntity<ErrorResponse> handleResourceAccessDenied(RuntimeException e) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(new ErrorResponse("Access denied"));

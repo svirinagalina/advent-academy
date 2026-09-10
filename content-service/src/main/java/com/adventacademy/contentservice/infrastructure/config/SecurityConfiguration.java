@@ -46,6 +46,12 @@ public class SecurityConfiguration {
                         // Public endpoints - no authentication required
                         .requestMatchers(HttpMethod.GET, "/api/catalog").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/catalog/**").permitAll()
+                        // Assets of published content are public; DownloadAssetService refuses the
+                        // ones whose lesson content is still a draft (published-or-content-authorized).
+                        .requestMatchers(HttpMethod.GET, "/api/assets/*").permitAll()
+                        // The Markdown preview UI is an authoring tool, not a learner page.
+                        .requestMatchers(HttpMethod.GET, "/markdown-preview", "/markdown-preview/", "/markdown-preview/**")
+                        .hasAnyRole("CONTENT_EDITOR", "ADMIN")
                         // Swagger/Actuator
                         .requestMatchers("/swagger-ui.html", "/v3/api-docs", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()

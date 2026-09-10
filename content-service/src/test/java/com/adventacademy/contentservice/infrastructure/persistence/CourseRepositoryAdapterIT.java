@@ -26,6 +26,7 @@ class CourseRepositoryAdapterIT extends AbstractPostgresIT {
 
 
     private static final Clock CLOCK = Clock.systemUTC();
+    private static final UUID OWNER = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
     @Autowired
     private CourseRepository courseRepository;
@@ -38,8 +39,8 @@ class CourseRepositoryAdapterIT extends AbstractPostgresIT {
 
     @Test
     void saveAndLoadPreservesComponentRefOrder() {
-        Component c1 = componentRepository.save(Component.create("Intro", null, CLOCK));
-        Component c2 = componentRepository.save(Component.create("Collections", null, CLOCK));
+        Component c1 = componentRepository.save(Component.create("Intro", null, OWNER, CLOCK));
+        Component c2 = componentRepository.save(Component.create("Collections", null, OWNER, CLOCK));
 
         Course course = Course.create("Java Basics", "About java", OWNER_ID, CLOCK);
         course.addComponent(c1.getId(), CLOCK);
@@ -59,8 +60,8 @@ class CourseRepositoryAdapterIT extends AbstractPostgresIT {
 
     @Test
     void reorderAndSaveDoesNotViolateUniquePositionConstraint() {
-        Component c1 = componentRepository.save(Component.create("Intro", null, CLOCK));
-        Component c2 = componentRepository.save(Component.create("Collections", null, CLOCK));
+        Component c1 = componentRepository.save(Component.create("Intro", null, OWNER, CLOCK));
+        Component c2 = componentRepository.save(Component.create("Collections", null, OWNER, CLOCK));
 
         Course course = Course.create("Java Basics", "About java", OWNER_ID, CLOCK);
         course.addComponent(c1.getId(), CLOCK);
@@ -83,7 +84,7 @@ class CourseRepositoryAdapterIT extends AbstractPostgresIT {
 
     @Test
     void foreignKeyPreventsDeletingComponentUsedByCourse() {
-        Component component = componentRepository.save(Component.create("Intro", null, CLOCK));
+        Component component = componentRepository.save(Component.create("Intro", null, OWNER, CLOCK));
         Course course = Course.create("Java Basics", "About java", OWNER_ID, CLOCK);
         course.addComponent(component.getId(), CLOCK);
         courseRepository.save(course);
@@ -97,8 +98,8 @@ class CourseRepositoryAdapterIT extends AbstractPostgresIT {
 
     @Test
     void existsByComponentIdSeesReferencedComponents() {
-        Component used = componentRepository.save(Component.create("Used", null, CLOCK));
-        Component unused = componentRepository.save(Component.create("Unused", null, CLOCK));
+        Component used = componentRepository.save(Component.create("Used", null, OWNER, CLOCK));
+        Component unused = componentRepository.save(Component.create("Unused", null, OWNER, CLOCK));
         Course course = Course.create("Java Basics", null, OWNER_ID, CLOCK);
         course.addComponent(used.getId(), CLOCK);
         courseRepository.save(course);

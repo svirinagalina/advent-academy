@@ -67,7 +67,8 @@ public class AssetController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PreAuthorize("isAuthenticated()")
+    // Deliberately no role gate: published assets are public and DownloadAssetService
+    // refuses the ones whose lesson content is still a draft.
     @GetMapping("/api/assets/{id}")
     @Operation(
             summary = "Download asset by ID",

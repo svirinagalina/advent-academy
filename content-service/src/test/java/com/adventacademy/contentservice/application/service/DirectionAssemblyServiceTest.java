@@ -5,12 +5,15 @@ import com.adventacademy.contentservice.domain.constructor.Direction;
 import com.adventacademy.contentservice.domain.constructor.PublicationStatus;
 import com.adventacademy.contentservice.domain.repository.CourseRepository;
 import com.adventacademy.contentservice.domain.repository.DirectionRepository;
+import com.adventacademy.contentservice.application.port.AuditTrailPort;
+import com.adventacademy.contentservice.application.port.CurrentUserProvider;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,9 +25,34 @@ public class DirectionAssemblyServiceTest {
     private final CourseRepository courseRepository = mock(CourseRepository.class);
 
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-17T12:00:00Z"), ZoneOffset.UTC);
+    private static final UUID OWNER = UUID.fromString("11111111-1111-1111-1111-111111111111");
+
+    private static final UUID OTHER_USER = UUID.fromString("22222222-2222-2222-2222-222222222222");
+
+    private final AuditTrailPort auditTrail = mock(AuditTrailPort.class);
+
+    /** Hand-written stand-in: the role logic under test lives on the port's default methods. */
+    private static final class FakeCurrentUser implements CurrentUserProvider {
+
+        private UUID userId = OWNER;
+        private Set<String> roles = Set.of("INSTRUCTOR");
+
+        @Override
+        public Optional<UUID> currentUserId() {
+            return Optional.ofNullable(userId);
+        }
+
+        @Override
+        public Set<String> currentRoles() {
+            return roles;
+        }
+    }
+
+    private final FakeCurrentUser currentUser = new FakeCurrentUser();
+    private final ContentAccessGuard accessGuard = new ContentAccessGuard(currentUser, auditTrail);
 
     private final DirectionAssemblyService service =
-            new DirectionAssemblyService(directionRepository, courseRepository);
+            new DirectionAssemblyService(directionRepository, courseRepository, accessGuard);
 
     @Test
     void addCourseShouldThrowWhenCourseDoesNotExist() {
@@ -41,7 +69,7 @@ public class DirectionAssemblyServiceTest {
     @Test
     void addCourseShouldAppendCourseToDirection() {
         UUID courseId = UUID.randomUUID();
-        Direction direction = Direction.create("Backend", "About backend", CLOCK);
+        Direction direction = Direction.create("Backend", "About backend", OWNER, CLOCK);
         when(courseRepository.existsById(courseId)).thenReturn(true);
         when(directionRepository.findById(direction.getId())).thenReturn(Optional.of(direction));
         when(directionRepository.save(any(Direction.class))).thenAnswer(inv -> inv.getArgument(0));

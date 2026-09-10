@@ -51,7 +51,7 @@ public class CourseController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'ADMIN')")
     @Operation(summary = "Create a course in DRAFT status")
     public ResponseEntity<CourseResponse> create(@Valid @RequestBody CourseRequest request) {
         var course = assemblyService.create(request.title(), request.description());
@@ -59,14 +59,14 @@ public class CourseController {
     }
 
     @GetMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "List all courses visible to the caller")
     public List<CourseResponse> findAll() {
         return assemblyService.findAll().stream().map(CourseResponse::from).toList();
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "Get a course expanded into components and lessons")
     public CourseTreeResponse get(@PathVariable UUID id) {
         // Refuses drafts that belong to somebody else before the tree is assembled.

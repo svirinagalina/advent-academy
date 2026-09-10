@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ComponentRepositoryAdapterIT extends AbstractPostgresIT {
 
     private static final Clock CLOCK = Clock.systemUTC();
+    private static final UUID OWNER = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
     @Autowired
     private ComponentRepository repository;
@@ -29,7 +30,7 @@ class ComponentRepositoryAdapterIT extends AbstractPostgresIT {
 
     @Test
     void saveAndLoadPreservesLessonOrder() {
-        Component component = Component.create("Collections", "About collections", CLOCK);
+        Component component = Component.create("Collections", "About collections", OWNER, CLOCK);
         Lesson first = component.addLesson("Lists", CLOCK);
         Lesson second = component.addLesson("Maps", CLOCK);
         Lesson third = component.addLesson("Sets", CLOCK);
@@ -49,7 +50,7 @@ class ComponentRepositoryAdapterIT extends AbstractPostgresIT {
 
     @Test
     void reorderAndSaveDoesNotViolateUniquePositionConstraint() {
-        Component component = Component.create("Collections", "About collections", CLOCK);
+        Component component = Component.create("Collections", "About collections", OWNER, CLOCK);
         Lesson first = component.addLesson("Lists", CLOCK);
         Lesson second = component.addLesson("Maps", CLOCK);
         repository.save(component);
@@ -72,7 +73,7 @@ class ComponentRepositoryAdapterIT extends AbstractPostgresIT {
 
     @Test
     void removedLessonIsDeletedFromDatabase() {
-        Component component = Component.create("Collections", "About collections", CLOCK);
+        Component component = Component.create("Collections", "About collections", OWNER, CLOCK);
         Lesson first = component.addLesson("Lists", CLOCK);
         Lesson second = component.addLesson("Maps", CLOCK);
         repository.save(component);
@@ -99,7 +100,7 @@ class ComponentRepositoryAdapterIT extends AbstractPostgresIT {
 
     @Test
     void deletingComponentCascadesToLessons() {
-        Component component = Component.create("Collections", "About collections", CLOCK);
+        Component component = Component.create("Collections", "About collections", OWNER, CLOCK);
         component.addLesson("Lists", CLOCK);
         repository.save(component);
         em.flush();
