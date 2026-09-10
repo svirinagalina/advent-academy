@@ -34,6 +34,7 @@ public class CourseAssemblyService {
 
     private static final String AUDIT_EVENT_TYPE = "COURSE_ACCESS";
     private static final String AUDIT_RESULT_DENIED = "DENIED";
+    private static final String AUDIT_RESULT_SUCCESS = "SUCCESS";
 
     private final CourseRepository courseRepository;
     private final ComponentRepository componentRepository;
@@ -138,14 +139,18 @@ public class CourseAssemblyService {
         Course course = load(id);
         requireCurator(course, "PUBLISH_COURSE");
         course.publish(publicationPolicy, clock);
-        return courseRepository.save(course);
+        Course published = courseRepository.save(course);
+        recordSuccess("PUBLISH_COURSE", published.getId());
+        return published;
     }
 
     public Course archive(UUID id) {
         Course course = load(id);
         requireCurator(course, "ARCHIVE_COURSE");
         course.archive(clock);
-        return courseRepository.save(course);
+        Course archived = courseRepository.save(course);
+        recordSuccess("ARCHIVE_COURSE", archived.getId());
+        return archived;
     }
 
     private Course load(UUID id) {
@@ -182,6 +187,17 @@ public class CourseAssemblyService {
         return currentUserProvider.currentUserId()
                 .map(userId -> userId.equals(course.getOwnerId()))
                 .orElse(false);
+    }
+
+    /** Successful lifecycle changes are evidence too, not only refusals. */
+    private void recordSuccess(String operation, UUID courseId) {
+        auditTrail.record(new AuditTrailPort.AuditEvent(
+                AUDIT_EVENT_TYPE,
+                currentUserProvider.currentUserId().orElse(null),
+                operation,
+                "course:" + courseId,
+                AUDIT_RESULT_SUCCESS,
+                null));
     }
 
     private void recordDenial(String operation, UUID courseId, String reason) {

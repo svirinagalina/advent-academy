@@ -12,12 +12,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 /**
- * Serves stored assets to authenticated callers.
+ * Serves stored assets.
  * <p>
- * Assets are never public: the endpoint requires a token, and while the lesson content they belong
- * to is not {@link ContentStatus#PUBLISHED} the asset is additionally restricted to its uploader
- * and to curators ({@code ADMIN}, {@code CONTENT_EDITOR}). Refusals are audited, so leaked asset
- * ids cannot be probed unnoticed.
+ * Access follows the authorization matrix' {@code published-or-content-authorized} rule: once the
+ * lesson content an asset belongs to is {@link ContentStatus#PUBLISHED} the asset is readable by
+ * anybody, including anonymous callers, because published material is public. While the content is
+ * not published the asset stays restricted to its uploader and to curators ({@code ADMIN},
+ * {@code CONTENT_EDITOR}). Refusals are audited, so leaked asset ids cannot be probed unnoticed.
  */
 @Service
 public class DownloadAssetService {

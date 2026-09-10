@@ -26,37 +26,40 @@ public final class Direction {
     private final UUID id;
     private String title;
     private String description;
+    private final UUID ownerId;
     private final List<CourseRef> courses;
     private final Instant createdAt;
     private Instant updatedAt;
     /** Revision counter for optimistic concurrency control; guards against lost updates on concurrent edits. Null until first persisted. */
     private final Long version;
 
-    private Direction(UUID id, String title, String description,
+    private Direction(UUID id, String title, String description, UUID ownerId,
                       List<CourseRef> courses, Instant createdAt, Instant updatedAt, Long version) {
         this.id = id;
         this.title = title;
         this.description = description;
+        this.ownerId = ownerId;
         this.courses = courses;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.version = version;
     }
 
-    public static Direction create(String title, String description, Clock clock) {
+    public static Direction create(String title, String description, UUID ownerId, Clock clock) {
         Objects.requireNonNull(clock, "clock must not be null");
+        Objects.requireNonNull(ownerId, "ownerId must not be null");
         validateTitle(title);
 
         Instant now = clock.instant();
-        return new Direction(UUID.randomUUID(), title, description,
+        return new Direction(UUID.randomUUID(), title, description, ownerId,
                 new ArrayList<>(), now, now, null);
     }
 
-    public static Direction restore(UUID id, String title, String description,
+    public static Direction restore(UUID id, String title, String description, UUID ownerId,
                                     List<CourseRef> courses, Instant createdAt, Instant updatedAt, Long version) {
         List<CourseRef> ordered = new ArrayList<>(courses == null ? List.of() : courses);
         ordered.sort(Comparator.comparingInt(CourseRef::getPosition));
-        return new Direction(id, title, description, ordered, createdAt, updatedAt, version);
+        return new Direction(id, title, description, ownerId, ordered, createdAt, updatedAt, version);
     }
 
     /**
@@ -142,6 +145,14 @@ public final class Direction {
 
     public String getDescription() {
         return description;
+    }
+
+    /**
+     * @return the user who created the direction; {@code null} for rows that predate ownership,
+     * which stay curatable by {@code ADMIN} and {@code CONTENT_EDITOR} only.
+     */
+    public UUID getOwnerId() {
+        return ownerId;
     }
 
     /**

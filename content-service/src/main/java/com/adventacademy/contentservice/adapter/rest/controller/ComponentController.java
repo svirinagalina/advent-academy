@@ -49,7 +49,7 @@ public class ComponentController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'ADMIN')")
     @Operation(summary = "Create a component in DRAFT status")
     public ResponseEntity<ComponentResponse> create(@Valid @RequestBody ComponentRequest request) {
         var component = structureService.create(request.title(), request.description());
@@ -57,14 +57,14 @@ public class ComponentController {
     }
 
     @GetMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "List all components")
     public List<ComponentResponse> findAll() {
         return structureService.findAll().stream().map(ComponentResponse::from).toList();
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "Get a component with its lessons")
     public ComponentResponse get(@PathVariable UUID id) {
         return ComponentResponse.from(structureService.get(id));

@@ -5,14 +5,18 @@ import com.adventacademy.contentservice.application.validation.AssetFileValidato
 import com.adventacademy.contentservice.application.validation.InvalidMarkdownFileException;
 import com.adventacademy.contentservice.config.ArchiveUploadProperties;
 import com.adventacademy.contentservice.domain.StoredAsset;
+import com.adventacademy.contentservice.domain.constructor.Component;
 import com.adventacademy.contentservice.domain.repository.AssetStorage;
+import com.adventacademy.contentservice.domain.repository.ComponentRepository;
 import com.adventacademy.contentservice.domain.repository.LessonRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.Clock;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,8 +58,50 @@ class ZipContentExtractorTest {
         }
     };
 
-    private final CurrentUserProvider currentUserProvider =
-            () -> Optional.of(UUID.fromString("00000000-0000-0000-0000-000000000001"));
+    private static final UUID USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
+    private final CurrentUserProvider currentUserProvider = () -> Optional.of(USER_ID);
+
+    /** Every lesson in this test belongs to a component the uploading user owns. */
+    private final ComponentRepository fakeComponentRepository = new ComponentRepository() {
+        @Override
+        public Optional<Component> findByLessonId(UUID lessonId) {
+            return Optional.of(Component.create("Owning component", null, USER_ID, Clock.systemUTC()));
+        }
+
+        @Override
+        public Component save(Component component) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<Component> findById(UUID id) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<Component> findAll() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<Component> findAllById(Collection<UUID> ids) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean existsById(UUID id) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void deleteById(UUID id) {
+            throw new UnsupportedOperationException();
+        }
+    };
+
+    private final ContentAccessGuard accessGuard =
+            new ContentAccessGuard(currentUserProvider, event -> { });
 
     private UploadAssetService uploadAssetService;
     private ArchiveUploadProperties properties;
@@ -66,7 +112,8 @@ class ZipContentExtractorTest {
         AssetFileValidator assetFileValidator = new AssetFileValidator(
                 10 * 1024 * 1024,
                 Set.of("image/png", "image/jpeg", "text/plain"));
-        uploadAssetService = new UploadAssetService(assetFileValidator, fakeAssetStorage, fakeLessonRepository, currentUserProvider);
+        uploadAssetService = new UploadAssetService(assetFileValidator, fakeAssetStorage, fakeLessonRepository,
+                fakeComponentRepository, accessGuard);
 
         properties = new ArchiveUploadProperties();
         properties.setMaxTotalUncompressedBytes(1024 * 1024);

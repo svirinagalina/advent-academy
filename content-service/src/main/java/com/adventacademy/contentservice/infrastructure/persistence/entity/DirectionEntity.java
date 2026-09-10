@@ -29,6 +29,10 @@ public class DirectionEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    /** Nullable: directions created before ownership was introduced have no known owner. */
+    @Column(name = "owner_id")
+    private UUID ownerId;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "direction_courses", joinColumns = @JoinColumn(name = "direction_id"))
     @OrderBy("position ASC")
@@ -58,6 +62,10 @@ public class DirectionEntity {
         return description;
     }
 
+    public UUID getOwnerId() {
+        return ownerId;
+    }
+
     public List<CourseRefEmbeddable> getCourses() {
         return courses;
     }
@@ -84,6 +92,10 @@ public class DirectionEntity {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public void setOwnerId(UUID ownerId) {
+        this.ownerId = ownerId;
     }
 
     public void setCourses(List<CourseRefEmbeddable> courses) {

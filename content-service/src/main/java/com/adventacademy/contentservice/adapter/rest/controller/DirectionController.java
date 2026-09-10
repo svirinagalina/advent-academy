@@ -36,7 +36,7 @@ public class DirectionController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'ADMIN')")
     @Operation(summary = "Create a direction")
     public ResponseEntity<DirectionResponse> create(@Valid @RequestBody DirectionRequest request) {
         var direction = assemblyService.create(request.title(), request.description());
@@ -44,14 +44,14 @@ public class DirectionController {
     }
 
     @GetMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "List all directions")
     public List<DirectionResponse> findAll() {
         return assemblyService.findAll().stream().map(DirectionResponse::from).toList();
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "Get a direction with its course references")
     public DirectionResponse get(@PathVariable UUID id) {
         return DirectionResponse.from(assemblyService.get(id));

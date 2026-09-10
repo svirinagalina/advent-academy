@@ -19,6 +19,7 @@ public class DirectionMapper {
         entity.setId(direction.getId());
         entity.setTitle(direction.getTitle());
         entity.setDescription(direction.getDescription());
+        entity.setOwnerId(direction.getOwnerId());
         entity.setVersion(direction.getVersion());
         entity.setCreatedAt(direction.getCreatedAt());
         entity.setUpdatedAt(direction.getUpdatedAt());
@@ -39,6 +40,7 @@ public class DirectionMapper {
                 entity.getId(),
                 entity.getTitle(),
                 entity.getDescription(),
+                entity.getOwnerId(),
                 refs,
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),

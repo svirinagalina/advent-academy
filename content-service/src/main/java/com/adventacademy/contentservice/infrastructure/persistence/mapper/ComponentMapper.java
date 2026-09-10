@@ -19,6 +19,7 @@ public class ComponentMapper {
         entity.setTitle(component.getTitle());
         entity.setDescription(component.getDescription());
         entity.setStatus(component.getStatus());
+        entity.setOwnerId(component.getOwnerId());
         entity.setVersion(component.getVersion());
         entity.setCreatedAt(component.getCreatedAt());
         entity.setUpdatedAt(component.getUpdatedAt());
@@ -50,6 +51,7 @@ public class ComponentMapper {
                 entity.getTitle(),
                 entity.getDescription(),
                 entity.getStatus(),
+                entity.getOwnerId(),
                 lessons,
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),

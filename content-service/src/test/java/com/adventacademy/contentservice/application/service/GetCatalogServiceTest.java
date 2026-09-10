@@ -19,11 +19,12 @@ class CatalogResponseTest {
 
 
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-17T12:00:00Z"), ZoneOffset.UTC);
+    private static final UUID OWNER = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
     @Test
     void directionWithoutPublishedCoursesIsHiddenFromCatalog() {
         Course draft = Course.create("Python course", "About python", OWNER_ID, CLOCK);
-        Direction direction = Direction.create("Backend", "About backend", CLOCK);
+        Direction direction = Direction.create("Backend", "About backend", OWNER, CLOCK);
         direction.addCourse(draft.getId(), CLOCK);
 
         // сервис уже отфильтровал draft-курсы, поэтому карта пустая
@@ -35,7 +36,7 @@ class CatalogResponseTest {
     @Test
     void directionWithPublishedCourseStaysInCatalog() {
         Course published = Course.create("Java course", "About java", OWNER_ID, CLOCK);
-        Direction direction = Direction.create("Backend", "About backend", CLOCK);
+        Direction direction = Direction.create("Backend", "About backend", OWNER, CLOCK);
         direction.addCourse(published.getId(), CLOCK);
 
         CatalogResponse response = CatalogResponse.from(

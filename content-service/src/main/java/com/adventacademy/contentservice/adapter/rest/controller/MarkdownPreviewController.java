@@ -35,7 +35,7 @@ public class MarkdownPreviewController {
         this.previewService = previewService;
     }
 
-    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'ADMIN')")
     @PostMapping(value = "/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Preview a Markdown file as sanitized HTML",
             description = "Accepts a .md or .markdown file, validates it with the same rules as the real "
