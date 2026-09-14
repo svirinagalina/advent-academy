@@ -3,8 +3,10 @@ user-service;POST;/api/auth/register;public;public;Identity team;user-service/sr
 user-service;POST;/api/auth/login;public;public;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/AuthController.java;SEC-103
 user-service;POST;/api/auth/refresh;public;public;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/AuthController.java;SEC-104
 user-service;POST;/api/auth/confirm-email;public;public;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/AuthController.java;SEC-103
+user-service;POST;/api/auth/resend-verification;public;public;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/AuthController.java;SEC-103
 user-service;POST;/api/auth/change-password;authenticated;authenticated;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/AuthController.java;SEC-103
 user-service;POST;/api/auth/password-reset;public;public;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/AuthController.java;SEC-103
+user-service;POST;/api/auth/password-reset/confirm;public;public;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/AuthController.java;SEC-103
 user-service;POST;/api/auth/mfa/enable;authenticated;authenticated;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/AuthController.java;SEC-103
 user-service;POST;/api/auth/mfa/confirm;authenticated;authenticated;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/AuthController.java;SEC-103
 user-service;POST;/api/auth/mfa/disable;authenticated;authenticated;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/AuthController.java;SEC-103

@@ -38,7 +38,9 @@ public class SecurityConfiguration {
                                 "/api/auth/login",
                                 "/api/auth/refresh",
                                 "/api/auth/confirm-email",
-                                "/api/auth/password-reset"
+                                "/api/auth/resend-verification",
+                                "/api/auth/password-reset",
+                                "/api/auth/password-reset/confirm"
                         ).permitAll()
                         .requestMatchers("/api/roles/**", "/api/permissions/**", "/api/role-requests/**")
                         .hasRole("ADMIN")

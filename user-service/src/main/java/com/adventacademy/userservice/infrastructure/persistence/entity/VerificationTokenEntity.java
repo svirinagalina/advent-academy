@@ -7,15 +7,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "verification_tokens", uniqueConstraints = {
-    @UniqueConstraint(name = "uk_user_purpose", columnNames = {"user_id", "purpose"})
-})
+@Table(name = "verification_tokens")
 public class VerificationTokenEntity {
 
     @Id

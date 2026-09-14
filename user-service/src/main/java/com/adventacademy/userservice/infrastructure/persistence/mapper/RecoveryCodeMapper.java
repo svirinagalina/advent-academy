@@ -8,12 +8,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class RecoveryCodeMapper {
 
-    public RecoveryCodeEntity toEntity(RecoveryCode code) {
+    /**
+     * @param owner the user row the code belongs to; {@code user_id} is mandatory, so the
+     *              adapter resolves it before mapping instead of leaving the association empty
+     */
+    public RecoveryCodeEntity toEntity(RecoveryCode code, UserEntity owner) {
         if (code == null) {
             return null;
         }
         RecoveryCodeEntity entity = new RecoveryCodeEntity();
         entity.setId(code.getId());
+        entity.setUser(owner);
         entity.setCodeHash(code.getCodeHash());
         entity.setUsedAt(code.getUsedAt());
         entity.setCreatedAt(code.getCreatedAt());

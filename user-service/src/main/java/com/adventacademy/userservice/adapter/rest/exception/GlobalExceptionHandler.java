@@ -41,6 +41,23 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse("INVALID_USER_STATE", ex.getMessage()));
     }
 
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidToken(InvalidTokenException ex) {
+        // The reason (expired/used/wrong purpose) stays in the audit trail; the client gets one message.
+        logger.warn("Verification token refused: {}", ex.getReason());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("INVALID_TOKEN", ex.getMessage()));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
+        logger.warn("Bad request: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("BAD_REQUEST", ex.getMessage()));
+    }
+
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex) {
         logger.warn("Invalid credentials attempt");
