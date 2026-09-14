@@ -6,7 +6,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "lint": "node --check src/main/resources/static/js/media-effects.js && node --check src/main/resources/static/js/meeting-client.js && node --check src/main/resources/static/js/app.js",
+    "lint": "node --check src/main/resources/static/js/media-effects.js && node --check src/main/resources/static/js/network-quality.js && node --check src/main/resources/static/js/meeting-client.js && node --check src/main/resources/static/js/app.js",
     "test": "node --test src/test/frontend/*.test.js",
     "test:e2e": "playwright test",
     "build": "node scripts/build-frontend.mjs"
