@@ -3,7 +3,7 @@ package com.adventacademy.userservice.application.service.security.auth;
 import com.adventacademy.userservice.application.dto.request.LoginRequest;
 import com.adventacademy.userservice.application.port.AuditTrailPort;
 import com.adventacademy.userservice.application.port.JwtProvider;
-import com.adventacademy.userservice.application.port.MfaProvider;
+import com.adventacademy.userservice.application.service.auth.MfaCodeVerifier;
 import com.adventacademy.userservice.application.port.PasswordEncoder;
 import com.adventacademy.userservice.application.service.auth.LoginService;
 import com.adventacademy.userservice.application.service.security.AccountLockService;
@@ -37,7 +37,7 @@ class LoginServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private JwtProvider jwtProvider;
-    @Mock private MfaProvider mfaProvider;
+    @Mock private MfaCodeVerifier mfaCodeVerifier;
     @Mock private AccountLockService accountLockService;
     @Mock private AuditTrailPort auditTrailPort;
 
@@ -50,7 +50,7 @@ class LoginServiceTest {
                 userRepository,
                 passwordEncoder,
                 jwtProvider,
-                mfaProvider,
+                mfaCodeVerifier,
                 accountLockService,
                 auditTrailPort,
                 15L,

@@ -1,12 +1,16 @@
 package com.adventacademy.userservice.infrastructure.persistence.adapter;
 
+import com.adventacademy.userservice.domain.exception.UserNotFoundException;
 import com.adventacademy.userservice.domain.model.RecoveryCode;
 import com.adventacademy.userservice.domain.repository.RecoveryCodeRepository;
 import com.adventacademy.userservice.infrastructure.persistence.entity.RecoveryCodeEntity;
+import com.adventacademy.userservice.infrastructure.persistence.entity.UserEntity;
 import com.adventacademy.userservice.infrastructure.persistence.jpa.RecoveryCodeJpaRepository;
+import com.adventacademy.userservice.infrastructure.persistence.jpa.UserJpaRepository;
 import com.adventacademy.userservice.infrastructure.persistence.mapper.RecoveryCodeMapper;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,40 +19,37 @@ import java.util.UUID;
 public class RecoveryCodeRepositoryAdapter implements RecoveryCodeRepository {
 
     private final RecoveryCodeJpaRepository jpaRepository;
+    private final UserJpaRepository userJpaRepository;
     private final RecoveryCodeMapper mapper;
 
-    public RecoveryCodeRepositoryAdapter(RecoveryCodeJpaRepository jpaRepository, RecoveryCodeMapper mapper) {
+    public RecoveryCodeRepositoryAdapter(RecoveryCodeJpaRepository jpaRepository,
+                                         UserJpaRepository userJpaRepository,
+                                         RecoveryCodeMapper mapper) {
         this.jpaRepository = jpaRepository;
+        this.userJpaRepository = userJpaRepository;
         this.mapper = mapper;
     }
 
     @Override
     public RecoveryCode save(RecoveryCode recoveryCode) {
-        RecoveryCodeEntity entity = mapper.toEntity(recoveryCode);
-        RecoveryCodeEntity saved = jpaRepository.save(entity);
-        return mapper.toDomain(saved);
+        return saveAll(List.of(recoveryCode)).get(0);
     }
 
     @Override
     public List<RecoveryCode> saveAll(List<RecoveryCode> codes) {
-        List<RecoveryCodeEntity> entities = codes.stream().map(mapper::toEntity).toList();
-        List<RecoveryCodeEntity> saved = jpaRepository.saveAll(entities);
-        return saved.stream().map(mapper::toDomain).toList();
+        if (codes.isEmpty()) {
+            return List.of();
+        }
+        UUID userId = codes.get(0).getUserId();
+        UserEntity owner = userJpaRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+        List<RecoveryCodeEntity> entities = codes.stream().map(code -> mapper.toEntity(code, owner)).toList();
+        return jpaRepository.saveAll(entities).stream().map(mapper::toDomain).toList();
     }
 
     @Override
     public Optional<RecoveryCode> findById(UUID id) {
         return jpaRepository.findById(id).map(mapper::toDomain);
-    }
-
-    @Override
-    public Optional<RecoveryCode> findByCodeHash(String codeHash) {
-        return jpaRepository.findByCodeHash(codeHash).map(mapper::toDomain);
-    }
-
-    @Override
-    public List<RecoveryCode> findByUserId(UUID userId) {
-        return jpaRepository.findByUserId(userId).stream().map(mapper::toDomain).toList();
     }
 
     @Override
@@ -62,13 +63,12 @@ public class RecoveryCodeRepositoryAdapter implements RecoveryCodeRepository {
     }
 
     @Override
-    public void deleteById(UUID id) {
-        jpaRepository.deleteById(id);
+    public boolean consume(UUID userId, String codeHash, Instant usedAt) {
+        return jpaRepository.consume(userId, codeHash, usedAt) == 1;
     }
 
     @Override
     public void deleteAllByUserId(UUID userId) {
-        List<RecoveryCodeEntity> codes = jpaRepository.findByUserId(userId);
-        jpaRepository.deleteAll(codes);
+        jpaRepository.deleteAllByUserId(userId);
     }
 }

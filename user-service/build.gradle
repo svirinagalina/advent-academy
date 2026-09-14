@@ -80,6 +80,7 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'io.camunda:spring-boot-starter-camunda-test-testcontainer'
     testImplementation 'org.testcontainers:testcontainers'
+    testImplementation 'org.testcontainers:testcontainers-postgresql'
     testImplementation 'com.tngtech.archunit:archunit-junit5'
     testRuntimeOnly 'com.h2database:h2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

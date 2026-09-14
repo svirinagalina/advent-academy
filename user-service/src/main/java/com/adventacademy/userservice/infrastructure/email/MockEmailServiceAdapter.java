@@ -20,7 +20,7 @@ public class MockEmailServiceAdapter implements EmailService {
 
     private static final List<MockEmail> sentEmails = new ArrayList<>();
 
-    record MockEmail(String to, String subject, String body, long timestamp) {}
+    public record MockEmail(String to, String subject, String body, long timestamp) {}
 
     @Override
     public void sendEmailVerification(String email, String verificationToken) {

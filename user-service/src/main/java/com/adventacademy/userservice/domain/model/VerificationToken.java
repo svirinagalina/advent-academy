@@ -13,6 +13,10 @@ import java.util.UUID;
  * - One-time use: once consumed, token cannot be reused
  */
 public final class VerificationToken {
+
+    public static final String PURPOSE_EMAIL_VERIFICATION = "email_verification";
+    public static final String PURPOSE_PASSWORD_RESET = "password_reset";
+
     private final UUID id;
     private final UUID userId;
     private final String tokenDigest;        // SHA-256 hash of token (plaintext never stored)

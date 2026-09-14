@@ -1,77 +1,64 @@
 package com.adventacademy.userservice.infrastructure.security;
 
+import com.adventacademy.userservice.application.port.MfaProvider;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import dev.samstevens.totp.code.CodeGenerator;
-import dev.samstevens.totp.code.CodeVerifier;
 import dev.samstevens.totp.code.DefaultCodeGenerator;
-import dev.samstevens.totp.code.DefaultCodeVerifier;
 import dev.samstevens.totp.code.HashingAlgorithm;
 import dev.samstevens.totp.exceptions.CodeGenerationException;
 import dev.samstevens.totp.qr.QrData;
 import dev.samstevens.totp.secret.DefaultSecretGenerator;
 import dev.samstevens.totp.secret.SecretGenerator;
-import dev.samstevens.totp.time.SystemTimeProvider;
-import dev.samstevens.totp.time.TimeProvider;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.time.Clock;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.OptionalLong;
 
-@Slf4j
+/**
+ * RFC 6238 TOTP (SHA-1, 6 digits, 30-second steps) compatible with Google Authenticator, Authy and
+ * Microsoft Authenticator.
+ * <p>
+ * Verification reports the matching time step instead of a plain boolean so the application can
+ * keep the last accepted step per account and refuse replays without any process-local cache.
+ * Time comes from the injected {@link Clock}, which is what makes the window boundaries testable.
+ */
 @Component
-public class TotpProvider {
+public class TotpProvider implements MfaProvider {
 
-    private static final int TIME_PERIOD_SECONDS = 30;
+    public static final int TIME_STEP_SECONDS = 30;
     private static final int CODE_DIGITS = 6;
-    private static final int SECRET_LENGTH_CHARS = 32; // 32 base32 chars = 160 bits of entropy
-    private static final String ISSUER = "UserService";
+    private static final int SECRET_LENGTH_CHARS = 32; // 32 base32 chars = 160 bits
+    private static final String ISSUER = "Advent Academy";
 
-    private final SecretGenerator secretGenerator;
-    private final CodeGenerator codeGenerator;
-    private final CodeVerifier codeVerifier;
-    private final TimeProvider timeProvider;
+    private final SecretGenerator secretGenerator = new DefaultSecretGenerator(SECRET_LENGTH_CHARS);
+    private final CodeGenerator codeGenerator = new DefaultCodeGenerator(HashingAlgorithm.SHA1, CODE_DIGITS);
+    private final Clock clock;
     private final int windowSize;
 
-    // Store last used TOTP to prevent replay attacks: secret -> (code, timestamp)
-    private final Map<String, String> lastUsedCodes = new ConcurrentHashMap<>();
-
-    public TotpProvider(
-            @Value("${security.mfa.totp-window-size:1}") int windowSize
-    ) {
-        this.secretGenerator = new DefaultSecretGenerator(SECRET_LENGTH_CHARS);
-        this.codeGenerator = new DefaultCodeGenerator();
-        this.timeProvider = new SystemTimeProvider();
-
-        DefaultCodeVerifier verifier = new DefaultCodeVerifier(this.codeGenerator, this.timeProvider);
-        verifier.setTimePeriod(TIME_PERIOD_SECONDS);
-        verifier.setAllowedTimePeriodDiscrepancy(windowSize);
-        this.codeVerifier = verifier;
-
+    public TotpProvider(@Value("${security.mfa.totp-window-size:1}") int windowSize, Clock clock) {
+        if (windowSize < 0 || windowSize > 2) {
+            throw new IllegalArgumentException("security.mfa.totp-window-size must be between 0 and 2");
+        }
         this.windowSize = windowSize;
+        this.clock = clock;
     }
 
-    /**
-     * Generate a cryptographically random TOTP secret (32-character base32 string).
-     * Compatible with Google Authenticator, Authy, Microsoft Authenticator, etc.
-     */
+    @Override
     public String generateSecret() {
         return secretGenerator.generate();
     }
 
-    /**
-     * Generate QR code URL for manual entry into authenticator apps.
-     * Format: otpauth://totp/UserService:email?secret=...&issuer=...
-     */
+    @Override
     public String generateQrCodeUrl(String email, String secret) {
         return new QrData.Builder()
                 .label(email)
@@ -79,121 +66,51 @@ public class TotpProvider {
                 .issuer(ISSUER)
                 .algorithm(HashingAlgorithm.SHA1)
                 .digits(CODE_DIGITS)
-                .period(TIME_PERIOD_SECONDS)
+                .period(TIME_STEP_SECONDS)
                 .build()
                 .getUri();
     }
 
-    /**
-     * Generate QR code as PNG image (base64 encoded data URL).
-     * Useful for embedding in HTML/JSON responses.
-     */
+    @Override
     public String generateQrCodeImage(String email, String secret) {
         try {
-            String qrUri = generateQrCodeUrl(email, secret);
-
-            // Generate QR code bitmap
-            BitMatrix bitMatrix = new MultiFormatWriter()
-                    .encode(qrUri, BarcodeFormat.QR_CODE, 200, 200);
-
-            // Convert to PNG bytes
-            ByteArrayOutputStream pngOutputStream = new ByteArrayOutputStream();
-            MatrixToImageWriter.writeToStream(bitMatrix, "PNG", pngOutputStream);
-
-            // Encode as data URL
-            byte[] pngBytes = pngOutputStream.toByteArray();
-            String base64 = Base64.getEncoder().encodeToString(pngBytes);
-            return "data:image/png;base64," + base64;
+            BitMatrix matrix = new MultiFormatWriter().encode(generateQrCodeUrl(email, secret), BarcodeFormat.QR_CODE, 200, 200);
+            ByteArrayOutputStream png = new ByteArrayOutputStream();
+            MatrixToImageWriter.writeToStream(matrix, "PNG", png);
+            return "data:image/png;base64," + Base64.getEncoder().encodeToString(png.toByteArray());
         } catch (WriterException | IOException e) {
-            log.error("Failed to generate QR code image", e);
             throw new IllegalStateException("QR code image generation failed", e);
         }
     }
 
-    /**
-     * Validate TOTP code against secret.
-     *
-     * Checks:
-     * - Code is valid for current time window (±windowSize * 30 seconds)
-     * - Code has not been used before (replay prevention)
-     * - Code length is exactly 6 digits
-     *
-     * @param secret The base32-encoded TOTP secret
-     * @param code The 6-digit TOTP code from authenticator app
-     * @return true if code is valid and fresh, false otherwise
-     */
-    public boolean validateCode(String secret, String code) {
-        if (secret == null || code == null || code.length() != CODE_DIGITS) {
-            log.debug("Invalid TOTP code format");
-            return false;
+    @Override
+    public OptionalLong verifyCode(String secret, String code) {
+        if (secret == null || code == null || code.length() != CODE_DIGITS || !code.chars().allMatch(Character::isDigit)) {
+            return OptionalLong.empty();
         }
-
-        // Verify code is valid for current time (with ±windowSize window)
-        if (!codeVerifier.isValidCode(secret, code)) {
-            log.debug("TOTP code validation failed for time window");
-            return false;
+        long currentStep = Math.floorDiv(clock.instant().getEpochSecond(), TIME_STEP_SECONDS);
+        // Check every step in the window so timing does not reveal which one matched.
+        OptionalLong matched = OptionalLong.empty();
+        for (long step = currentStep - windowSize; step <= currentStep + windowSize; step++) {
+            if (matches(secret, step, code) && matched.isEmpty()) {
+                matched = OptionalLong.of(step);
+            }
         }
-
-        // Check for replay: ensure this code wasn't used before
-        String codeKey = secret + ":" + code;
-        if (lastUsedCodes.containsKey(codeKey)) {
-            log.warn("TOTP replay attack detected: code reused for secret");
-            return false;
-        }
-
-        // Mark code as used (prevent replay)
-        lastUsedCodes.put(codeKey, code);
-
-        log.debug("TOTP code validated successfully");
-        return true;
+        return matched;
     }
 
-    /**
-     * Generate current TOTP code for testing/debugging purposes.
-     * Should NOT be used in production for user verification.
-     */
-    public String getCurrentCode(String secret) {
+    /** Test/support helper: the code the authenticator app shows for the given time step. */
+    public String codeForStep(String secret, long step) {
         try {
-            return codeGenerator.generate(secret, timeProvider.getTime() / TIME_PERIOD_SECONDS);
+            return codeGenerator.generate(secret, step);
         } catch (CodeGenerationException e) {
-            log.error("Failed to generate current TOTP code", e);
             throw new IllegalStateException("TOTP code generation failed", e);
         }
     }
 
-    /**
-     * Check if a code has been used before (for replay prevention).
-     */
-    public boolean isCodeUsed(String secret, String code) {
-        String codeKey = secret + ":" + code;
-        return lastUsedCodes.containsKey(codeKey);
-    }
-
-    /**
-     * Clear all cached used codes. Should be called periodically to free memory.
-     * Called during application shutdown or maintenance.
-     */
-    public void clearUsedCodes() {
-        int cleared = lastUsedCodes.size();
-        lastUsedCodes.clear();
-        log.info("Cleared {} cached TOTP codes", cleared);
-    }
-
-    /**
-     * Get time-based info for debugging (current timestamp, window size).
-     */
-    public Map<String, Object> getDebugInfo(String secret, String code) {
-        Map<String, Object> info = new HashMap<>();
-        try {
-            String currentCode = getCurrentCode(secret);
-            info.put("current_code", currentCode);
-            info.put("provided_code", code);
-            info.put("match", currentCode.equals(code));
-            info.put("window_size", windowSize);
-            info.put("time_step_seconds", TIME_PERIOD_SECONDS);
-        } catch (RuntimeException e) {
-            info.put("error", e.getMessage());
-        }
-        return info;
+    private boolean matches(String secret, long step, String code) {
+        return MessageDigest.isEqual(
+                codeForStep(secret, step).getBytes(StandardCharsets.US_ASCII),
+                code.getBytes(StandardCharsets.US_ASCII));
     }
 }

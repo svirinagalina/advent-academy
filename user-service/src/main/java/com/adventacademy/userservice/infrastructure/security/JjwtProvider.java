@@ -33,7 +33,13 @@ public class JjwtProvider implements JwtProvider {
     private final Duration refreshTokenLifetime;
     private final long clockSkewSeconds;
     private final Clock clock;
-    private final ConcurrentMap<String, Instant> activeRefreshTokens = new ConcurrentHashMap<>();
+    /**
+     * Active refresh tokens by JTI. Process-local until the durable refresh sessions of ADR 0003
+     * land; user-wide revocation (password reset/change) is therefore per replica as well.
+     */
+    private final ConcurrentMap<String, ActiveRefreshToken> activeRefreshTokens = new ConcurrentHashMap<>();
+
+    private record ActiveRefreshToken(UUID userId, Instant expiresAt) {}
 
     public JjwtProvider(
             @Value("${security.jwt.secret}") String secret,
@@ -64,7 +70,7 @@ public class JjwtProvider implements JwtProvider {
     public String generateRefreshToken(UUID userId) {
         final String token = generateToken(userId, REFRESH_TOKEN, refreshTokenLifetime, null, Set.of());
         final Claims claims = parseClaims(token);
-        activeRefreshTokens.put(claims.getId(), claims.getExpiration().toInstant());
+        activeRefreshTokens.put(claims.getId(), new ActiveRefreshToken(userId, claims.getExpiration().toInstant()));
         return token;
     }
 
@@ -95,6 +101,11 @@ public class JjwtProvider implements JwtProvider {
         } catch (JwtException | IllegalArgumentException exception) {
             return false;
         }
+    }
+
+    @Override
+    public void revokeRefreshTokens(UUID userId) {
+        activeRefreshTokens.values().removeIf(active -> active.userId().equals(userId));
     }
 
     @Override
@@ -161,6 +172,6 @@ public class JjwtProvider implements JwtProvider {
 
     private void removeExpiredRefreshTokens() {
         final Instant now = clock.instant();
-        activeRefreshTokens.values().removeIf(expiry -> !expiry.isAfter(now));
+        activeRefreshTokens.values().removeIf(active -> !active.expiresAt().isAfter(now));
     }
 }

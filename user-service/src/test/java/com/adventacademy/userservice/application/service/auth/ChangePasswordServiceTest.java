@@ -2,6 +2,7 @@ package com.adventacademy.userservice.application.service.auth;
 
 import com.adventacademy.userservice.application.dto.request.ChangePasswordRequest;
 import com.adventacademy.userservice.application.port.AuditTrailPort;
+import com.adventacademy.userservice.application.port.JwtProvider;
 import com.adventacademy.userservice.application.port.PasswordEncoder;
 import com.adventacademy.userservice.domain.exception.InvalidCredentialsException;
 import com.adventacademy.userservice.domain.model.AuditEvent;
@@ -25,6 +26,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -33,6 +35,7 @@ class ChangePasswordServiceTest {
 
     @Mock private UserRepository userRepository;
     @Mock private PasswordEncoder passwordEncoder;
+    @Mock private JwtProvider jwtProvider;
     @Mock private AuditTrailPort auditTrailPort;
 
     private ChangePasswordService service;
@@ -43,7 +46,7 @@ class ChangePasswordServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ChangePasswordService(userRepository, passwordEncoder, auditTrailPort, clock);
+        service = new ChangePasswordService(userRepository, passwordEncoder, jwtProvider, auditTrailPort, clock);
         userId = UUID.randomUUID();
         user = new User();
         user.setId(userId);
@@ -61,14 +64,28 @@ class ChangePasswordServiceTest {
                 "old", "newpassword", "10.0.0.3", "Safari"));
 
         ArgumentCaptor<AuditEvent> captor = ArgumentCaptor.forClass(AuditEvent.class);
-        verify(auditTrailPort).record(captor.capture());
-        AuditEvent event = captor.getValue();
+        verify(auditTrailPort, times(2)).record(captor.capture());
+        AuditEvent event = captor.getAllValues().get(0);
 
         assertThat(event.getEventType()).isEqualTo(AuditEventType.PASSWORD_CHANGED);
         assertThat(event.getResult()).isEqualTo(AuditResult.SUCCESS);
         assertThat(event.getActorUserId()).isEqualTo(userId);
         assertThat(event.getTargetUserId()).isEqualTo(userId);
         assertThat(event.getIpAddress()).isEqualTo("10.0.0.3");
+
+        assertThat(captor.getAllValues().get(1).getEventType()).isEqualTo(AuditEventType.SESSIONS_REVOKED);
+    }
+
+    @Test
+    void changePassword_correctOldPassword_revokesEveryRefreshTokenOfTheUser() {
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("old", "old-hash")).thenReturn(true);
+        when(passwordEncoder.encode("newpassword")).thenReturn("new-hash");
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        service.changePassword(userId, new ChangePasswordRequest("old", "newpassword", null, null));
+
+        verify(jwtProvider).revokeRefreshTokens(userId);
     }
 
     @Test

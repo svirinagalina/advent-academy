@@ -1,11 +1,17 @@
 package com.adventacademy.userservice.adapter.rest.controller;
 
 import com.adventacademy.userservice.application.dto.request.ChangePasswordRequest;
+import com.adventacademy.userservice.application.dto.request.CompletePasswordResetRequest;
+import com.adventacademy.userservice.application.dto.request.ConfirmMfaRequest;
+import com.adventacademy.userservice.application.dto.request.DisableMfaRequest;
+import com.adventacademy.userservice.application.dto.request.EnableMfaRequest;
 import com.adventacademy.userservice.application.dto.request.LoginRequest;
 import com.adventacademy.userservice.application.dto.request.PasswordResetRequest;
 import com.adventacademy.userservice.application.dto.request.RefreshTokenRequest;
 import com.adventacademy.userservice.application.dto.request.RegisterUserRequest;
+import com.adventacademy.userservice.application.dto.request.ResendVerificationRequest;
 import com.adventacademy.userservice.application.dto.response.AuthResponse;
+import com.adventacademy.userservice.application.dto.response.ConfirmMfaResponse;
 import com.adventacademy.userservice.application.dto.response.EnableMfaResponse;
 import com.adventacademy.userservice.application.dto.response.MessageResponse;
 import com.adventacademy.userservice.application.dto.response.UserResponse;
@@ -26,8 +32,11 @@ import java.util.UUID;
  * REST controller handling user authentication and registration.
  * <p>
  * Provides endpoints for user registration, login with optional MFA, JWT token refresh,
- * email confirmation, password change, and MFA setup/teardown.
- * All endpoints are public and do not require prior authentication.
+ * email confirmation and re-sending, password change and reset, and MFA setup/teardown.
+ * The registration, login, refresh, confirm/resend and password-reset endpoints are public; the
+ * password-change and MFA endpoints need an access token, and enabling/disabling MFA additionally
+ * requires the current password (step-up). The public endpoints are rate limited per address and
+ * per account, and answer identically whether or not an account exists.
  * </p>
  */
 @RestController
@@ -105,13 +114,27 @@ public class AuthController {
     @PostMapping("/confirm-email")
     @Operation(summary = "Confirm email", description = "Confirm user email address with verification token")
     @ApiResponse(responseCode = "200", description = "Email confirmed successfully")
-    @ApiResponse(responseCode = "404", description = "Invalid verification token")
+    @ApiResponse(responseCode = "400", description = "Invalid, expired or already used verification token")
     public ResponseEntity<MessageResponse> confirmEmail(
             @RequestParam String token,
             HttpServletRequest httpRequest) {
         String ipAddress = httpRequest.getRemoteAddr();
         String userAgent = httpRequest.getHeader("User-Agent");
         MessageResponse response = confirmEmailService.confirmEmail(token, ipAddress, userAgent);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/resend-verification")
+    @Operation(summary = "Re-send verification email",
+            description = "Issues a new verification link for a pending account. The response is identical "
+                    + "whether the email is known, unknown or already verified.")
+    @ApiResponse(responseCode = "200", description = "Request accepted")
+    @ApiResponse(responseCode = "429", description = "Too many requests")
+    public ResponseEntity<MessageResponse> resendVerification(
+            @Valid @RequestBody ResendVerificationRequest request,
+            HttpServletRequest httpRequest) {
+        MessageResponse response = confirmEmailService.resendVerification(
+                request.email(), httpRequest.getRemoteAddr(), httpRequest.getHeader("User-Agent"));
         return ResponseEntity.ok(response);
     }
 
@@ -141,9 +164,10 @@ public class AuthController {
 
     @PostMapping("/password-reset")
     @Operation(summary = "Initiate password reset",
-            description = "Records a password-reset request for audit. The response is identical "
+            description = "Sends a one-time reset link to the address. The response is identical "
                     + "regardless of whether the email is known, to avoid leaking account existence.")
     @ApiResponse(responseCode = "200", description = "Password-reset initiation accepted")
+    @ApiResponse(responseCode = "429", description = "Too many requests")
     public ResponseEntity<MessageResponse> initiatePasswordReset(
             @Valid @RequestBody PasswordResetRequest request,
             HttpServletRequest httpRequest) {
@@ -161,33 +185,62 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/password-reset/confirm")
+    @Operation(summary = "Complete password reset",
+            description = "Sets a new password using the token from the reset email. The token is single-use; "
+                    + "all refresh sessions of the account are revoked.")
+    @ApiResponse(responseCode = "200", description = "Password reset")
+    @ApiResponse(responseCode = "400", description = "Invalid, expired or already used token, or passwords do not match")
+    @ApiResponse(responseCode = "429", description = "Too many requests")
+    public ResponseEntity<MessageResponse> completePasswordReset(
+            @Valid @RequestBody CompletePasswordResetRequest request,
+            HttpServletRequest httpRequest) {
+        CompletePasswordResetRequest enriched = new CompletePasswordResetRequest(
+                request.token(),
+                request.newPassword(),
+                request.confirmPassword(),
+                httpRequest.getRemoteAddr(),
+                httpRequest.getHeader("User-Agent")
+        );
+        MessageResponse response = passwordResetService.complete(enriched);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/mfa/enable")
-    @Operation(summary = "Enable MFA", description = "Enable multi-factor authentication and get QR code")
+    @Operation(summary = "Start MFA enrolment",
+            description = "Step-up: requires the current password. Returns the secret, the otpauth URI and a QR "
+                    + "code; MFA is only active after /mfa/confirm.")
     @ApiResponse(responseCode = "200", description = "MFA secret generated")
-    public ResponseEntity<EnableMfaResponse> enableMfa(Authentication authentication) {
-        EnableMfaResponse response = mfaService.enableMfa(userId(authentication));
+    @ApiResponse(responseCode = "401", description = "Invalid password, or MFA already enabled")
+    public ResponseEntity<EnableMfaResponse> enableMfa(
+            @Valid @RequestBody EnableMfaRequest request,
+            Authentication authentication) {
+        EnableMfaResponse response = mfaService.enableMfa(userId(authentication), request.password());
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/mfa/confirm")
-    @Operation(summary = "Confirm MFA", description = "Confirm MFA setup with code from authenticator app")
-    @ApiResponse(responseCode = "200", description = "MFA enabled successfully")
+    @Operation(summary = "Confirm MFA enrolment",
+            description = "Verifies the first code from the authenticator app, enables MFA and returns the "
+                    + "recovery codes. They are shown exactly once.")
+    @ApiResponse(responseCode = "200", description = "MFA enabled; recovery codes in the response")
     @ApiResponse(responseCode = "401", description = "Invalid MFA code")
-    public ResponseEntity<MessageResponse> confirmMfa(
-            @RequestParam String code,
+    public ResponseEntity<ConfirmMfaResponse> confirmMfa(
+            @Valid @RequestBody ConfirmMfaRequest request,
             Authentication authentication) {
-        MessageResponse response = mfaService.confirmMfa(userId(authentication), code);
+        ConfirmMfaResponse response = mfaService.confirmMfa(userId(authentication), request.code());
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/mfa/disable")
-    @Operation(summary = "Disable MFA", description = "Disable multi-factor authentication")
+    @Operation(summary = "Disable MFA",
+            description = "Step-up: requires the current password and a current TOTP or an unused recovery code.")
     @ApiResponse(responseCode = "200", description = "MFA disabled successfully")
-    @ApiResponse(responseCode = "401", description = "Invalid MFA code")
+    @ApiResponse(responseCode = "401", description = "Invalid password or MFA code")
     public ResponseEntity<MessageResponse> disableMfa(
-            @RequestParam String code,
+            @Valid @RequestBody DisableMfaRequest request,
             Authentication authentication) {
-        MessageResponse response = mfaService.disableMfa(userId(authentication), code);
+        MessageResponse response = mfaService.disableMfa(userId(authentication), request.password(), request.code());
         return ResponseEntity.ok(response);
     }
 

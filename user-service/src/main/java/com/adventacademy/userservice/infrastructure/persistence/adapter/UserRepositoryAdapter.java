@@ -136,6 +136,7 @@ public class UserRepositoryAdapter implements UserRepository {
         entity.setEmailVerificationToken(user.getEmailVerificationToken());
         entity.setMfaEnabled(user.isMfaEnabled());
         entity.setMfaSecret(user.getMfaSecret());
+        entity.setMfaLastUsedStep(user.getMfaLastUsedStep());
         entity.setFailedLoginAttempts(user.getFailedLoginAttempts());
         entity.setLockedUntil(user.getLockedUntil());
         entity.setLastLoginAt(user.getLastLoginAt());

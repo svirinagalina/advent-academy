@@ -1,4 +1,6 @@
 spring:
+  mail:
+    enabled: false
   datasource:
     url: jdbc:h2:mem:testdb
     driver-class-name: org.h2.Driver
@@ -22,6 +24,26 @@ security:
   account-lock:
     max-failed-attempts: 5
     lock-duration-minutes: 30
+  mfa:
+    totp-window-size: 1
+    recovery-code-count: 8
+    encryption:
+      active-key: v1
+      keys:
+        v1: dGVzdC1tZmEtZW5jcnlwdGlvbi1rZXktMzItYnl0ZXM=
+  tokens:
+    email-verification-ttl: 24h
+    password-reset-ttl: 1h
+  rate-limit:
+    enabled: true
+    window: 1h
+    login-per-ip: 20
+    login-per-account: 10
+    register-per-ip: 10
+    password-reset-per-ip: 5
+    password-reset-per-account: 3
+    resend-verification-per-ip: 5
+    resend-verification-per-account: 3
 
 camunda:
   client:
