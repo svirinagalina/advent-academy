@@ -273,6 +273,20 @@ test("requires two worsening confirmations and recovers one level per three conf
     assert.equal(evaluator.evaluate(good, 8).state, QUALITY_STATES.GOOD);
 });
 
+test("enters and leaves offline immediately without walking through quality levels", () => {
+    const evaluator = new NetworkQualityEvaluator({windowSize: 1});
+    const offline = qualityMetrics({iceState: "disconnected"});
+    const good = qualityMetrics();
+
+    const disconnected = evaluator.evaluate(offline, 1);
+    assert.equal(disconnected.state, QUALITY_STATES.OFFLINE);
+    assert.equal(disconnected.changed, true);
+
+    const reconnected = evaluator.evaluate(good, 2);
+    assert.equal(reconnected.state, QUALITY_STATES.GOOD);
+    assert.equal(reconnected.changed, true);
+});
+
 test("sliding window is bounded and alternating boundary samples do not oscillate", () => {
     const evaluator = new NetworkQualityEvaluator({windowSize: 3});
     const fair = qualityMetrics({rttMs: 160});
@@ -343,4 +357,36 @@ test("polling uses the configured interval and never overlaps getStats calls", a
 
     monitor.stop();
     assert.equal(clearedTimer, 17);
+});
+
+test("stops polling after the configured number of consecutive collection errors", async () => {
+    const errors = [];
+    let clearedTimer = null;
+    const monitor = new NetworkQualityMonitor({
+        peerConnection: {},
+        config: {maximumConsecutiveErrors: 3},
+        collector: {
+            async collect() {
+                throw new Error("getStats unavailable");
+            }
+        },
+        onError: error => errors.push(error.message),
+        setIntervalImpl: () => 23,
+        clearIntervalImpl: timer => {
+            clearedTimer = timer;
+        }
+    });
+
+    monitor.start();
+    await new Promise(resolve => setImmediate(resolve));
+    await monitor.poll();
+    await monitor.poll();
+
+    assert.deepEqual(errors, [
+        "getStats unavailable",
+        "getStats unavailable",
+        "getStats unavailable"
+    ]);
+    assert.equal(monitor.running, false);
+    assert.equal(clearedTimer, 23);
 });

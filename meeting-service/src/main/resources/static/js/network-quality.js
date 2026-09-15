@@ -19,6 +19,7 @@ const DEFAULT_QUALITY_CONFIG = Object.freeze({
     windowSize: 5,
     worseningConfirmations: 2,
     recoveryConfirmations: 3,
+    maximumConsecutiveErrors: 3,
     thresholds: Object.freeze({
         fair: Object.freeze({
             rttMs: 150,
@@ -193,7 +194,10 @@ class NetworkQualityEvaluator {
         const candidateState = classifyQuality(windowMetrics, this.config.thresholds);
         const previousState = this.state;
 
-        if (candidateState === this.state) {
+        if (candidateState === QUALITY_STATES.OFFLINE || this.state === QUALITY_STATES.OFFLINE) {
+            this.state = candidateState;
+            this.resetPending();
+        } else if (candidateState === this.state) {
             this.resetPending();
         } else {
             this.recordCandidate(candidateState);
@@ -257,6 +261,7 @@ class NetworkQualityMonitor {
         this.timer = null;
         this.inFlight = false;
         this.running = false;
+        this.consecutiveErrors = 0;
     }
 
     start() {
@@ -284,12 +289,17 @@ class NetworkQualityMonitor {
         try {
             const metrics = await this.collector.collect(this.peerConnection);
             const snapshot = this.evaluator.evaluate(metrics);
+            this.consecutiveErrors = 0;
             if (this.running) {
                 this.onSnapshot(snapshot);
             }
             return snapshot;
         } catch (error) {
             if (this.running) {
+                this.consecutiveErrors += 1;
+                if (this.consecutiveErrors >= this.config.maximumConsecutiveErrors) {
+                    this.stop();
+                }
                 this.onError(error);
             }
             return null;
@@ -370,6 +380,8 @@ function mergeQualityConfig(config) {
             DEFAULT_QUALITY_CONFIG.worseningConfirmations),
         recoveryConfirmations: positiveInteger(config.recoveryConfirmations,
             DEFAULT_QUALITY_CONFIG.recoveryConfirmations),
+        maximumConsecutiveErrors: positiveInteger(config.maximumConsecutiveErrors,
+            DEFAULT_QUALITY_CONFIG.maximumConsecutiveErrors),
         thresholds: {
             fair: {...DEFAULT_QUALITY_CONFIG.thresholds.fair, ...config.thresholds?.fair},
             poor: {...DEFAULT_QUALITY_CONFIG.thresholds.poor, ...config.thresholds?.poor},
