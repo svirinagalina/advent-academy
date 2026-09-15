@@ -4,6 +4,7 @@ import com.adventacademy.contentservice.AbstractPostgresIT;
 import com.adventacademy.contentservice.domain.ContentStatus;
 import com.adventacademy.contentservice.domain.LessonContent;
 import com.adventacademy.contentservice.domain.repository.LessonContentRepository;
+import com.adventacademy.contentservice.support.WithContentEditor;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * -> domain object -> repository -> back out through the response DTO.
  */
 @AutoConfigureMockMvc
+@WithContentEditor
 class XssSanitizationApiIT extends AbstractPostgresIT {
 
     private static final String SCRIPT_PAYLOAD = "<script>alert(1)</script>";

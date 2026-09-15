@@ -15,10 +15,11 @@ class DirectionTest {
 
     private static final Instant FIXED_INSTANT = Instant.parse("2026-06-29T12:00:00Z");
     private static final Clock CLOCK = Clock.fixed(FIXED_INSTANT, ZoneOffset.UTC);
+    private static final UUID OWNER = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
     @Test
     void createShouldInitializeEmptyDirection() {
-        Direction direction = Direction.create("Backend", "About backend", CLOCK);
+        Direction direction = Direction.create("Backend", "About backend", OWNER, CLOCK);
 
         assertThat(direction.getId()).isNotNull();
         assertThat(direction.getTitle()).isEqualTo("Backend");
@@ -29,14 +30,14 @@ class DirectionTest {
 
     @Test
     void createShouldRejectBlankTitle() {
-        assertThatThrownBy(() -> Direction.create(null, null, CLOCK))
+        assertThatThrownBy(() -> Direction.create(null, null, OWNER, CLOCK))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("title must not be blank");
     }
 
     @Test
     void addCourseShouldAppendWithContiguousPositions() {
-        Direction direction = Direction.create("Backend", "About backend", CLOCK);
+        Direction direction = Direction.create("Backend", "About backend", OWNER, CLOCK);
         UUID c1 = UUID.randomUUID();
         UUID c2 = UUID.randomUUID();
 
@@ -53,7 +54,7 @@ class DirectionTest {
 
     @Test
     void addCourseShouldRejectDuplicate() {
-        Direction direction = Direction.create("Backend", "About backend", CLOCK);
+        Direction direction = Direction.create("Backend", "About backend", OWNER, CLOCK);
         UUID c1 = UUID.randomUUID();
         direction.addCourse(c1, CLOCK);
 
@@ -64,7 +65,7 @@ class DirectionTest {
 
     @Test
     void getCoursesShouldReturnUnmodifiableList() {
-        Direction direction = Direction.create("Backend", "About backend", CLOCK);
+        Direction direction = Direction.create("Backend", "About backend", OWNER, CLOCK);
         direction.addCourse(UUID.randomUUID(), CLOCK);
 
         List<CourseRef> refs = direction.getCourses();
@@ -79,13 +80,13 @@ class DirectionTest {
         CourseRef first = CourseRef.restore(UUID.randomUUID(), 0);
 
         Direction direction = Direction.restore(UUID.randomUUID(), "Backend",
-                "About backend", List.of(second, first), FIXED_INSTANT, FIXED_INSTANT, 0L);
+                "About backend", OWNER, List.of(second, first), FIXED_INSTANT, FIXED_INSTANT, 0L);
         assertThat(direction.getCourses()).containsExactly(first, second);
     }
 
     @Test
     void removeCourseShouldRenumberRemaining() {
-        Direction direction = Direction.create("Backend", "About backend", CLOCK);
+        Direction direction = Direction.create("Backend", "About backend", OWNER, CLOCK);
         UUID c1 = UUID.randomUUID();
         UUID c2 = UUID.randomUUID();
         UUID c3 = UUID.randomUUID();
@@ -105,7 +106,7 @@ class DirectionTest {
 
     @Test
     void reorderCoursesShouldApplyNewOrder() {
-        Direction direction = Direction.create("Backend", "About backend", CLOCK);
+        Direction direction = Direction.create("Backend", "About backend", OWNER, CLOCK);
         UUID c1 = UUID.randomUUID();
         UUID c2 = UUID.randomUUID();
         direction.addCourse(c1, CLOCK);
@@ -120,7 +121,7 @@ class DirectionTest {
 
     @Test
     void reorderCoursesShouldRejectForeignIds() {
-        Direction direction = Direction.create("Backend", "About backend", CLOCK);
+        Direction direction = Direction.create("Backend", "About backend", OWNER, CLOCK);
         direction.addCourse(UUID.randomUUID(), CLOCK);
         direction.addCourse(UUID.randomUUID(), CLOCK);
 
@@ -131,7 +132,7 @@ class DirectionTest {
 
     @Test
     void reorderCoursesShouldRejectDuplicateIds() {
-        Direction direction = Direction.create("Backend", "About backend", CLOCK);
+        Direction direction = Direction.create("Backend", "About backend", OWNER, CLOCK);
         UUID c1 = UUID.randomUUID();
         UUID c2 = UUID.randomUUID();
         direction.addCourse(c1, CLOCK);
@@ -144,7 +145,7 @@ class DirectionTest {
 
     @Test
     void reorderCoursesShouldRejectMissingIds() {
-        Direction direction = Direction.create("Backend", "About backend", CLOCK);
+        Direction direction = Direction.create("Backend", "About backend", OWNER, CLOCK);
         UUID c1 = UUID.randomUUID();
         UUID c2 = UUID.randomUUID();
         direction.addCourse(c1, CLOCK);

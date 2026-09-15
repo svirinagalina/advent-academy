@@ -15,6 +15,10 @@ public class AssetEntity {
     @Column(name = "lesson_id", nullable = false)
     private UUID lessonId;
 
+    /** Uploader of the asset; nullable for assets stored before ownership was tracked. */
+    @Column(name = "owner_id")
+    private UUID ownerId;
+
     @Column(nullable = false)
     private String filename;
 
@@ -50,6 +54,14 @@ public class AssetEntity {
 
     public void setLessonId(UUID lessonId) {
         this.lessonId = lessonId;
+    }
+
+    public UUID getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(UUID ownerId) {
+        this.ownerId = ownerId;
     }
 
     public String getFilename() {

@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -34,6 +35,7 @@ public class MarkdownPreviewController {
         this.previewService = previewService;
     }
 
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'ADMIN')")
     @PostMapping(value = "/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Preview a Markdown file as sanitized HTML",
             description = "Accepts a .md or .markdown file, validates it with the same rules as the real "

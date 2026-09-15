@@ -8,16 +8,21 @@ import java.util.UUID;
 /**
  * Domain model representing a binary asset (image, document, etc.) bundled with a lesson.
  * <p>
- * Holds the raw file bytes together with its metadata (owning lesson, original
+ * Holds the raw file bytes together with its metadata (owning lesson, uploader, original
  * filename, MIME type, size) and creation/update timestamps. Instances are
  * immutable except for {@code updatedAt}, and can only be created with a
  * non-null lessonId, a non-blank filename and contentType, and non-empty
  * file data.
+ * <p>
+ * {@code ownerId} is the user who uploaded the asset. It is what authorizes downloads while the
+ * lesson content is still a draft; it is nullable because assets created before ownership was
+ * introduced have no known uploader.
  */
 public final class StoredAsset {
 
     private final UUID id;
     private final UUID lessonId;
+    private final UUID ownerId;
     private final String filename;
     private final String contentType;
     private final long fileSize;
@@ -28,6 +33,7 @@ public final class StoredAsset {
     private StoredAsset(
             UUID id,
             UUID lessonId,
+            UUID ownerId,
             String filename,
             String contentType,
             long fileSize,
@@ -37,6 +43,7 @@ public final class StoredAsset {
     ) {
         this.id = id;
         this.lessonId = lessonId;
+        this.ownerId = ownerId;
         this.filename = filename;
         this.contentType = contentType;
         this.fileSize = fileSize;
@@ -68,6 +75,20 @@ public final class StoredAsset {
             byte[] fileData,
             Clock clock
     ) {
+        return create(lessonId, null, filename, contentType, fileData, clock);
+    }
+
+    /**
+     * Creates a new asset owned by the given uploader.
+     */
+    public static StoredAsset create(
+            UUID lessonId,
+            UUID ownerId,
+            String filename,
+            String contentType,
+            byte[] fileData,
+            Clock clock
+    ) {
         Objects.requireNonNull(clock, "clock must not be null");
         validateCreation(lessonId, filename, contentType, fileData);
 
@@ -75,6 +96,7 @@ public final class StoredAsset {
         return new StoredAsset(
                 UUID.randomUUID(),
                 lessonId,
+                ownerId,
                 filename,
                 contentType,
                 fileData.length,
@@ -98,9 +120,27 @@ public final class StoredAsset {
             Instant createdAt,
             Instant updatedAt
     ) {
+        return restore(id, lessonId, null, filename, contentType, fileSize, fileData, createdAt, updatedAt);
+    }
+
+    /**
+     * Reconstructs an asset together with its uploader.
+     */
+    public static StoredAsset restore(
+            UUID id,
+            UUID lessonId,
+            UUID ownerId,
+            String filename,
+            String contentType,
+            long fileSize,
+            byte[] fileData,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
         return new StoredAsset(
                 id,
                 lessonId,
+                ownerId,
                 filename,
                 contentType,
                 fileSize,
@@ -136,6 +176,14 @@ public final class StoredAsset {
 
     public UUID getLessonId() {
         return lessonId;
+    }
+
+    /**
+     * @return the user who uploaded the asset, or {@code null} for assets stored before
+     *         ownership was tracked
+     */
+    public UUID getOwnerId() {
+        return ownerId;
     }
 
     public String getFilename() {

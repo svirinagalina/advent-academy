@@ -35,6 +35,11 @@ public class ComponentRepositoryAdapter implements ComponentRepository {
     }
 
     @Override
+    public Optional<Component> findByLessonId(UUID lessonId) {
+        return jpaRepository.findByLessonId(lessonId).map(mapper::toDomain);
+    }
+
+    @Override
     public List<Component> findAll() {
         return jpaRepository.findAll().stream().map(mapper::toDomain).toList();
     }

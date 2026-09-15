@@ -35,6 +35,10 @@ public class ComponentEntity {
     @Column(nullable = false, length = 20)
     private PublicationStatus status;
 
+    /** Nullable: components created before ownership was introduced have no known owner. */
+    @Column(name = "owner_id")
+    private UUID ownerId;
+
     @OneToMany(mappedBy = "component", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderBy("position ASC")
     private List<LessonEntity> lessons = new ArrayList<>();
@@ -67,6 +71,10 @@ public class ComponentEntity {
         return status;
     }
 
+    public UUID getOwnerId() {
+        return ownerId;
+    }
+
     public List<LessonEntity> getLessons() {
         return lessons;
     }
@@ -97,6 +105,10 @@ public class ComponentEntity {
 
     public void setStatus(PublicationStatus status) {
         this.status = status;
+    }
+
+    public void setOwnerId(UUID ownerId) {
+        this.ownerId = ownerId;
     }
 
     public void setLessons(List<LessonEntity> lessons) {

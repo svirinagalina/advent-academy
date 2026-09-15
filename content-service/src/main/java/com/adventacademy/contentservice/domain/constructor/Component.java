@@ -27,17 +27,19 @@ public final class Component {
     private String title;
     private String description;
     private PublicationStatus status;
+    private final UUID ownerId;
     private final List<Lesson> lessons;
     private final Instant createdAt;
     private Instant updatedAt;
     /** Revision counter for optimistic concurrency control; guards against lost updates on concurrent edits. Null until first persisted. */
     private final Long version;
 
-    private Component(UUID id, String title, String description, PublicationStatus status,
+    private Component(UUID id, String title, String description, PublicationStatus status, UUID ownerId,
                       List<Lesson> lessons, Instant createdAt, Instant updatedAt, Long version) {
         this.id = id;
         this.title = title;
         this.status = status;
+        this.ownerId = ownerId;
         this.lessons = lessons;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -45,20 +47,21 @@ public final class Component {
         this.version = version;
     }
 
-    public static Component create(String title, String description, Clock clock) {
+    public static Component create(String title, String description, UUID ownerId, Clock clock) {
         Objects.requireNonNull(clock, "clock must not be null");
+        Objects.requireNonNull(ownerId, "ownerId must not be null");
         validateTitle(title);
 
         Instant now = clock.instant();
-        return new Component(UUID.randomUUID(), title, description, PublicationStatus.DRAFT,
+        return new Component(UUID.randomUUID(), title, description, PublicationStatus.DRAFT, ownerId,
                 new ArrayList<>(), now, now, null);
     }
 
-    public static Component restore(UUID id, String title, String description, PublicationStatus status,
+    public static Component restore(UUID id, String title, String description, PublicationStatus status, UUID ownerId,
                                     List<Lesson> lessons, Instant createdAt, Instant updatedAt, Long version) {
         List<Lesson> ordered = new ArrayList<>(lessons == null ? List.of() : lessons);
         ordered.sort(Comparator.comparingInt(Lesson::getPosition));
-        return new Component(id, title, description, status, ordered, createdAt, updatedAt, version);
+        return new Component(id, title, description, status, ownerId, ordered, createdAt, updatedAt, version);
     }
 
     /**
@@ -195,6 +198,14 @@ public final class Component {
 
     public PublicationStatus getStatus() {
         return status;
+    }
+
+    /**
+     * @return the user who created the component; {@code null} for rows that predate ownership,
+     * which stay curatable by {@code ADMIN} and {@code CONTENT_EDITOR} only.
+     */
+    public UUID getOwnerId() {
+        return ownerId;
     }
 
     /**

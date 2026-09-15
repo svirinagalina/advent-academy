@@ -16,11 +16,12 @@ class ComponentTest {
 
     private static final Instant FIXED_INSTANT = Instant.parse("2026-06-29T12:00:00Z");
     private static final Clock CLOCK = Clock.fixed(FIXED_INSTANT, ZoneOffset.UTC);
+    private static final UUID OWNER = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final ComponentPublicationPolicy ALL_READY = lessonIds -> Set.of();
 
     @Test
     void createShouldInitializeEmptyDraftComponent() {
-        Component component = Component.create("Basics", "About basics", CLOCK);
+        Component component = Component.create("Basics", "About basics", OWNER, CLOCK);
 
         assertThat(component.getId()).isNotNull();
         assertThat(component.getTitle()).isEqualTo("Basics");
@@ -32,14 +33,14 @@ class ComponentTest {
 
     @Test
     void createShouldRejectBlankTitle() {
-        assertThatThrownBy(() -> Component.create("  ", null, CLOCK))
+        assertThatThrownBy(() -> Component.create("  ", null, OWNER, CLOCK))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("title must not be blank");
     }
 
     @Test
     void addLessonShouldAppendWithContiguousPositions() {
-        Component component = Component.create("Basics", "About basics", CLOCK);
+        Component component = Component.create("Basics", "About basics", OWNER, CLOCK);
 
         Lesson first = component.addLesson("Lesson 1", CLOCK);
         Lesson second = component.addLesson("Lesson 2", CLOCK);
@@ -53,7 +54,7 @@ class ComponentTest {
 
     @Test
     void getLessonsShouldReturnUnmodifiableList() {
-        Component component = Component.create("Basics", "About basics", CLOCK);
+        Component component = Component.create("Basics", "About basics", OWNER, CLOCK);
         component.addLesson("Lesson 1", CLOCK);
 
         List<Lesson> lessons = component.getLessons();
@@ -64,7 +65,7 @@ class ComponentTest {
 
     @Test
     void publishAndArchiveShouldFollowLifecycle() {
-        Component component = Component.create("Basics", "About basics", CLOCK);
+        Component component = Component.create("Basics", "About basics", OWNER, CLOCK);
         component.addLesson("Lesson 1", CLOCK);
 
         component.publish(ALL_READY, CLOCK);
@@ -76,7 +77,7 @@ class ComponentTest {
 
     @Test
     void publishShouldRejectArchivedComponent() {
-        Component component = Component.create("Basics", "About basics", CLOCK);
+        Component component = Component.create("Basics", "About basics", OWNER, CLOCK);
         component.addLesson("Lesson 1", CLOCK);
         component.archive(CLOCK);
 
@@ -92,7 +93,7 @@ class ComponentTest {
         Lesson first = Lesson.restore(UUID.randomUUID(), "First", 0, FIXED_INSTANT, FIXED_INSTANT);
 
         Component component = Component.restore(id, "Basics", "About basics", PublicationStatus.PUBLISHED,
-                List.of(second, first), FIXED_INSTANT, FIXED_INSTANT, 0L);
+                OWNER, List.of(second, first), FIXED_INSTANT, FIXED_INSTANT, 0L);
 
         assertThat(component.getId()).isEqualTo(id);
         assertThat(component.getStatus()).isEqualTo(PublicationStatus.PUBLISHED);
@@ -101,7 +102,7 @@ class ComponentTest {
 
     @Test
     void removeLessonShouldRenumberRemaining() {
-        Component component = Component.create("Basics", "About basics", CLOCK);
+        Component component = Component.create("Basics", "About basics", OWNER, CLOCK);
         Lesson first = component.addLesson("Lesson 1", CLOCK);
         Lesson second = component.addLesson("Lesson 2", CLOCK);
         Lesson third = component.addLesson("Lesson 3", CLOCK);
@@ -116,7 +117,7 @@ class ComponentTest {
 
     @Test
     void reorderLessonsShouldApplyNewOrder() {
-        Component component = Component.create("Basics", "About basics", CLOCK);
+        Component component = Component.create("Basics", "About basics", OWNER, CLOCK);
         Lesson first = component.addLesson("Lesson 1", CLOCK);
         Lesson second = component.addLesson("Lesson 2", CLOCK);
         Lesson third = component.addLesson("Lesson 3", CLOCK);
@@ -131,7 +132,7 @@ class ComponentTest {
 
     @Test
     void reorderLessonsShouldRejectForeignOrMissingIds() {
-        Component component = Component.create("Basics", "About basics", CLOCK);
+        Component component = Component.create("Basics", "About basics", OWNER, CLOCK);
         component.addLesson("Lesson 1", CLOCK);
         component.addLesson("Lesson 2", CLOCK);
 
@@ -141,7 +142,7 @@ class ComponentTest {
 
     @Test
     void reorderLessonsShouldRejectDuplicateIds() {
-        Component component = Component.create("Basics", "About basics", CLOCK);
+        Component component = Component.create("Basics", "About basics", OWNER, CLOCK);
         Lesson first = component.addLesson("Lesson 1", CLOCK);
         component.addLesson("Lesson 2", CLOCK);
 
@@ -151,7 +152,7 @@ class ComponentTest {
 
     @Test
     void reorderLessonsShouldRejectMissingIds() {
-        Component component = Component.create("Basics", "About basics", CLOCK);
+        Component component = Component.create("Basics", "About basics", OWNER, CLOCK);
         Lesson first = component.addLesson("Lesson 1", CLOCK);
         component.addLesson("Lesson 2", CLOCK);
 
@@ -161,7 +162,7 @@ class ComponentTest {
 
     @Test
     void modificationShouldBeRejectedWhenNotDraft() {
-        Component component = Component.create("Basics", "About basics", CLOCK);
+        Component component = Component.create("Basics", "About basics", OWNER, CLOCK);
         Lesson lesson = component.addLesson("Lesson 1", CLOCK);
         component.publish(ALL_READY, CLOCK);
 
@@ -176,14 +177,14 @@ class ComponentTest {
     @Test
     void restoreShouldTolerateNullLessons() {
         Component component = Component.restore(UUID.randomUUID(), "Basics", "About basics",
-                PublicationStatus.DRAFT, null, FIXED_INSTANT, FIXED_INSTANT, 0L);
+                PublicationStatus.DRAFT, OWNER, null, FIXED_INSTANT, FIXED_INSTANT, 0L);
 
         assertThat(component.getLessons()).isEmpty();
     }
 
     @Test
     void publishShouldRejectComponentWithoutLessons() {
-        Component component = Component.create("Basics", "About basics", CLOCK);
+        Component component = Component.create("Basics", "About basics", OWNER, CLOCK);
 
         assertThatThrownBy(() -> component.publish(ALL_READY, CLOCK))
                 .isInstanceOf(IllegalStateException.class)
@@ -192,7 +193,7 @@ class ComponentTest {
 
     @Test
     void publishShouldReportUnpublishableLessons() {
-        Component component = Component.create("Basics", "About basics", CLOCK);
+        Component component = Component.create("Basics", "About basics", OWNER, CLOCK);
         Lesson lesson = component.addLesson("Lesson 1", CLOCK);
         ComponentPublicationPolicy notReady = lessonIds -> Set.of(lesson.getId());
 

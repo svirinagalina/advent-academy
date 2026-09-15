@@ -18,38 +18,41 @@ public final class Course {
     private String title;
     private String description;
     private PublicationStatus status;
+    private final UUID ownerId;
     private final List<ComponentRef> components;
     private final Instant createdAt;
     private Instant updatedAt;
     /** Revision counter for optimistic concurrency control; guards against lost updates on concurrent edits. Null until first persisted. */
     private final Long version;
 
-    private Course(UUID id, String title, String description, PublicationStatus status,
+    private Course(UUID id, String title, String description, PublicationStatus status, UUID ownerId,
                    List<ComponentRef> components, Instant createdAt, Instant updatedAt, Long version) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.status = status;
+        this.ownerId = ownerId;
         this.components = components;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.version = version;
     }
 
-    public static Course create(String title, String description, Clock clock) {
+    public static Course create(String title, String description, UUID ownerId, Clock clock) {
         Objects.requireNonNull(clock, "clock must not be null");
+        Objects.requireNonNull(ownerId, "ownerId must not be null");
         validateTitle(title);
 
         Instant now = clock.instant();
-        return new Course(UUID.randomUUID(), title, description, PublicationStatus.DRAFT,
+        return new Course(UUID.randomUUID(), title, description, PublicationStatus.DRAFT, ownerId,
                 new ArrayList<>(), now, now, null);
     }
 
-    public static Course restore(UUID id, String title, String description, PublicationStatus status,
+    public static Course restore(UUID id, String title, String description, PublicationStatus status, UUID ownerId,
                                  List<ComponentRef> components, Instant createdAt, Instant updatedAt, Long version) {
         List<ComponentRef> ordered = new ArrayList<>(components == null ? List.of() : components);
         ordered.sort(Comparator.comparingInt(ComponentRef::getPosition));
-        return new Course(id, title, description, status, ordered, createdAt, updatedAt, version);
+        return new Course(id, title, description, status, ownerId, ordered, createdAt, updatedAt, version);
     }
 
     /**
@@ -188,6 +191,10 @@ public final class Course {
 
     public PublicationStatus getStatus() {
         return status;
+    }
+
+    public UUID getOwnerId() {
+        return ownerId;
     }
 
     /**

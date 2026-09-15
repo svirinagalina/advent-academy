@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -44,6 +45,7 @@ public class AssetController {
         this.downloadAssetService = downloadAssetService;
     }
 
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @PostMapping(value = "/api/lessons/{lessonId}/assets", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)    @Operation(
             summary = "Upload asset for a lesson",
             description = "Validates file size and MIME type, stores the asset and returns metadata with download URL"
@@ -65,6 +67,8 @@ public class AssetController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    // Deliberately no role gate: published assets are public and DownloadAssetService
+    // refuses the ones whose lesson content is still a draft.
     @GetMapping("/api/assets/{id}")
     @Operation(
             summary = "Download asset by ID",

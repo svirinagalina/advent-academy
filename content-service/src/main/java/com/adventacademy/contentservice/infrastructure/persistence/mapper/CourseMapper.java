@@ -20,6 +20,7 @@ public class CourseMapper {
         entity.setTitle(course.getTitle());
         entity.setDescription(course.getDescription());
         entity.setStatus(course.getStatus());
+        entity.setOwnerId(course.getOwnerId());
         entity.setVersion(course.getVersion());
         entity.setCreatedAt(course.getCreatedAt());
         entity.setUpdatedAt(course.getUpdatedAt());
@@ -41,6 +42,7 @@ public class CourseMapper {
                 entity.getTitle(),
                 entity.getDescription(),
                 entity.getStatus(),
+                entity.getOwnerId(),
                 refs,
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
