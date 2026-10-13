@@ -1,6 +1,8 @@
 package com.adventacademy.userservice.infrastructure.security;
 
 import com.adventacademy.userservice.application.port.JwtProvider;
+import com.adventacademy.userservice.application.port.RefreshTokenStore;
+import com.adventacademy.userservice.application.service.auth.OpaqueTokens;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -16,8 +18,6 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 @Component
 public class JjwtProvider implements JwtProvider {
@@ -33,13 +33,7 @@ public class JjwtProvider implements JwtProvider {
     private final Duration refreshTokenLifetime;
     private final long clockSkewSeconds;
     private final Clock clock;
-    /**
-     * Active refresh tokens by JTI. Process-local until the durable refresh sessions of ADR 0003
-     * land; user-wide revocation (password reset/change) is therefore per replica as well.
-     */
-    private final ConcurrentMap<String, ActiveRefreshToken> activeRefreshTokens = new ConcurrentHashMap<>();
-
-    private record ActiveRefreshToken(UUID userId, Instant expiresAt) {}
+    private final RefreshTokenStore refreshTokens;
 
     public JjwtProvider(
             @Value("${security.jwt.secret}") String secret,
@@ -48,7 +42,8 @@ public class JjwtProvider implements JwtProvider {
             @Value("${security.jwt.access-token-expiration-minutes:15}") long accessTokenMinutes,
             @Value("${security.jwt.refresh-token-expiration-days:7}") long refreshTokenDays,
             @Value("${security.jwt.clock-skew-seconds:30}") long clockSkewSeconds,
-            Clock clock) {
+            Clock clock,
+            RefreshTokenStore refreshTokens) {
         if (secret == null || secret.getBytes(StandardCharsets.UTF_8).length < 32) {
             throw new IllegalArgumentException("security.jwt.secret must contain at least 32 UTF-8 bytes");
         }
@@ -59,6 +54,7 @@ public class JjwtProvider implements JwtProvider {
         this.refreshTokenLifetime = Duration.ofDays(refreshTokenDays);
         this.clockSkewSeconds = clockSkewSeconds;
         this.clock = clock;
+        this.refreshTokens = refreshTokens;
     }
 
     @Override
@@ -70,7 +66,7 @@ public class JjwtProvider implements JwtProvider {
     public String generateRefreshToken(UUID userId) {
         final String token = generateToken(userId, REFRESH_TOKEN, refreshTokenLifetime, null, Set.of());
         final Claims claims = parseClaims(token);
-        activeRefreshTokens.put(claims.getId(), new ActiveRefreshToken(userId, claims.getExpiration().toInstant()));
+        refreshTokens.save(OpaqueTokens.digest(claims.getId()), userId, claims.getExpiration().toInstant());
         return token;
     }
 
@@ -83,9 +79,8 @@ public class JjwtProvider implements JwtProvider {
     public boolean validateRefreshToken(String token) {
         try {
             final Claims claims = parseClaims(token);
-            removeExpiredRefreshTokens();
             return REFRESH_TOKEN.equals(claims.get(TOKEN_TYPE_CLAIM, String.class))
-                    && activeRefreshTokens.containsKey(claims.getId());
+                    && refreshTokens.isActive(OpaqueTokens.digest(claims.getId()), clock.instant());
         } catch (JwtException | IllegalArgumentException exception) {
             return false;
         }
@@ -95,9 +90,8 @@ public class JjwtProvider implements JwtProvider {
     public boolean consumeRefreshToken(String token) {
         try {
             final Claims claims = parseClaims(token);
-            removeExpiredRefreshTokens();
             return REFRESH_TOKEN.equals(claims.get(TOKEN_TYPE_CLAIM, String.class))
-                    && activeRefreshTokens.remove(claims.getId()) != null;
+                    && refreshTokens.consume(OpaqueTokens.digest(claims.getId()), clock.instant());
         } catch (JwtException | IllegalArgumentException exception) {
             return false;
         }
@@ -105,7 +99,7 @@ public class JjwtProvider implements JwtProvider {
 
     @Override
     public void revokeRefreshTokens(UUID userId) {
-        activeRefreshTokens.values().removeIf(active -> active.userId().equals(userId));
+        refreshTokens.revokeByUserId(userId);
     }
 
     @Override
@@ -170,8 +164,4 @@ public class JjwtProvider implements JwtProvider {
         return claims;
     }
 
-    private void removeExpiredRefreshTokens() {
-        final Instant now = clock.instant();
-        activeRefreshTokens.values().removeIf(active -> !active.expiresAt().isAfter(now));
-    }
 }

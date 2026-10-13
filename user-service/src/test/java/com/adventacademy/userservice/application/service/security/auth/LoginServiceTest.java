@@ -61,11 +61,13 @@ class LoginServiceTest {
     @Test
     void login_success_shouldRecordAuditEvent() {
         User user = new User();
+        user.setStatus(com.adventacademy.userservice.domain.model.UserStatus.ACTIVE);
+        user.setEmailVerified(true);
         LoginRequest request = new LoginRequest(
                 "test@test.com", "password", null, "127.0.0.1", "Mozilla"
         );
 
-        when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailForUpdate(request.email())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(any(), any())).thenReturn(true);
         when(jwtProvider.generateAccessToken(any(), any(), any())).thenReturn("accessToken");
         when(jwtProvider.generateRefreshToken(any())).thenReturn("refreshToken");
@@ -85,11 +87,13 @@ class LoginServiceTest {
     @Test
     void login_wrongPassword_shouldRecordFailedAuditEvent() {
         User user = new User();
+        user.setStatus(com.adventacademy.userservice.domain.model.UserStatus.ACTIVE);
+        user.setEmailVerified(true);
         LoginRequest request = new LoginRequest(
                 "test@test.com", "wrongpassword", null, "127.0.0.1", "Mozilla"
         );
 
-        when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailForUpdate(request.email())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(any(), any())).thenReturn(false);
 
         assertThatThrownBy(() -> loginService.login(request))

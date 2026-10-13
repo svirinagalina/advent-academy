@@ -61,7 +61,7 @@ public class ConfirmEmailService {
             throw e;
         }
 
-        User user = userRepository.findById(redeemed.getUserId())
+        User user = userRepository.findByIdForUpdate(redeemed.getUserId())
                 .orElseThrow(() -> new UserNotFoundException(redeemed.getUserId()));
 
         user.setEmailVerified(true);

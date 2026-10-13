@@ -56,7 +56,7 @@ class ConfirmEmailServiceTest {
         VerificationToken token = VerificationToken.create(user.getId(), "digest", VerificationToken.PURPOSE_EMAIL_VERIFICATION,
                 NOW.minusSeconds(60), NOW.plusSeconds(3600));
         when(tokens.redeem("tok-1", VerificationToken.PURPOSE_EMAIL_VERIFICATION)).thenReturn(token);
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenReturn(user);
 
         service.confirmEmail("tok-1", "10.0.0.2", "Firefox");

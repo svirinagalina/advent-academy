@@ -115,7 +115,7 @@ class PasswordResetServiceTest {
         VerificationToken token = VerificationToken.create(user.getId(), "d", VerificationToken.PURPOSE_PASSWORD_RESET,
                 NOW.minusSeconds(10), NOW.plusSeconds(3000));
         when(tokens.redeem("reset-token", VerificationToken.PURPOSE_PASSWORD_RESET)).thenReturn(token);
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(passwordEncoder.encode("new-password-1")).thenReturn("new-hash");
         when(userRepository.save(any(User.class))).thenReturn(user);
 

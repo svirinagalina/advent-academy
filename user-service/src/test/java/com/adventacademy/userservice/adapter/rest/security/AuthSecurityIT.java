@@ -19,6 +19,9 @@ import com.adventacademy.userservice.infrastructure.persistence.jpa.RecoveryCode
 import com.adventacademy.userservice.infrastructure.persistence.jpa.UserJpaRepository;
 import com.adventacademy.userservice.infrastructure.persistence.jpa.VerificationTokenJpaRepository;
 import com.adventacademy.userservice.infrastructure.security.TotpProvider;
+import com.adventacademy.userservice.infrastructure.ratelimit.RateLimiter;
+import com.adventacademy.userservice.application.port.RefreshTokenStore;
+import com.adventacademy.userservice.infrastructure.security.JjwtProvider;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
@@ -105,12 +108,15 @@ class AuthSecurityIT {
     @Autowired private VerificationTokenService tokenService;
     @Autowired private PasswordResetService passwordResetService;
     @Autowired private TotpProvider totp;
+    @Autowired private RateLimiter rateLimiter;
+    @Autowired private RefreshTokenStore refreshTokenStore;
 
     private final List<String> secretsSeen = new ArrayList<>();
     private ListAppender<ILoggingEvent> logs;
 
     @BeforeEach
     void cleanSlate() {
+        jdbc.update("DELETE FROM refresh_tokens");
         jdbc.update("DELETE FROM recovery_codes");
         jdbc.update("DELETE FROM verification_tokens");
         jdbc.update("DELETE FROM auth_rate_limit_buckets");
@@ -130,6 +136,118 @@ class AuthSecurityIT {
     }
 
     // ---------------------------------------------------------------- e-mail verification
+
+    @Test
+    void unverifiedAccountCannotLoginEvenAfterPasswordReset() throws Exception {
+        String email = "pending@example.com";
+        register(email);
+        login(email, PASSWORD, null).andExpect(status().isForbidden());
+        mvc.perform(postJson("/api/auth/password-reset", Map.of("email", email)))
+                .andExpect(status().isOk());
+        String reset = lastTokenMailedTo(email);
+        mvc.perform(postJson("/api/auth/password-reset/confirm", Map.of(
+                        "token", reset, "newPassword", NEW_PASSWORD, "confirmPassword", NEW_PASSWORD)))
+                .andExpect(status().isOk());
+        login(email, NEW_PASSWORD, null).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void concurrentTotpLoginsAcceptTheSameStepOnlyOnce() throws Exception {
+        String email = "totp-race@example.com";
+        registerAndConfirm(email);
+        String access = readJson(login(email, PASSWORD, null).andReturn()).get("accessToken").asText();
+        JsonNode enrolment = readJson(mvc.perform(postJson("/api/auth/mfa/enable", Map.of("password", PASSWORD))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + access)).andExpect(status().isOk()).andReturn());
+        String secret = enrolment.get("secret").asText();
+        long step = Math.floorDiv(Instant.now().getEpochSecond(), TotpProvider.TIME_STEP_SECONDS);
+        mvc.perform(postJson("/api/auth/mfa/confirm", Map.of("code", totp.codeForStep(secret, step)))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + access)).andExpect(status().isOk());
+        String code = totp.codeForStep(secret, step + 1);
+        List<Integer> statuses = concurrently(8, () -> login(email, PASSWORD, code)
+                .andReturn().getResponse().getStatus());
+        assertThat(statuses).filteredOn(status -> status == 200).hasSize(1);
+        assertThat(statuses).allMatch(status -> status == 200 || status == 401 || status == 403);
+    }
+
+    @Test
+    void concurrentRequestsCanFillAnEmptyRateLimitBucketWithoutFalseRefusals() throws Exception {
+        List<Boolean> allowed = concurrently(8, () -> rateLimiter.tryAcquire(
+                "bucket-race", "same-client", 8, java.time.Duration.ofHours(1)));
+        assertThat(allowed).containsOnly(true);
+        assertThat(rateLimiter.tryAcquire("bucket-race", "same-client", 8, java.time.Duration.ofHours(1))).isFalse();
+    }
+
+    @Test
+    void refreshTokensSurviveProviderRecreationAndPasswordResetRevokesOtherReplicas() throws Exception {
+        String email = "replicas@example.com";
+        registerAndConfirm(email);
+        UUID userId = users.findByEmail(email).orElseThrow().getId();
+        JjwtProvider replica = replicaProvider();
+        String tokenOnReplica = replica.generateRefreshToken(userId);
+        String tokenOnApplication = readJson(login(email, PASSWORD, null).andReturn()).get("refreshToken").asText();
+        assertThat(replicaProvider().validateRefreshToken(tokenOnReplica)).isTrue();
+        assertThat(replica.validateRefreshToken(tokenOnApplication)).isTrue();
+        mvc.perform(postJson("/api/auth/refresh", Map.of("refreshToken", tokenOnReplica)))
+                .andExpect(status().isOk());
+        assertThat(replica.consumeRefreshToken(tokenOnReplica)).isFalse();
+
+        mvc.perform(postJson("/api/auth/password-reset", Map.of("email", email))).andExpect(status().isOk());
+        mvc.perform(postJson("/api/auth/password-reset/confirm", Map.of(
+                        "token", lastTokenMailedTo(email), "newPassword", NEW_PASSWORD, "confirmPassword", NEW_PASSWORD)))
+                .andExpect(status().isOk());
+        assertThat(replica.validateRefreshToken(tokenOnApplication)).isFalse();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM refresh_tokens WHERE user_id = ?", Integer.class, userId)).isZero();
+    }
+
+    @Test
+    void concurrentRefreshRotatesOnlyOnceAndPreservesUserRoles() throws Exception {
+        String email = "refresh-race@example.com";
+        registerAndConfirm(email);
+        UUID userId = users.findByEmail(email).orElseThrow().getId();
+        UUID roleId = jdbc.queryForObject("SELECT id FROM roles WHERE name = 'ADMIN'", UUID.class);
+        Integer permissionsBefore = jdbc.queryForObject("SELECT COUNT(*) FROM role_permissions WHERE role_id = ?", Integer.class, roleId);
+        jdbc.update("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", userId, roleId);
+        JsonNode signedIn = readJson(login(email, PASSWORD, null).andReturn());
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM role_permissions WHERE role_id = ?", Integer.class, roleId))
+                .isEqualTo(permissionsBefore);
+        assertThat(replicaProvider().getRolesFromToken(signedIn.get("accessToken").asText())).contains("ADMIN");
+        String token = signedIn.get("refreshToken").asText();
+        List<Integer> statuses = concurrently(8, () -> mvc.perform(postJson("/api/auth/refresh", Map.of("refreshToken", token)))
+                .andReturn().getResponse().getStatus());
+        assertThat(statuses).filteredOn(status -> status == 200).hasSize(1);
+        assertThat(statuses).allMatch(status -> status == 200 || status == 401);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM refresh_tokens WHERE user_id = ?", Integer.class, userId)).isEqualTo(1);
+    }
+
+    private JjwtProvider replicaProvider() {
+        return new JjwtProvider("test-secret-key-for-testing-purposes-only-32-bytes",
+                "advent-academy-user-service", "advent-academy-services", 15, 7, 30,
+                java.time.Clock.systemUTC(), refreshTokenStore);
+    }
+
+    private <T> List<T> concurrently(int count, Callable<T> operation) throws Exception {
+        try (ExecutorService pool = Executors.newFixedThreadPool(count)) {
+            CountDownLatch ready = new CountDownLatch(count);
+            CountDownLatch start = new CountDownLatch(1);
+            List<Future<T>> futures = new ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                futures.add(pool.submit(() -> {
+                    ready.countDown();
+                    if (!start.await(20, java.util.concurrent.TimeUnit.SECONDS)) {
+                        throw new IllegalStateException("Concurrent test did not start");
+                    }
+                    return operation.call();
+                }));
+            }
+            assertThat(ready.await(20, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+            List<T> results = new ArrayList<>();
+            for (Future<T> future : futures) {
+                results.add(future.get(30, java.util.concurrent.TimeUnit.SECONDS));
+            }
+            return results;
+        }
+    }
 
     @Test
     void registerConfirmLogin_endToEnd_withDigestOnlyOneTimeToken() throws Exception {

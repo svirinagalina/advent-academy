@@ -87,7 +87,7 @@ public class PasswordResetService {
             throw e;
         }
 
-        User user = userRepository.findById(redeemed.getUserId())
+        User user = userRepository.findByIdForUpdate(redeemed.getUserId())
                 .orElseThrow(() -> new UserNotFoundException(redeemed.getUserId()));
 
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));

@@ -7,6 +7,7 @@ import com.adventacademy.userservice.application.port.JwtProvider;
 import com.adventacademy.userservice.application.port.PasswordEncoder;
 import com.adventacademy.userservice.application.service.security.AccountLockService;
 import com.adventacademy.userservice.domain.exception.AccountLockedException;
+import com.adventacademy.userservice.domain.exception.EmailNotVerifiedException;
 import com.adventacademy.userservice.domain.exception.InvalidCredentialsException;
 import com.adventacademy.userservice.domain.exception.InvalidUserStateException;
 import com.adventacademy.userservice.domain.model.AuditEvent;
@@ -47,6 +48,7 @@ public class LoginService {
     private final AuditTrailPort auditTrailPort;
     private final long accessTokenExpirationMinutes;
     private final Clock clock;
+    private final String unknownUserPasswordHash;
 
     public LoginService(
             UserRepository userRepository,
@@ -65,14 +67,17 @@ public class LoginService {
         this.auditTrailPort = auditTrailPort;
         this.accessTokenExpirationMinutes = accessTokenExpirationMinutes;
         this.clock = clock;
+        this.unknownUserPasswordHash = passwordEncoder.encode(UUID.randomUUID().toString());
     }
 
     // A refused attempt still commits: the failed-attempt counter behind account locking and the
     // burnt recovery code must not be rolled back together with the 401.
     @Transactional(noRollbackFor = InvalidCredentialsException.class)
     public AuthResponse login(LoginRequest request) {
-        Optional<User> maybeUser = userRepository.findByEmail(request.email());
+        Optional<User> maybeUser = userRepository.findByEmailForUpdate(request.email());
         if (maybeUser.isEmpty()) {
+            // Unknown accounts must pay the same password-hashing cost as wrong passwords.
+            passwordEncoder.matches(request.password(), unknownUserPasswordHash);
             auditTrailPort.record(event(AuditEventType.LOGIN_FAILED, null, request, AuditResult.FAILED, "Unknown email"));
             throw new InvalidCredentialsException();
         }
@@ -86,6 +91,9 @@ public class LoginService {
             throw new InvalidCredentialsException();
         }
 
+        if (!user.isEmailVerified()) {
+            throw new EmailNotVerifiedException();
+        }
         if (!user.canAuthenticate()) {
             if (user.isLocked()) {
                 throw new AccountLockedException(user.getLockedUntil());

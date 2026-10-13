@@ -78,6 +78,23 @@ public class UserRepositoryAdapter implements UserRepository {
     }
 
     @Override
+    public Optional<User> findByIdForUpdate(UUID id) {
+        return jpaRepository.findByIdForUpdate(id).map(this::mapLockedUser);
+    }
+
+    @Override
+    public Optional<User> findByEmailForUpdate(String email) {
+        return jpaRepository.findByEmailForUpdate(email).map(this::mapLockedUser);
+    }
+
+    private User mapLockedUser(UserEntity entity) {
+        // Fetch roles separately: locking an outer collection join is invalid on PostgreSQL.
+        Hibernate.initialize(entity.getRoles());
+        entity.getRoles().forEach(role -> Hibernate.initialize(role.getPermissions()));
+        return mapper.toDomain(entity);
+    }
+
+    @Override
     public Optional<User> findByIdWithRoles(UUID id) {
         return jpaRepository.findWithRolesById(id)
                 .map(mapper::toDomain);

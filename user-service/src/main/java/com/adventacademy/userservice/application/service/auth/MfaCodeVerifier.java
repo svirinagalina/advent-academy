@@ -39,7 +39,8 @@ public class MfaCodeVerifier {
 
     /**
      * Verifies the code and, on success, advances the user's replay guard (TOTP) or burns the
-     * recovery code. The caller persists the user afterwards.
+     * recovery code. The caller must hold the user row's write lock until it persists the user
+     * and commits; otherwise two requests could both accept the same TOTP step.
      */
     public Outcome verify(User user, String code) {
         if (code == null || code.isBlank() || user.getMfaSecret() == null) {

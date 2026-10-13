@@ -163,7 +163,7 @@ public class MfaService {
     }
 
     private User load(UUID userId) {
-        return userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
+        return userRepository.findByIdForUpdate(userId).orElseThrow(() -> new UserNotFoundException(userId));
     }
 
     private AuditEvent event(AuditEventType type, UUID userId, AuditResult result, String reason) {

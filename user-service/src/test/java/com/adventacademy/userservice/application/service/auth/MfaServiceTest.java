@@ -58,7 +58,7 @@ class MfaServiceTest {
         user.setId(UUID.randomUUID());
         user.setEmail("user@example.com");
         user.setPasswordHash("hash");
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
     }
 
     @Test

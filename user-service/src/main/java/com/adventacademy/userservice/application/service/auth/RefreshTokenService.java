@@ -5,6 +5,7 @@ import com.adventacademy.userservice.application.dto.response.AuthResponse;
 import com.adventacademy.userservice.application.port.AuditTrailPort;
 import com.adventacademy.userservice.application.port.JwtProvider;
 import com.adventacademy.userservice.domain.exception.InvalidUserStateException;
+import com.adventacademy.userservice.domain.exception.InvalidCredentialsException;
 import com.adventacademy.userservice.domain.exception.UserNotFoundException;
 import com.adventacademy.userservice.domain.model.AuditEvent;
 import com.adventacademy.userservice.domain.model.AuditEventType;
@@ -41,18 +42,23 @@ public class RefreshTokenService {
         this.accessTokenExpirationMinutes = accessTokenExpirationMinutes;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public AuthResponse refresh(RefreshTokenRequest request) {
-        if (!jwtProvider.consumeRefreshToken(request.refreshToken())) {
-            throw new InvalidUserStateException("Invalid refresh token");
+        if (!jwtProvider.validateRefreshToken(request.refreshToken())) {
+            throw new InvalidCredentialsException("Invalid refresh token");
         }
 
         UUID userId = jwtProvider.getUserIdFromToken(request.refreshToken());
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
 
         if (!user.canAuthenticate()) {
             throw new InvalidUserStateException("User account is not active. Status: " + user.getStatus());
+        }
+
+        // Serialize with login and password reset/change before consuming and rotating tokens.
+        if (!jwtProvider.consumeRefreshToken(request.refreshToken())) {
+            throw new InvalidCredentialsException("Invalid refresh token");
         }
 
         String accessToken = jwtProvider.generateAccessToken(

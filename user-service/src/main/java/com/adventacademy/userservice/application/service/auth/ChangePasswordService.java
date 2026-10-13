@@ -43,7 +43,7 @@ public class ChangePasswordService {
 
     @Transactional
     public MessageResponse changePassword(UUID userId, ChangePasswordRequest request) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
 
         if (!passwordEncoder.matches(request.oldPassword(), user.getPasswordHash())) {

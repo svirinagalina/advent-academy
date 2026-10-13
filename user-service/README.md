@@ -307,6 +307,16 @@ PENDING (registration) → ACTIVE (email confirmed)
 - Public auth endpoints do not reveal whether an account exists and are rate limited
 - Soft delete for user accounts
 
+Refresh-token state is shared in PostgreSQL (`refresh_tokens`, V12), so rotation and password
+reset/change revocation work across user-service replicas and survive process restarts. Only JTI
+digests are stored. Authentication, MFA mutation and password updates lock the user row until commit
+to serialize TOTP replay protection and session revocation against concurrent login/refresh.
+
+Upgrade boundary: V12 deliberately invalidates refresh tokens issued by the previous in-memory
+implementation. Deploy all user-service replicas together and require users to log in again; mixing
+old and new token stores during a rolling upgrade is unsupported. Device sessions, token families,
+family replay revocation and logout endpoints from ADR 0003 remain separate SEC-103/SEC-104 work.
+
 ## License
 
 MIT License

@@ -61,6 +61,9 @@ public class User {
     }
 
     public boolean canAuthenticate() {
+        if (!emailVerified || status == UserStatus.PENDING) {
+            return false;
+        }
         if (status == UserStatus.DELETED || status == UserStatus.BLOCKED ||
             status == UserStatus.SUSPENDED) {
             return false;

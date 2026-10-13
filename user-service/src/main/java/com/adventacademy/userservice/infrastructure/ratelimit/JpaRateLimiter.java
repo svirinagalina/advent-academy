@@ -3,7 +3,6 @@ package com.adventacademy.userservice.infrastructure.ratelimit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -23,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * often an address or account knocked on the auth endpoints (issue #45, "distributed rate limiting").
  * <p>
  * One request is one conditional {@code UPDATE ... WHERE request_count < limit}; a missing bucket
- * is inserted and a lost insert race falls back to the update. Each call runs in its own short
+ * is inserted with ON CONFLICT DO NOTHING before the conditional update. Each call runs in its own short
  * transaction ({@code REQUIRES_NEW}) so the count survives even when the request itself fails.
  * Identities are stored as a digest: the table must not become a list of e-mail addresses.
  * Stale windows are reaped opportunistically.
@@ -65,19 +64,8 @@ public class JpaRateLimiter implements RateLimiter {
     }
 
     private boolean acquire(String key, Instant windowStart, int limit) {
-        if (buckets.incrementIfBelow(key, limit) == 1) {
-            return true;
-        }
-        if (buckets.existsById(key)) {
-            return false; // exhausted
-        }
-        try {
-            buckets.saveAndFlush(new RateLimitBucketEntity(key, windowStart, 1));
-            return true;
-        } catch (DataIntegrityViolationException raced) {
-            // Somebody inserted the bucket between our update and insert; count against it.
-            return buckets.incrementIfBelow(key, limit) == 1;
-        }
+        buckets.insertIfMissing(key, windowStart);
+        return buckets.incrementIfBelow(key, limit) == 1;
     }
 
     private void reapStaleWindows(Instant now, Duration window) {

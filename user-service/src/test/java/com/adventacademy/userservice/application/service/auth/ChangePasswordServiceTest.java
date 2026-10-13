@@ -55,7 +55,7 @@ class ChangePasswordServiceTest {
 
     @Test
     void changePassword_correctOldPassword_recordsSuccessEvent() {
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(userId)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("old", "old-hash")).thenReturn(true);
         when(passwordEncoder.encode("newpassword")).thenReturn("new-hash");
         when(userRepository.save(any(User.class))).thenReturn(user);
@@ -78,7 +78,7 @@ class ChangePasswordServiceTest {
 
     @Test
     void changePassword_correctOldPassword_revokesEveryRefreshTokenOfTheUser() {
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(userId)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("old", "old-hash")).thenReturn(true);
         when(passwordEncoder.encode("newpassword")).thenReturn("new-hash");
         when(userRepository.save(any(User.class))).thenReturn(user);
@@ -90,7 +90,7 @@ class ChangePasswordServiceTest {
 
     @Test
     void changePassword_wrongOldPassword_recordsFailedEventAndThrows() {
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(userId)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("wrong", "old-hash")).thenReturn(false);
 
         assertThatThrownBy(() -> service.changePassword(userId, new ChangePasswordRequest(

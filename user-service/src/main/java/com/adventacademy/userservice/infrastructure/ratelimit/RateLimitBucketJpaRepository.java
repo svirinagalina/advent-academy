@@ -9,6 +9,11 @@ import java.time.Instant;
 
 interface RateLimitBucketJpaRepository extends JpaRepository<RateLimitBucketEntity, String> {
 
+    @Modifying(flushAutomatically = true)
+    @Query(value = "INSERT INTO auth_rate_limit_buckets (bucket_key, window_start, request_count) "
+            + "VALUES (:key, :windowStart, 0) ON CONFLICT (bucket_key) DO NOTHING", nativeQuery = true)
+    int insertIfMissing(@Param("key") String key, @Param("windowStart") Instant windowStart);
+
     /** @return 1 when the bucket existed and had room, 0 when it is missing or exhausted */
     @Modifying(flushAutomatically = true)
     @Query("UPDATE RateLimitBucketEntity b SET b.requestCount = b.requestCount + 1 WHERE b.bucketKey = :key AND b.requestCount < :limit")
