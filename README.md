@@ -122,6 +122,10 @@ This project is licensed under the terms of the [MIT License](LICENSE).
 
 ### Run the application
 
+CI checks affected backend services during development. Use GitLab **Run pipeline**, a
+schedule, a release tag or `FULL_CI=true` for all tests, static checks and backend images.
+See [docs/ci-development.md](docs/ci-development.md) for the selection rules and full mode.
+
 ```bash
 ./gradlew clean build
 ./gradlew :user-service:bootRun --args='--spring.profiles.active=local'

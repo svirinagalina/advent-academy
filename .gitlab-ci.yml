@@ -1,15 +1,22 @@
+# Active development: verify affected backend modules. No frontend job until it is merged.
 stages:
   - build
   - test
   - static-checks
   - docker-build
 
+variables:
+  FULL_CI:
+    value: "false"
+    options: ["false", "true"]
+    description: "Run all backend tests, static checks and Docker builds (required before release)."
+
 default:
   image: eclipse-temurin:21-jdk
+  interruptible: true
   before_script:
     - export GRADLE_USER_HOME="$CI_PROJECT_DIR/.gradle"
     - chmod +x ./gradlew
-    - ./gradlew --version
   cache:
     key: "${CI_PROJECT_NAME}-gradle"
     paths:
@@ -17,47 +24,50 @@ default:
       - .gradle/caches
     policy: pull-push
 
+workflow:
+  auto_cancel:
+    on_new_commit: interruptible
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule" || $CI_PIPELINE_SOURCE == "web" || $CI_COMMIT_TAG'
+    - if: '$CI_COMMIT_BRANCH =~ /^(main|master|develop|dev)$/'
+
+# The Alpine helper also selects modules, so Java jobs do not need Git installed.
 branch-sync-check:
   stage: .pre
   image: alpine:3.20
   before_script:
-    - apk add --no-cache git
+    - apk add --no-cache bash git
   cache: []
   variables:
     GIT_DEPTH: "0"
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   script:
-    - git fetch --no-tags origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
-    - TARGET_SHA="$(git rev-parse FETCH_HEAD)"
-    - SOURCE_SHA="${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}"
     - |
-      if ! git merge-base --is-ancestor "$TARGET_SHA" "$SOURCE_SHA"; then
-        echo "Source branch is behind $CI_MERGE_REQUEST_TARGET_BRANCH_NAME."
-        echo "Rebase it onto the target branch and force-push the result."
-        exit 1
+      if [ "$CI_PIPELINE_SOURCE" = "merge_request_event" ]; then
+        git fetch --no-tags origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+        TARGET_SHA="$(git rev-parse FETCH_HEAD)"
+        SOURCE_SHA="${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}"
+        if ! git merge-base --is-ancestor "$TARGET_SHA" "$SOURCE_SHA"; then
+          echo "Source branch is behind $CI_MERGE_REQUEST_TARGET_BRANCH_NAME."
+          echo "Rebase it onto the target branch and force-push the result."
+          exit 1
+        fi
+        MERGE_COMMITS="$(git rev-list --merges "$TARGET_SHA..$SOURCE_SHA")"
+        if [ -n "$MERGE_COMMITS" ]; then
+          echo "Source branch contains merge commits after $CI_MERGE_REQUEST_TARGET_BRANCH_NAME."
+          git log --oneline --merges "$TARGET_SHA..$SOURCE_SHA"
+          exit 1
+        fi
       fi
-    - |
-      MERGE_COMMITS="$(git rev-list --merges "$TARGET_SHA..$SOURCE_SHA")"
-      if [ -n "$MERGE_COMMITS" ]; then
-        echo "Source branch contains merge commits after $CI_MERGE_REQUEST_TARGET_BRANCH_NAME."
-        echo "Rebase it onto the target branch and force-push the result."
-        git log --oneline --merges "$TARGET_SHA..$SOURCE_SHA"
-        exit 1
-      fi
-
-build:
-  stage: build
-  script:
-    - ./gradlew clean assemble --no-daemon --stacktrace
+    - bash ci/test-select-modules.sh
+    - mkdir -p .ci-state
+    - bash ci/select-modules.sh > .ci-state/modules.txt
+    - cat .ci-state/modules.txt
   artifacts:
-    when: always
-    paths:
-      - '**/build/libs/*.jar'
-    expire_in: 1 week
-test:
-  stage: test
-  needs: ["build"]
+    paths: [.ci-state/modules.txt]
+    expire_in: 1 day
+
+.docker-test-services:
   services:
     - name: docker:27-dind
       command: ["--tls=false"]
@@ -65,72 +75,181 @@ test:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
     DOCKER_API_VERSION: "1.43"
+
+backend-check:
+  extends: .docker-test-services
+  stage: test
+  needs:
+    - job: branch-sync-check
+      artifacts: true
+  rules:
+    - if: '$FULL_CI == "true" || $CI_PIPELINE_SOURCE == "schedule" || $CI_PIPELINE_SOURCE == "web" || $CI_COMMIT_TAG'
+      when: never
+    - changes: &backend_changes
+        - ".gitlab-ci.yml"
+        - "ci/**/*"
+        - "build.gradle"
+        - "settings.gradle"
+        - "gradle.properties"
+        - "gradlew"
+        - "gradlew.bat"
+        - "gradle/**/*"
+        - "platform/**/*"
+        - "config/**/*"
+        - "src/**/*"
+        - "docker-compose*.yml"
+        - ".dockerignore"
+        - "docs/security/**/*"
+        - "docs/adr/**/*"
+        - "user-service/src/**/*"
+        - "user-service/build.gradle"
+        - "user-service/Dockerfile"
+        - "user-service/Dockerfile.*"
+        - "user-service/package*.json"
+        - "user-service/scripts/**/*"
+        - "content-service/src/**/*"
+        - "content-service/build.gradle"
+        - "content-service/Dockerfile"
+        - "content-service/Dockerfile.*"
+        - "content-service/package*.json"
+        - "content-service/scripts/**/*"
+        - "meeting-service/src/**/*"
+        - "meeting-service/build.gradle"
+        - "meeting-service/Dockerfile"
+        - "meeting-service/Dockerfile.*"
+        - "meeting-service/package*.json"
+        - "meeting-service/scripts/**/*"
+        - "api-gateway/src/**/*"
+        - "api-gateway/build.gradle"
+        - "api-gateway/Dockerfile"
+        - "api-gateway/Dockerfile.*"
+        - "api-gateway/package*.json"
+        - "api-gateway/scripts/**/*"
   script:
-    - ./gradlew test --no-daemon --stacktrace
+    - bash ci/check-backend.sh
   artifacts:
     when: always
+    paths:
+      - '**/build/libs/*.jar'
+      - '**/build/test-results/test/'
+      - '**/build/reports/tests/test/'
+      - '**/build/reports/checkstyle/'
     reports:
       junit:
         - '**/build/test-results/test/*.xml'
-    paths:
-      - '**/build/test-results/test/'
-      - '**/build/reports/tests/test/'
     expire_in: 1 week
-static-checks:
-  stage: static-checks
-  needs: ["test"]
-  script:
-    - ./gradlew checkstyleMain checkstyleTest spotbugsMain spotbugsTest --no-daemon --stacktrace
-    - ./gradlew check -x test --no-daemon --stacktrace
-  artifacts:
-    when: always
-    paths:
-      - '**/build/reports/checkstyle/'
-      - '**/build/reports/spotbugs/'
-      - '**/build/reports/tests/test/'
-    expire_in: 1 week
+
 security-contract:
-  stage: static-checks
-  needs: ["test"]
+  stage: test
+  needs:
+    - job: branch-sync-check
+      artifacts: true
+  rules:
+    - if: '$FULL_CI == "true" || $CI_PIPELINE_SOURCE == "schedule" || $CI_PIPELINE_SOURCE == "web" || $CI_COMMIT_TAG'
+      when: never
+    - changes:
+        - ".gitlab-ci.yml"
+        - "ci/**/*"
+        - "build.gradle"
+        - "settings.gradle"
+        - "gradle.properties"
+        - "gradlew"
+        - "gradlew.bat"
+        - "gradle/**/*"
+        - "platform/**/*"
+        - "config/**/*"
+        - "src/**/*"
+        - "docker-compose*.yml"
+        - ".dockerignore"
+        - "docs/security/**/*"
+        - "docs/adr/**/*"
+        - "user-service/src/main/**/*"
+        - "content-service/src/main/**/*"
+        - "meeting-service/src/main/**/*"
+        - "api-gateway/src/main/**/*"
+        - "user-service/Dockerfile*"
+        - "content-service/Dockerfile*"
+        - "meeting-service/Dockerfile*"
+        - "api-gateway/Dockerfile*"
+  cache:
+    key: "${CI_PROJECT_NAME}-gradle"
+    paths: [.gradle/wrapper, .gradle/caches]
+    policy: pull
   script:
     - ./gradlew securityContract --no-daemon --stacktrace
   artifacts:
     when: always
     reports:
+      junit: ['build/test-results/securityContract/*.xml']
+    paths:
+      - build/test-results/securityContract/
+      - build/reports/tests/securityContract/
+    expire_in: 1 week
+
+full-check:
+  extends: .docker-test-services
+  stage: test
+  needs:
+    - job: branch-sync-check
+      artifacts: true
+  rules:
+    - if: '$FULL_CI == "true" || $CI_PIPELINE_SOURCE == "schedule" || $CI_PIPELINE_SOURCE == "web" || $CI_COMMIT_TAG'
+  script:
+    - ./gradlew check securityContract assemble --no-daemon --stacktrace
+  artifacts:
+    when: always
+    reports:
       junit:
+        - '**/build/test-results/test/*.xml'
         - 'build/test-results/securityContract/*.xml'
     paths:
-      - 'build/test-results/securityContract/'
-      - 'build/reports/tests/securityContract/'
+      - '**/build/libs/*.jar'
+      - '**/build/test-results/'
+      - '**/build/reports/'
+      - reports/
     expire_in: 1 week
+
 docker-build:
   stage: docker-build
-  image: docker:24.0.7
+  image: docker:27
   services:
-    - name: docker:24.0.7-dind
+    - name: docker:27-dind
       command: ["--tls=false"]
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
-  needs: ["static-checks", "security-contract", "build"]
   before_script:
-    - apk add --no-cache bash findutils
-  script:
-    - echo "Searching for Dockerfiles..."
-    - DOCKERFILES=$(find . -mindepth 2 -maxdepth 4 -name 'Dockerfile')
-    - |
-      if [ -z "$DOCKERFILES" ]; then
-        echo "No Dockerfiles found, failing docker-build stage."
-        exit 1
-      fi
-    - |
-      for FILE in $DOCKERFILES; do
-        SERVICE_DIR=$(dirname "$FILE")
-        IMAGE_NAME="${CI_PROJECT_PATH_SLUG}-$(basename "$SERVICE_DIR"):${CI_COMMIT_SHORT_SHA}"
-        echo "Building image: $IMAGE_NAME from $FILE (context: $SERVICE_DIR)"
-        docker build -f "$FILE" -t "$IMAGE_NAME" .
-      done
-workflow:
+    - apk add --no-cache bash git
+  cache: []
+  needs:
+    - job: branch-sync-check
+      artifacts: true
+    - job: backend-check
+      optional: true
+      artifacts: true
+    - job: security-contract
+      optional: true
+      artifacts: false
+    - job: full-check
+      optional: true
+      artifacts: true
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '$CI_COMMIT_BRANCH =~ /^(main|master|develop|dev)$/'
+    - if: '$FULL_CI == "true" || $CI_PIPELINE_SOURCE == "schedule" || $CI_PIPELINE_SOURCE == "web" || $CI_COMMIT_TAG'
+    - changes:
+        - ".gitlab-ci.yml"
+        - "ci/**/*"
+        - "user-service/Dockerfile"
+        - "user-service/Dockerfile.*"
+        - "content-service/Dockerfile"
+        - "content-service/Dockerfile.*"
+        - "meeting-service/Dockerfile"
+        - "meeting-service/Dockerfile.*"
+        - "api-gateway/Dockerfile"
+        - "api-gateway/Dockerfile.*"
+        - ".dockerignore"
+        - "docker-compose*.yml"
+    - changes: *backend_changes
+      when: manual
+      allow_failure: true
+  script:
+    - bash ci/build-images.sh
