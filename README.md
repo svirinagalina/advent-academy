@@ -120,7 +120,14 @@ configuration already has this; keep it in mind when adding a new one.
 
 This project is licensed under the terms of the [MIT License](LICENSE).
 
-### Run the application
+### Frontend
+
+The Next.js frontend lives in `frontend/` and requires Node.js 24 LTS.
+Run `npm ci` and `npm run dev` from that directory, then open http://localhost:3000.
+Place HTML design references and their assets in `frontend/design-reference/`.
+See [frontend/README.md](frontend/README.md) for Docker and validation commands.
+
+### Backend
 
 CI checks affected backend services during development. Use GitLab **Run pipeline**, a
 schedule, a release tag or `FULL_CI=true` for all tests and static checks. Backend image

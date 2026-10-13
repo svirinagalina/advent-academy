@@ -55,6 +55,25 @@ branch-sync-check:
     paths: [.ci-state/modules.txt]
     expire_in: 1 day
 
+frontend-check:
+  stage: build
+  image: node:24-alpine
+  before_script: []
+  cache:
+    key:
+      prefix: frontend-npm
+      files:
+        - frontend/package-lock.json
+    paths:
+      - frontend/.npm/
+  script:
+    - cd frontend
+    - npm ci --cache .npm --prefer-offline --no-audit --no-fund
+    - npm run check
+    - npm run build
+  variables:
+    NEXT_TELEMETRY_DISABLED: "1"
+
 .docker-test-services:
   services:
     - name: docker:27-dind
