@@ -28,6 +28,9 @@ workflow:
   auto_cancel:
     on_new_commit: interruptible
   rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^(dev|develop)$/ && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^(main|master)$/'
+      variables:
+        FULL_CI: "true"
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_PIPELINE_SOURCE == "schedule" || $CI_PIPELINE_SOURCE == "web" || $CI_COMMIT_TAG'
     - if: '$CI_COMMIT_BRANCH =~ /^(main|master|develop|dev)$/'
@@ -42,23 +45,8 @@ branch-sync-check:
   variables:
     GIT_DEPTH: "0"
   script:
-    - |
-      if [ "$CI_PIPELINE_SOURCE" = "merge_request_event" ]; then
-        git fetch --no-tags origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
-        TARGET_SHA="$(git rev-parse FETCH_HEAD)"
-        SOURCE_SHA="${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}"
-        if ! git merge-base --is-ancestor "$TARGET_SHA" "$SOURCE_SHA"; then
-          echo "Source branch is behind $CI_MERGE_REQUEST_TARGET_BRANCH_NAME."
-          echo "Rebase it onto the target branch and force-push the result."
-          exit 1
-        fi
-        MERGE_COMMITS="$(git rev-list --merges "$TARGET_SHA..$SOURCE_SHA")"
-        if [ -n "$MERGE_COMMITS" ]; then
-          echo "Source branch contains merge commits after $CI_MERGE_REQUEST_TARGET_BRANCH_NAME."
-          git log --oneline --merges "$TARGET_SHA..$SOURCE_SHA"
-          exit 1
-        fi
-      fi
+    - bash ci/test-branch-sync.sh
+    - bash ci/check-branch-sync.sh
     - bash ci/test-select-modules.sh
     - mkdir -p .ci-state
     - bash ci/select-modules.sh > .ci-state/modules.txt

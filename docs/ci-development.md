@@ -3,7 +3,9 @@
 ## Обычный pipeline
 
 - `branch-sync-check` остаётся обязательным для MR: исходная ветка содержит актуальную
-  целевую ветку и не содержит новых merge-коммитов.
+  целевую ветку и не содержит новых merge-коммитов. Исключение: `dev`/`develop`
+  → `main`/`master` допускает merge-историю; актуальная целевая ветка по-прежнему
+  обязательна. Общую `dev` синхронизируй через merge целевой ветки, без rebase.
   Этот лёгкий job также вычисляет изменённые модули и передаёт список остальным jobs
   артефактом; Java-образу не требуется установка Git. На обычных push проверка
   ancestry не выполняется, только выбор модулей.
@@ -35,6 +37,7 @@ backend Docker-образа. Ускоренные jobs в этом режиме 
 
 Полный режим включается:
 
+- для MR `dev`/`develop` → `main`/`master` (автоматически);
 - при запуске pipeline из GitLab UI (Run pipeline);
 - для scheduled pipeline;
 - для тегов (перед релизом);
@@ -51,6 +54,7 @@ backend Docker-образа. Ускоренные jobs в этом режиме 
 
 ```bash
 bash ci/test-select-modules.sh
+bash ci/test-branch-sync.sh
 FULL_CI=true bash ci/check-backend.sh
 ./gradlew check securityContract assemble --no-daemon
 ```
