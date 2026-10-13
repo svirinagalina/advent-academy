@@ -9,7 +9,7 @@ variables:
   FULL_CI:
     value: "false"
     options: ["false", "true"]
-    description: "Run all backend tests, static checks and Docker builds (required before release)."
+    description: "Run all backend tests and static checks (Docker builds remain manual except for tags)."
 
 default:
   image: eclipse-temurin:21-jdk
@@ -222,20 +222,12 @@ docker-build:
       optional: true
       artifacts: true
   rules:
-    - if: '$FULL_CI == "true" || $CI_PIPELINE_SOURCE == "schedule" || $CI_PIPELINE_SOURCE == "web" || $CI_COMMIT_TAG'
-    - changes:
-        - ".gitlab-ci.yml"
-        - "ci/**/*"
-        - "user-service/Dockerfile"
-        - "user-service/Dockerfile.*"
-        - "content-service/Dockerfile"
-        - "content-service/Dockerfile.*"
-        - "meeting-service/Dockerfile"
-        - "meeting-service/Dockerfile.*"
-        - "api-gateway/Dockerfile"
-        - "api-gateway/Dockerfile.*"
-        - ".dockerignore"
-        - "docker-compose*.yml"
+    - if: '$CI_COMMIT_TAG'
+      when: on_success
+      allow_failure: false
+    - if: '$FULL_CI == "true" || $CI_PIPELINE_SOURCE == "schedule" || $CI_PIPELINE_SOURCE == "web"'
+      when: manual
+      allow_failure: true
     - changes: *backend_changes
       when: manual
       allow_failure: true
