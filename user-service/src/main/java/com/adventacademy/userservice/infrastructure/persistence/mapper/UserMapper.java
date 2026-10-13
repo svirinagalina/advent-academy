@@ -30,7 +30,7 @@ public class UserMapper {
                         .collect(Collectors.toSet())
                 : new HashSet<>();
 
-        return new User(
+        User user = new User(
                 entity.getId(),
                 entity.getEmail(),
                 entity.getPasswordHash(),
@@ -48,6 +48,8 @@ public class UserMapper {
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );
+        user.setMfaLastUsedStep(entity.getMfaLastUsedStep());
+        return user;
     }
 
     public UserEntity toEntity(User domain) {
@@ -69,6 +71,7 @@ public class UserMapper {
         entity.setEmailVerificationToken(domain.getEmailVerificationToken());
         entity.setMfaEnabled(domain.isMfaEnabled());
         entity.setMfaSecret(domain.getMfaSecret());
+        entity.setMfaLastUsedStep(domain.getMfaLastUsedStep());
         entity.setFailedLoginAttempts(domain.getFailedLoginAttempts());
         entity.setLockedUntil(domain.getLockedUntil());
         entity.setLastLoginAt(domain.getLastLoginAt());

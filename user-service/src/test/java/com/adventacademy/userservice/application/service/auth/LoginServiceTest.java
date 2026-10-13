@@ -4,19 +4,20 @@ import com.adventacademy.userservice.application.dto.request.LoginRequest;
 import com.adventacademy.userservice.application.dto.response.AuthResponse;
 import com.adventacademy.userservice.application.port.AuditTrailPort;
 import com.adventacademy.userservice.application.port.JwtProvider;
-import com.adventacademy.userservice.application.port.MfaProvider;
 import com.adventacademy.userservice.application.port.PasswordEncoder;
 import com.adventacademy.userservice.application.service.security.AccountLockService;
 import com.adventacademy.userservice.domain.exception.AccountLockedException;
 import com.adventacademy.userservice.domain.exception.InvalidCredentialsException;
 import com.adventacademy.userservice.domain.exception.InvalidUserStateException;
-import com.adventacademy.userservice.domain.exception.UserNotFoundException;
+import com.adventacademy.userservice.domain.model.AuditEvent;
+import com.adventacademy.userservice.domain.model.AuditEventType;
 import com.adventacademy.userservice.domain.model.User;
 import com.adventacademy.userservice.domain.model.UserStatus;
 import com.adventacademy.userservice.domain.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -46,7 +47,7 @@ class LoginServiceTest {
     @Mock
     private JwtProvider jwtProvider;
     @Mock
-    private MfaProvider mfaProvider;
+    private MfaCodeVerifier mfaCodeVerifier;
     @Mock
     private AccountLockService accountLockService;
     @Mock
@@ -57,11 +58,12 @@ class LoginServiceTest {
 
     @BeforeEach
     void setUp() {
+        when(passwordEncoder.encode(anyString())).thenReturn("dummy-hash");
         loginService = new LoginService(
                 userRepository,
                 passwordEncoder,
                 jwtProvider,
-                mfaProvider,
+                mfaCodeVerifier,
                 accountLockService,
                 auditTrailPort,
                 15L,
@@ -73,6 +75,7 @@ class LoginServiceTest {
         user.setEmail("user@example.com");
         user.setPasswordHash("hashed-password");
         user.setStatus(UserStatus.ACTIVE);
+        user.setEmailVerified(true);
         user.setFailedLoginAttempts(0);
         user.setMfaEnabled(false);
     }
@@ -80,7 +83,7 @@ class LoginServiceTest {
     @Test
     void login_SuccessfulLogin_ReturnsAuthResponse() {
         LoginRequest request = new LoginRequest("user@example.com", "password", null, null, null);
-        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailForUpdate("user@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password", "hashed-password")).thenReturn(true);
         when(jwtProvider.generateAccessToken(any(UUID.class), anyString(), any())).thenReturn("access-token");
         when(jwtProvider.generateRefreshToken(any(UUID.class))).thenReturn("refresh-token");
@@ -97,18 +100,26 @@ class LoginServiceTest {
     }
 
     @Test
-    void login_UserNotFound_ThrowsUserNotFoundException() {
-        LoginRequest request = new LoginRequest("unknown@example.com", "password", null, null, null);
-        when(userRepository.findByEmail("unknown@example.com")).thenReturn(Optional.empty());
+    void login_UserNotFound_LooksExactlyLikeAWrongPassword() {
+        LoginRequest unknown = new LoginRequest("unknown@example.com", "password", null, null, null);
+        LoginRequest wrongPassword = new LoginRequest("user@example.com", "wrong", null, null, null);
+        when(userRepository.findByEmailForUpdate("unknown@example.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailForUpdate("user@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("wrong", "hashed-password")).thenReturn(false);
+        when(passwordEncoder.matches("password", "dummy-hash")).thenReturn(false);
 
-        assertThrows(UserNotFoundException.class, () -> loginService.login(request));
-        verifyNoInteractions(passwordEncoder, jwtProvider, accountLockService);
+        InvalidCredentialsException forUnknown = assertThrows(InvalidCredentialsException.class, () -> loginService.login(unknown));
+        InvalidCredentialsException forWrong = assertThrows(InvalidCredentialsException.class, () -> loginService.login(wrongPassword));
+
+        assertEquals(forWrong.getMessage(), forUnknown.getMessage());
+        verify(passwordEncoder).matches("password", "dummy-hash");
+        verifyNoInteractions(jwtProvider);
     }
 
     @Test
     void login_WrongPassword_CallsHandleFailedLoginAndThrows() {
         LoginRequest request = new LoginRequest("user@example.com", "wrong-password", null, null, null);
-        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailForUpdate("user@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("wrong-password", "hashed-password")).thenReturn(false);
 
         assertThrows(InvalidCredentialsException.class, () -> loginService.login(request));
@@ -116,24 +127,38 @@ class LoginServiceTest {
     }
 
     @Test
-    void login_LockedAccount_ThrowsAccountLockedException() {
+    void login_LockedAccount_WithCorrectPassword_ThrowsAccountLockedException() {
         // Lock until far future to ensure isLocked() returns true regardless of system clock
         user.lock(LocalDateTime.now().plusYears(1));
         LoginRequest request = new LoginRequest("user@example.com", "password", null, null, null);
-        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailForUpdate("user@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("password", "hashed-password")).thenReturn(true);
 
         assertThrows(AccountLockedException.class, () -> loginService.login(request));
-        verifyNoInteractions(passwordEncoder, jwtProvider, accountLockService);
+        verifyNoInteractions(jwtProvider, accountLockService);
     }
 
     @Test
-    void login_SuspendedUser_ThrowsInvalidUserStateException() {
+    void login_LockedAccount_WithWrongPassword_IsAPlainCredentialFailure() {
+        // Account state is only revealed once the password verified - a probe learns nothing.
+        user.lock(LocalDateTime.now().plusYears(1));
+        LoginRequest request = new LoginRequest("user@example.com", "wrong", null, null, null);
+        when(userRepository.findByEmailForUpdate("user@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("wrong", "hashed-password")).thenReturn(false);
+
+        assertThrows(InvalidCredentialsException.class, () -> loginService.login(request));
+        verifyNoInteractions(jwtProvider, accountLockService);
+    }
+
+    @Test
+    void login_SuspendedUser_WithCorrectPassword_ThrowsInvalidUserStateException() {
         user.setStatus(UserStatus.SUSPENDED);
         LoginRequest request = new LoginRequest("user@example.com", "password", null, null, null);
-        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailForUpdate("user@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("password", "hashed-password")).thenReturn(true);
 
         assertThrows(InvalidUserStateException.class, () -> loginService.login(request));
-        verifyNoInteractions(passwordEncoder, jwtProvider, accountLockService);
+        verifyNoInteractions(jwtProvider, accountLockService);
     }
 
     @Test
@@ -141,7 +166,7 @@ class LoginServiceTest {
         user.setMfaEnabled(true);
         user.setMfaSecret("mfa-secret");
         LoginRequest request = new LoginRequest("user@example.com", "password", null, null, null);
-        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailForUpdate("user@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password", "hashed-password")).thenReturn(true);
 
         AuthResponse response = loginService.login(request);
@@ -157,9 +182,9 @@ class LoginServiceTest {
         user.setMfaEnabled(true);
         user.setMfaSecret("mfa-secret");
         LoginRequest request = new LoginRequest("user@example.com", "password", "wrong-code", null, null);
-        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailForUpdate("user@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password", "hashed-password")).thenReturn(true);
-        when(mfaProvider.validateCode("mfa-secret", "wrong-code")).thenReturn(false);
+        when(mfaCodeVerifier.verify(user, "wrong-code")).thenReturn(MfaCodeVerifier.Outcome.REJECTED);
 
         assertThrows(InvalidCredentialsException.class, () -> loginService.login(request));
         verify(accountLockService).handleFailedLogin(user);
@@ -170,9 +195,9 @@ class LoginServiceTest {
         user.setMfaEnabled(true);
         user.setMfaSecret("mfa-secret");
         LoginRequest request = new LoginRequest("user@example.com", "password", "123456", null, null);
-        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailForUpdate("user@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password", "hashed-password")).thenReturn(true);
-        when(mfaProvider.validateCode("mfa-secret", "123456")).thenReturn(true);
+        when(mfaCodeVerifier.verify(user, "123456")).thenReturn(MfaCodeVerifier.Outcome.TOTP);
         when(jwtProvider.generateAccessToken(any(UUID.class), anyString(), any())).thenReturn("access-token");
         when(jwtProvider.generateRefreshToken(any(UUID.class))).thenReturn("refresh-token");
         when(userRepository.save(any(User.class))).thenReturn(user);
@@ -182,5 +207,26 @@ class LoginServiceTest {
         assertNotNull(response);
         assertFalse(response.mfaRequired());
         assertEquals(LocalDateTime.now(FIXED_CLOCK), user.getLastLoginAt());
+    }
+
+    @Test
+    void login_MfaEnabledRecoveryCode_SignsInAndRecordsRecoveryCodeUse() {
+        user.setMfaEnabled(true);
+        user.setMfaSecret("v1:n:c");
+        LoginRequest request = new LoginRequest("user@example.com", "password", "7K3MQ-XW9RT", null, null);
+        when(userRepository.findByEmailForUpdate("user@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("password", "hashed-password")).thenReturn(true);
+        when(mfaCodeVerifier.verify(user, "7K3MQ-XW9RT")).thenReturn(MfaCodeVerifier.Outcome.RECOVERY_CODE);
+        when(jwtProvider.generateAccessToken(any(UUID.class), anyString(), any())).thenReturn("access-token");
+        when(jwtProvider.generateRefreshToken(any(UUID.class))).thenReturn("refresh-token");
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        AuthResponse response = loginService.login(request);
+
+        assertFalse(response.mfaRequired());
+        ArgumentCaptor<AuditEvent> events = ArgumentCaptor.forClass(AuditEvent.class);
+        verify(auditTrailPort, times(2)).record(events.capture());
+        assertEquals(AuditEventType.MFA_RECOVERY_CODE_USED, events.getAllValues().get(0).getEventType());
+        assertEquals(AuditEventType.LOGIN_SUCCESS, events.getAllValues().get(1).getEventType());
     }
 }

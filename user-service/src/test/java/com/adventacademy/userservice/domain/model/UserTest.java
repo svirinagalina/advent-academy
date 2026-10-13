@@ -20,6 +20,7 @@ class UserTest {
         user.setFirstName("John");
         user.setLastName("Doe");
         user.setStatus(UserStatus.ACTIVE);
+        user.setEmailVerified(true);
     }
 
     @Test

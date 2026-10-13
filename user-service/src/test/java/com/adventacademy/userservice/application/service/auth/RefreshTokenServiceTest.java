@@ -50,10 +50,12 @@ class RefreshTokenServiceTest {
         user.setId(userId);
         user.setEmail("user@test.com");
         user.setStatus(UserStatus.ACTIVE);
+        user.setEmailVerified(true);
 
+        when(jwtProvider.validateRefreshToken("rt")).thenReturn(true);
         when(jwtProvider.consumeRefreshToken("rt")).thenReturn(true);
         when(jwtProvider.getUserIdFromToken("rt")).thenReturn(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(userId)).thenReturn(Optional.of(user));
         when(jwtProvider.generateAccessToken(any(UUID.class), anyString(), any())).thenReturn("at-new");
         when(jwtProvider.generateRefreshToken(userId)).thenReturn("rt-new");
 

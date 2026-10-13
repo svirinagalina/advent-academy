@@ -5,13 +5,16 @@ Production-ready microservice for user management with Role-Based Access Control
 ## Features
 
 - **User Management**: Registration, profile management, soft delete
-- **Authentication**: JWT-based authentication (stub implementation with TODO)
+- **Authentication**: JWT-based authentication with refresh tokens
 - **RBAC**: Comprehensive role and permission management
 - **Account Security**:
   - Account locking after failed login attempts (5 attempts, 30-minute lock)
   - Password hashing with BCrypt
-  - Email verification (stub implementation with TODO)
-  - MFA support (stub implementation with TODO)
+  - Email verification and password reset with one-time, digest-only, expiring tokens
+  - TOTP MFA (Google Authenticator, Authy, Microsoft Authenticator) with encrypted secrets,
+    replay protection, one-time recovery codes and step-up (password) on enable/disable
+  - Rate limiting of the public auth endpoints per client address and per account, shared
+    across replicas through the database
 - **Clean Architecture**: Domain-driven design with clear separation of concerns
 - **REST API**: Comprehensive API with OpenAPI/Swagger documentation
 - **Database**: PostgreSQL with JPA/Hibernate
@@ -178,11 +181,19 @@ set +a
 - `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - User login
 - `POST /api/auth/refresh` - Refresh access token
-- `POST /api/auth/confirm-email` - Confirm email address
-- `POST /api/auth/change-password` - Change password
-- `POST /api/auth/mfa/enable` - Enable MFA
-- `POST /api/auth/mfa/confirm` - Confirm MFA setup
-- `POST /api/auth/mfa/disable` - Disable MFA
+- `POST /api/auth/confirm-email?token=` - Confirm email address (token from the verification e-mail; single use, 24 h)
+- `POST /api/auth/resend-verification` - Re-send the verification e-mail (`{email}`; identical answer for any address)
+- `POST /api/auth/change-password` - Change password (access token; revokes all refresh sessions)
+- `POST /api/auth/password-reset` - Request a reset link (`{email}`; identical answer for any address)
+- `POST /api/auth/password-reset/confirm` - Set a new password (`{token, newPassword, confirmPassword}`; single use, 1 h; revokes all refresh sessions)
+- `POST /api/auth/mfa/enable` - Start MFA enrolment (`{password}`; returns `secret`, `qrCodeUrl`, `qrCodeImage`)
+- `POST /api/auth/mfa/confirm` - Confirm enrolment (`{code}`; returns the recovery codes exactly once)
+- `POST /api/auth/mfa/disable` - Disable MFA (`{password, code}`; `code` is a TOTP or an unused recovery code)
+
+Login with MFA: `POST /api/auth/login` without `mfaCode` answers `{"mfaRequired": true}`; repeat with
+`mfaCode` set to the six-digit TOTP or to a recovery code (`XXXXX-XXXXX`). Each TOTP and each
+recovery code is accepted once. Public auth endpoints answer `429` with `Retry-After` when the
+per-address or per-account quota is used up.
 
 ### Users
 - `GET /api/users` - Get all users
@@ -215,6 +226,35 @@ security:
   account-lock:
     max-failed-attempts: 5
     lock-duration-minutes: 30
+  mfa:
+    totp-window-size: 1              # ±1 step of 30 s
+    recovery-code-count: 8
+    encryption:                      # AES-256-GCM keys for TOTP secrets at rest, versioned
+      active-key: v1
+      keys:
+        v1: ${MFA_ENCRYPTION_KEY_V1} # base64, 32 bytes: `openssl rand -base64 32`; no default
+  tokens:
+    email-verification-ttl: 24h
+    password-reset-ttl: 1h
+  rate-limit:                        # fixed windows, counters in auth_rate_limit_buckets
+    window: 1h
+    login-per-ip: 20
+    login-per-account: 10
+    register-per-ip: 10
+    password-reset-per-ip: 5
+    password-reset-per-account: 3
+    resend-verification-per-ip: 5
+    resend-verification-per-account: 3
+
+spring:
+  mail:
+    enabled: ${MAIL_ENABLED:false}   # false = log-only mock adapter, true = SMTP (SMTP_HOST, SMTP_PORT, ...)
+
+server:
+  forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:none}   # `native` behind the edge proxy
+  tomcat:
+    remoteip:
+      internal-proxies: ${TRUSTED_PROXIES:}                    # regex of proxy addresses to trust
 
 camunda:
   client:
@@ -225,36 +265,12 @@ camunda:
       rest-address: http://localhost:8088
 ```
 
-## TODO: Future Implementation
+## Key rotation for MFA secrets
 
-The following features are stubbed with TODO comments and need implementation:
-
-1. **JWT Provider** (`JwtProviderStub.java`):
-   - Implement JWT token generation and validation using jjwt library
-   - Add proper token signing and verification
-   - Implement token expiration handling
-
-2. **MFA Provider** (`MfaProviderStub.java`):
-   - Implement TOTP (Time-based One-Time Password)
-   - Generate QR codes for authenticator apps
-   - Validate MFA codes
-
-3. **Spring Security** (`SecurityConfigStub.java`):
-   - Configure JWT authentication filter
-   - Set up authorization rules
-   - Add CORS configuration
-   - Implement authentication entry point
-
-4. **Email Service**:
-   - Send email verification on registration
-   - Send password reset emails
-   - Email templates
-
-5. **Additional Features**:
-   - Refresh token storage (database or Redis)
-   - Password reset flow
-   - Audit logging
-   - Rate limiting for login endpoint
+Add the new key as `security.mfa.encryption.keys.v2`, switch `active-key` to `v2` and keep `v1`
+configured until every stored secret has been re-encrypted (users re-enrolling, or a maintenance
+job); then remove `v1`. Values carry their key version (`v1:<nonce>:<ciphertext>`), so both keys
+are readable during the transition.
 
 ## Testing
 
@@ -285,8 +301,21 @@ PENDING (registration) → ACTIVE (email confirmed)
 - Account locks after 5 failed login attempts for 30 minutes
 - JWT tokens expire after 15 minutes (configurable)
 - Refresh tokens expire after 7 days (configurable)
-- MFA support for additional security
+- TOTP secrets are encrypted at rest; TOTP codes and recovery codes are single-use
+- Verification/reset tokens exist in plaintext only inside the e-mail; the database keeps digests
+- Password reset/change revokes all refresh sessions
+- Public auth endpoints do not reveal whether an account exists and are rate limited
 - Soft delete for user accounts
+
+Refresh-token state is shared in PostgreSQL (`refresh_tokens`, V12), so rotation and password
+reset/change revocation work across user-service replicas and survive process restarts. Only JTI
+digests are stored. Authentication, MFA mutation and password updates lock the user row until commit
+to serialize TOTP replay protection and session revocation against concurrent login/refresh.
+
+Upgrade boundary: V12 deliberately invalidates refresh tokens issued by the previous in-memory
+implementation. Deploy all user-service replicas together and require users to log in again; mixing
+old and new token stores during a rolling upgrade is unsupported. Device sessions, token families,
+family replay revocation and logout endpoints from ADR 0003 remain separate SEC-103/SEC-104 work.
 
 ## License
 

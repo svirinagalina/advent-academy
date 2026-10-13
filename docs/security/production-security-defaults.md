@@ -22,6 +22,25 @@ missing. Exceptions are allowed only through a documented, owned, expiring risk 
 - Administrative, publication, role, recovery, and meeting-host actions require server-derived
   identity and generate a security audit event.
 
+## Account recovery, MFA and transactional e-mail
+
+- Verification and reset tokens are random 256-bit values; only their SHA-256 digest is stored,
+  together with purpose, creation, expiry and use time. A token is single-use, purpose-bound and
+  redeemed by an atomic conditional update, so concurrent presentation succeeds at most once.
+- TOTP seeds are stored encrypted (AES-256-GCM) under a versioned key that comes from the secret
+  manager and has no default. Replays are refused by the last accepted time step kept per account.
+  Recovery codes are shown once and stored as digests; a code is burnt atomically when used.
+- Enabling or disabling MFA is a step-up operation requiring the current password. Password reset
+  and password change revoke the account's refresh sessions.
+- Public recovery endpoints answer identically whether or not the account exists, and are rate
+  limited per resolved client address (ADR 0005) and per account identifier with counters shared
+  by all replicas; refusals are a bare 429.
+- Transactional e-mail (verification link, reset link) is handed to the mail adapter after the
+  owning transaction has committed. A delivery failure never fails the request and never retries
+  automatically: the token stays valid, the user re-requests it through the public re-send
+  endpoints, and the failure is recorded as an `EMAIL_DELIVERY_FAILED` audit event without the
+  token. The mail adapter and the audit trail never receive or log the token or seed.
+
 ## Browser and edge policy
 
 - CORS and WebSocket origins are exact HTTPS origins. Wildcards and pattern-wide credentials are

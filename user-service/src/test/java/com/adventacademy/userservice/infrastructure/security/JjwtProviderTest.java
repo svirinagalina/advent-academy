@@ -1,6 +1,7 @@
 package com.adventacademy.userservice.infrastructure.security;
 
 import io.jsonwebtoken.ExpiredJwtException;
+import com.adventacademy.userservice.application.port.RefreshTokenStore;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
@@ -57,7 +58,8 @@ class JjwtProviderTest {
                 15,
                 7,
                 30,
-                Clock.fixed(NOW, ZoneOffset.UTC));
+                Clock.fixed(NOW, ZoneOffset.UTC),
+                new TestRefreshTokenStore());
 
         assertThat(other.validateAccessToken(token)).isFalse();
         assertThatThrownBy(() -> new JjwtProvider(
@@ -67,8 +69,30 @@ class JjwtProviderTest {
                 15,
                 7,
                 30,
-                Clock.systemUTC()))
+                Clock.systemUTC(),
+                new TestRefreshTokenStore()))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    private static class TestRefreshTokenStore implements RefreshTokenStore {
+        private final java.util.Map<String, Entry> tokens = new java.util.HashMap<>();
+        private record Entry(UUID userId, Instant expiresAt) {}
+
+        public void save(String digest, UUID userId, Instant expiresAt) {
+            tokens.put(digest, new Entry(userId, expiresAt));
+        }
+
+        public boolean isActive(String digest, Instant now) {
+            return tokens.containsKey(digest) && tokens.get(digest).expiresAt().isAfter(now);
+        }
+
+        public boolean consume(String digest, Instant now) {
+            return isActive(digest, now) && tokens.remove(digest) != null;
+        }
+
+        public void revokeByUserId(UUID userId) {
+            tokens.values().removeIf(entry -> entry.userId().equals(userId));
+        }
     }
 
     private JjwtProvider provider(Clock clock) {
@@ -79,6 +103,7 @@ class JjwtProviderTest {
                 15,
                 7,
                 30,
-                clock);
+                clock,
+                new TestRefreshTokenStore());
     }
 }

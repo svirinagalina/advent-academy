@@ -10,6 +10,7 @@ import com.adventacademy.userservice.domain.model.AuditEventType;
 import com.adventacademy.userservice.domain.model.AuditResult;
 import com.adventacademy.userservice.domain.model.User;
 import com.adventacademy.userservice.domain.model.UserStatus;
+import com.adventacademy.userservice.domain.model.VerificationToken;
 import com.adventacademy.userservice.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,16 +25,22 @@ public class RegisterUserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final VerificationTokenService tokens;
+    private final EmailDispatcher emails;
     private final AuditTrailPort auditTrailPort;
     private final Clock clock;
 
     public RegisterUserService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
+            VerificationTokenService tokens,
+            EmailDispatcher emails,
             AuditTrailPort auditTrailPort,
             Clock clock) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.tokens = tokens;
+        this.emails = emails;
         this.auditTrailPort = auditTrailPort;
         this.clock = clock;
     }
@@ -50,9 +57,13 @@ public class RegisterUserService {
         user.setFirstName(request.firstName());
         user.setLastName(request.lastName());
         user.setStatus(UserStatus.PENDING);
-        user.setEmailVerificationToken(UUID.randomUUID().toString());
 
         User savedUser = userRepository.save(user);
+
+        // The verification link carries a random token whose digest alone is stored; the
+        // e-mail goes out after this transaction commits (see EmailDispatcher).
+        String verificationToken = tokens.issue(savedUser.getId(), VerificationToken.PURPOSE_EMAIL_VERIFICATION);
+        emails.sendEmailVerification(savedUser.getId(), savedUser.getEmail(), verificationToken);
 
         auditTrailPort.record(new AuditEvent(
                 UUID.randomUUID(),

@@ -55,3 +55,10 @@ logging:
       console:
   pattern:
     console: "%d{HH:mm:ss} [%thread] %-5level %logger{36} [requestId=%X{requestId}] - %msg%n"
+
+security:
+  mfa:
+    encryption:
+      keys:
+        # Development-only key (32 zero bytes). Never reuse outside the local profile.
+        v1: ${MFA_ENCRYPTION_KEY_V1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=}

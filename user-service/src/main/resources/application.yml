@@ -11,6 +11,28 @@ spring:
       hibernate:
         format_sql: false
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  mail:
+    enabled: ${MAIL_ENABLED:false}
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    protocol: smtp
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: false
+
+# Client identity for audit and rate limiting (ADR 0005). Off by default: the socket address is
+# the client. Behind the edge proxy set FORWARD_HEADERS_STRATEGY=native and list the proxy
+# addresses in TRUSTED_PROXIES (regex) so only their X-Forwarded-For is believed.
+server:
+  forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:none}
+  tomcat:
+    remoteip:
+      internal-proxies: ${TRUSTED_PROXIES:}
+      remote-ip-header: X-Forwarded-For
+      protocol-header: X-Forwarded-Proto
 
 # DataSource decoration (p6spy) is off by default — only the local profile
 # turns it on, so production runs with a plain HikariDataSource and zero
@@ -43,6 +65,34 @@ security:
   account-lock:
     max-failed-attempts: 5
     lock-duration-minutes: 30
+  mfa:
+    totp-window-size: 1          # ±1 step of 30 s accepted (clock drift), replays refused per account
+    recovery-code-count: 8       # One-time recovery codes issued at enrolment; only digests are stored
+    encryption:
+      # AES-256-GCM keys for TOTP secrets at rest, versioned for rotation. Base64, 32 bytes each.
+      # No production default: the service refuses to start without a key.
+      active-key: ${MFA_ENCRYPTION_ACTIVE_KEY:v1}
+      keys:
+        v1: ${MFA_ENCRYPTION_KEY_V1}
+  tokens:
+    email-verification-ttl: 24h
+    password-reset-ttl: 1h
+  rate-limit:
+    # Fixed windows shared through auth_rate_limit_buckets. IP = resolved client address (ADR 0005).
+    enabled: true
+    window: 1h
+    login-per-ip: 20
+    login-per-account: 10
+    register-per-ip: 10
+    password-reset-per-ip: 5
+    password-reset-per-account: 3
+    resend-verification-per-ip: 5
+    resend-verification-per-account: 3
+
+app:
+  email:
+    from: ${EMAIL_FROM:noreply@adventacademy.com}
+  baseurl: ${APP_BASE_URL:http://localhost:3000}
 
 management:
   health:

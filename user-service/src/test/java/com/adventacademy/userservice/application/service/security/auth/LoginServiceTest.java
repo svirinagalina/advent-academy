@@ -3,7 +3,7 @@ package com.adventacademy.userservice.application.service.security.auth;
 import com.adventacademy.userservice.application.dto.request.LoginRequest;
 import com.adventacademy.userservice.application.port.AuditTrailPort;
 import com.adventacademy.userservice.application.port.JwtProvider;
-import com.adventacademy.userservice.application.port.MfaProvider;
+import com.adventacademy.userservice.application.service.auth.MfaCodeVerifier;
 import com.adventacademy.userservice.application.port.PasswordEncoder;
 import com.adventacademy.userservice.application.service.auth.LoginService;
 import com.adventacademy.userservice.application.service.security.AccountLockService;
@@ -37,7 +37,7 @@ class LoginServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private JwtProvider jwtProvider;
-    @Mock private MfaProvider mfaProvider;
+    @Mock private MfaCodeVerifier mfaCodeVerifier;
     @Mock private AccountLockService accountLockService;
     @Mock private AuditTrailPort auditTrailPort;
 
@@ -50,7 +50,7 @@ class LoginServiceTest {
                 userRepository,
                 passwordEncoder,
                 jwtProvider,
-                mfaProvider,
+                mfaCodeVerifier,
                 accountLockService,
                 auditTrailPort,
                 15L,
@@ -61,11 +61,13 @@ class LoginServiceTest {
     @Test
     void login_success_shouldRecordAuditEvent() {
         User user = new User();
+        user.setStatus(com.adventacademy.userservice.domain.model.UserStatus.ACTIVE);
+        user.setEmailVerified(true);
         LoginRequest request = new LoginRequest(
                 "test@test.com", "password", null, "127.0.0.1", "Mozilla"
         );
 
-        when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailForUpdate(request.email())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(any(), any())).thenReturn(true);
         when(jwtProvider.generateAccessToken(any(), any(), any())).thenReturn("accessToken");
         when(jwtProvider.generateRefreshToken(any())).thenReturn("refreshToken");
@@ -85,11 +87,13 @@ class LoginServiceTest {
     @Test
     void login_wrongPassword_shouldRecordFailedAuditEvent() {
         User user = new User();
+        user.setStatus(com.adventacademy.userservice.domain.model.UserStatus.ACTIVE);
+        user.setEmailVerified(true);
         LoginRequest request = new LoginRequest(
                 "test@test.com", "wrongpassword", null, "127.0.0.1", "Mozilla"
         );
 
-        when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailForUpdate(request.email())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(any(), any())).thenReturn(false);
 
         assertThatThrownBy(() -> loginService.login(request))

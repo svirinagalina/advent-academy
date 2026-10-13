@@ -11,4 +11,7 @@ public interface JwtProvider {
     boolean consumeRefreshToken(String token);
     UUID getUserIdFromToken(String token);
     Set<String> getRolesFromToken(String token);
+
+    /** Invalidates every refresh token issued to the user, e.g. after a password reset. */
+    void revokeRefreshTokens(UUID userId);
 }
