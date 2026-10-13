@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: meeting-service
+
+server:
+  port: 8084
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+meeting:
+  allowed-origins:
+    - http://localhost:8084
+    - http://127.0.0.1:8084
+  max-message-bytes: 65536
+  capability-ttl-seconds: 60
+  room-creation-limit-per-minute: 10
+  capability-limit-per-minute: 30
+  join-limit-per-minute: 20
+  ice-servers: []
+
+security:
+  jwt:
+    secret: ${JWT_SECRET}
+    issuer: ${JWT_ISSUER:advent-academy-user-service}
+    audience: ${JWT_AUDIENCE:advent-academy-services}
+    clock-skew-seconds: 30
+
+logging:
+  level:
+    com.adventacademy.meetingservice: INFO

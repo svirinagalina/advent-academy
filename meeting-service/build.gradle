@@ -1,0 +1,60 @@
+plugins {
+    id 'java'
+    alias(libs.plugins.spring.boot)
+    id 'checkstyle'
+}
+
+group = 'com.adventacademy'
+version = '0.0.1-SNAPSHOT'
+description = 'Meeting Service'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+checkstyle {
+    toolVersion = libs.versions.checkstyle.tool.get()
+    configFile = rootProject.file('config/checkstyle/checkstyle.xml')
+}
+
+configurations.checkstyle {
+    resolutionStrategy.capabilitiesResolution.withCapability('com.google.collections:google-collections') {
+        select('com.google.guava:guava:0')
+    }
+}
+
+dependencies {
+    implementation platform(project(':platform'))
+    // annotationProcessor doesn't extend implementation, so it needs the
+    // platform too, or spring-boot-configuration-processor below resolves
+    // with no version.
+    annotationProcessor platform(project(':platform'))
+
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.jsonwebtoken:jjwt-api'
+
+    // OpenAPI/Swagger, matching user-service/content-service's version.
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui'
+
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson'
+
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

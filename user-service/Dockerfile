@@ -1,18 +1,22 @@
-# Build stage
-FROM gradle:8-jdk21 AS build
-WORKDIR /app
-COPY build.gradle settings.gradle ./
-COPY gradle gradle
-COPY src ./src
-RUN gradle clean build --no-daemon
+# syntax=docker/dockerfile:1
 
-# Runtime stage
 FROM eclipse-temurin:21-jre-alpine
+
+LABEL maintainer="Advent Academy" \
+      org.opencontainers.image.title="user-service" \
+      org.opencontainers.image.description="user-service development image (NOT for production use)" \
+      environment="development"
+
 WORKDIR /app
 
-# Copy JAR
-COPY --from=build /app/build/libs/*.jar app.jar
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+COPY --chown=appuser:appgroup user-service/build/libs/*.jar app.jar
+
+USER appuser
 
 EXPOSE 8080
+
+ENV JAVA_TOOL_OPTIONS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

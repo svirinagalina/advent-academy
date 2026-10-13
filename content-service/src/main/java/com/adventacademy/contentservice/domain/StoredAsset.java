@@ -1,0 +1,212 @@
+package com.adventacademy.contentservice.domain;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.util.Objects;
+import java.util.UUID;
+
+/**
+ * Domain model representing a binary asset (image, document, etc.) bundled with a lesson.
+ * <p>
+ * Holds the raw file bytes together with its metadata (owning lesson, uploader, original
+ * filename, MIME type, size) and creation/update timestamps. Instances are
+ * immutable except for {@code updatedAt}, and can only be created with a
+ * non-null lessonId, a non-blank filename and contentType, and non-empty
+ * file data.
+ * <p>
+ * {@code ownerId} is the user who uploaded the asset. It is what authorizes downloads while the
+ * lesson content is still a draft; it is nullable because assets created before ownership was
+ * introduced have no known uploader.
+ */
+public final class StoredAsset {
+
+    private final UUID id;
+    private final UUID lessonId;
+    private final UUID ownerId;
+    private final String filename;
+    private final String contentType;
+    private final long fileSize;
+    private final byte[] fileData;
+    private final Instant createdAt;
+    private Instant updatedAt;
+
+    private StoredAsset(
+            UUID id,
+            UUID lessonId,
+            UUID ownerId,
+            String filename,
+            String contentType,
+            long fileSize,
+            byte[] fileData,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+        this.id = id;
+        this.lessonId = lessonId;
+        this.ownerId = ownerId;
+        this.filename = filename;
+        this.contentType = contentType;
+        this.fileSize = fileSize;
+        this.fileData = fileData;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
+
+    /**
+     * Creates a new asset with a generated id and timestamps set to the current UTC time.
+     */
+    public static StoredAsset create(
+            UUID lessonId,
+            String filename,
+            String contentType,
+            byte[] fileData
+    ) {
+        return create(lessonId, filename, contentType, fileData, Clock.systemUTC());
+    }
+
+    /**
+     * Creates a new asset with a generated id, using the given clock for its
+     * creation and update timestamps. Validates all fields before construction.
+     */
+    public static StoredAsset create(
+            UUID lessonId,
+            String filename,
+            String contentType,
+            byte[] fileData,
+            Clock clock
+    ) {
+        return create(lessonId, null, filename, contentType, fileData, clock);
+    }
+
+    /**
+     * Creates a new asset owned by the given uploader.
+     */
+    public static StoredAsset create(
+            UUID lessonId,
+            UUID ownerId,
+            String filename,
+            String contentType,
+            byte[] fileData,
+            Clock clock
+    ) {
+        Objects.requireNonNull(clock, "clock must not be null");
+        validateCreation(lessonId, filename, contentType, fileData);
+
+        Instant now = clock.instant();
+        return new StoredAsset(
+                UUID.randomUUID(),
+                lessonId,
+                ownerId,
+                filename,
+                contentType,
+                fileData.length,
+                fileData,
+                now,
+                now
+        );
+    }
+
+    /**
+     * Reconstructs an asset from already-persisted state (e.g. when loading from
+     * the database), keeping its existing id and timestamps without validation.
+     */
+    public static StoredAsset restore(
+            UUID id,
+            UUID lessonId,
+            String filename,
+            String contentType,
+            long fileSize,
+            byte[] fileData,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+        return restore(id, lessonId, null, filename, contentType, fileSize, fileData, createdAt, updatedAt);
+    }
+
+    /**
+     * Reconstructs an asset together with its uploader.
+     */
+    public static StoredAsset restore(
+            UUID id,
+            UUID lessonId,
+            UUID ownerId,
+            String filename,
+            String contentType,
+            long fileSize,
+            byte[] fileData,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+        return new StoredAsset(
+                id,
+                lessonId,
+                ownerId,
+                filename,
+                contentType,
+                fileSize,
+                fileData,
+                createdAt,
+                updatedAt
+        );
+    }
+
+    private static void validateCreation(
+            UUID lessonId,
+            String filename,
+            String contentType,
+            byte[] fileData
+    ) {
+        if (lessonId == null) {
+            throw new IllegalArgumentException("lessonId must not be null");
+        }
+        if (filename == null || filename.isBlank()) {
+            throw new IllegalArgumentException("filename must not be blank");
+        }
+        if (contentType == null || contentType.isBlank()) {
+            throw new IllegalArgumentException("contentType must not be blank");
+        }
+        if (fileData == null || fileData.length == 0) {
+            throw new IllegalArgumentException("fileData must not be empty");
+        }
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public UUID getLessonId() {
+        return lessonId;
+    }
+
+    /**
+     * @return the user who uploaded the asset, or {@code null} for assets stored before
+     *         ownership was tracked
+     */
+    public UUID getOwnerId() {
+        return ownerId;
+    }
+
+    public String getFilename() {
+        return filename;
+    }
+
+    public String getContentType() {
+        return contentType;
+    }
+
+    public long getFileSize() {
+        return fileSize;
+    }
+
+    public byte[] getFileData() {
+        return fileData;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+}

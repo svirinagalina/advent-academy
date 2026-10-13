@@ -19,6 +19,8 @@ public class User {
     private String emailVerificationToken;
     private boolean mfaEnabled;
     private String mfaSecret;
+    /** Last accepted TOTP time step; codes for this step or earlier are replays. */
+    private Long mfaLastUsedStep;
     private int failedLoginAttempts;
     private LocalDateTime lockedUntil;
     private LocalDateTime lastLoginAt;
@@ -59,6 +61,9 @@ public class User {
     }
 
     public boolean canAuthenticate() {
+        if (!emailVerified || status == UserStatus.PENDING) {
+            return false;
+        }
         if (status == UserStatus.DELETED || status == UserStatus.BLOCKED ||
             status == UserStatus.SUSPENDED) {
             return false;
@@ -144,10 +149,10 @@ public class User {
     }
 
     public void removeRole(Role role) {
-        if (role == null) {
-            throw new IllegalArgumentException("Role cannot be null");
+        if (role == null || role.getId() == null) {
+            throw new IllegalArgumentException("Role cannot be null and must have id");
         }
-        this.roles.remove(role);
+        this.roles.removeIf(r -> role.getId().equals(r.getId()));
         this.updatedAt = LocalDateTime.now();
     }
 
@@ -258,6 +263,22 @@ public class User {
 
     public String getMfaSecret() {
         return mfaSecret;
+    }
+
+    public Long getMfaLastUsedStep() {
+        return mfaLastUsedStep;
+    }
+
+    public void setMfaLastUsedStep(Long mfaLastUsedStep) {
+        this.mfaLastUsedStep = mfaLastUsedStep;
+    }
+
+    /** Forgets the MFA secret and the replay guard; recovery codes are the caller's business. */
+    public void clearMfa() {
+        this.mfaEnabled = false;
+        this.mfaSecret = null;
+        this.mfaLastUsedStep = null;
+        this.updatedAt = LocalDateTime.now();
     }
 
     public void setMfaSecret(String mfaSecret) {

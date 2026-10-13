@@ -1,0 +1,27 @@
+# Defaults for running the gateway on the host while backends run in Docker with
+# their ports published to localhost (docker compose up -d postgres ... user-service
+# content-service meeting-service, then ./gradlew :api-gateway:bootRun
+# --args='--spring.profiles.active=local'). Any of these can still be overridden by a
+# real environment variable of the same name.
+USER_SERVICE_URL: http://localhost:8080
+CONTENT_SERVICE_URL: http://localhost:8081
+MEETING_SERVICE_URL: http://localhost:8084
+MEETING_SERVICE_WS_URL: ws://localhost:8084
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, gateway
+  endpoint:
+    gateway:
+      enabled: true
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.adventacademy: INFO
+    org.springframework.cloud.gateway: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

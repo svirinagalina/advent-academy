@@ -1,9 +1,8 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '4.0.2'
-    id 'io.spring.dependency-management' version '1.1.7'
+    alias(libs.plugins.spring.boot)
     id 'checkstyle'
-    id("com.github.spotbugs") version "6.1.11"
+    alias(libs.plugins.spotbugs)
 }
 
 group = 'com.adventacademy'
@@ -23,8 +22,14 @@ configurations {
 }
 
 checkstyle {
-    toolVersion = '10.12.3'
+    toolVersion = libs.versions.checkstyle.tool.get()
     configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
+}
+
+configurations.checkstyle {
+    resolutionStrategy.capabilitiesResolution.withCapability('com.google.collections:google-collections') {
+        select('com.google.guava:guava:0')
+    }
 }
 
 tasks.spotbugsMain {
@@ -40,10 +45,46 @@ repositories {
 }
 
 dependencies {
+    implementation platform(project(':platform'))
+    // annotationProcessor is a separate root configuration that does not
+    // extend implementation, so the platform must be added to it too, or
+    // managed annotationProcessor-only dependencies (lombok here) resolve
+    // with no version at all.
+    annotationProcessor platform(project(':platform'))
+    // developmentOnly is another root configuration (added by the Boot
+    // plugin itself) that doesn't extend implementation.
+    developmentOnly platform(project(':platform'))
+
     implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.flywaydb:flyway-core'
+
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    runtimeOnly 'org.postgresql:postgresql'
+
     annotationProcessor 'org.projectlombok:lombok'
+
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly 'com.h2database:h2'
+}
+
+tasks.named('test') {
+    useJUnitPlatform {
+        // The dedicated securityContract task is the single CI owner of this suite.
+        excludeTags 'security-contract'
+    }
+}
+
+tasks.register('securityContract', Test) {
+    group = 'verification'
+    description = 'Validates the SEC-101 route inventory and production security policy.'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+
+    useJUnitPlatform {
+        includeTags 'security-contract'
+    }
 }

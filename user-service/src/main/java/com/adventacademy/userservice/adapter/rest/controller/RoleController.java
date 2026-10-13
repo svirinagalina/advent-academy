@@ -6,15 +6,19 @@ import com.adventacademy.userservice.application.dto.response.UserResponse;
 import com.adventacademy.userservice.application.service.role.AssignRoleService;
 import com.adventacademy.userservice.application.service.role.CreateRoleService;
 import com.adventacademy.userservice.application.service.role.GetRoleService;
+import com.adventacademy.userservice.domain.pagination.PageResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -24,6 +28,9 @@ import java.util.UUID;
  * and assigning or revoking roles from users.
  * </p>
  */
+
+
+@Validated
 @RestController
 @RequestMapping("/api/roles")
 @Tag(name = "Roles", description = "Role management endpoints")
@@ -61,10 +68,14 @@ public class RoleController {
     }
 
     @GetMapping
-    @Operation(summary = "Get all roles", description = "Retrieve list of all roles")
+    @Operation(summary = "Get all roles", description = "Retrieve paginated list of roles")
     @ApiResponse(responseCode = "200", description = "Roles retrieved successfully")
-    public ResponseEntity<List<RoleResponse>> getAllRoles() {
-        List<RoleResponse> response = getRoleService.getAllRoles();
+    public ResponseEntity<PageResult<RoleResponse>> getAllRoles(
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+            @RequestParam(defaultValue = "id,asc") String sort
+    ) {
+        PageResult<RoleResponse> response = getRoleService.getAllRoles(page, size, sort);
         return ResponseEntity.ok(response);
     }
 
@@ -74,8 +85,11 @@ public class RoleController {
     @ApiResponse(responseCode = "404", description = "User or role not found")
     public ResponseEntity<UserResponse> assignRoleToUser(
             @PathVariable UUID userId,
-            @PathVariable UUID roleId) {
-        UserResponse response = assignRoleService.assignRoleToUser(userId, roleId);
+            @PathVariable UUID roleId,
+            HttpServletRequest httpRequest) {
+        String ipAddress = httpRequest.getRemoteAddr();
+        String userAgent = httpRequest.getHeader("User-Agent");
+        UserResponse response = assignRoleService.assignRoleToUser(userId, roleId, ipAddress, userAgent);
         return ResponseEntity.ok(response);
     }
 
@@ -85,8 +99,11 @@ public class RoleController {
     @ApiResponse(responseCode = "404", description = "User or role not found")
     public ResponseEntity<UserResponse> removeRoleFromUser(
             @PathVariable UUID userId,
-            @PathVariable UUID roleId) {
-        UserResponse response = assignRoleService.removeRoleFromUser(userId, roleId);
+            @PathVariable UUID roleId,
+            HttpServletRequest httpRequest) {
+        String ipAddress = httpRequest.getRemoteAddr();
+        String userAgent = httpRequest.getHeader("User-Agent");
+        UserResponse response = assignRoleService.removeRoleFromUser(userId, roleId, ipAddress, userAgent);
         return ResponseEntity.ok(response);
     }
 }

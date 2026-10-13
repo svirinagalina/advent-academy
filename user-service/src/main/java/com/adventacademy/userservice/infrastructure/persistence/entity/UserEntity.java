@@ -1,22 +1,32 @@
 package com.adventacademy.userservice.infrastructure.persistence.entity;
 
 import com.adventacademy.userservice.domain.model.UserStatus;
+import com.adventacademy.userservice.infrastructure.persistence.id.AssignedOrRandomUuid;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.domain.Persistable;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
 @Entity
 @Table(name = "users")
-public class UserEntity {
+public class UserEntity implements Persistable<UUID> {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @AssignedOrRandomUuid
     private UUID id;
+
+    /**
+     * Spring Data decides between persist and merge by asking us, not by looking at the id:
+     * the domain assigns ids up front, so a non-null id does not mean "already stored".
+     */
+    @Transient
+    private boolean persisted;
 
     @Column(nullable = false, unique = true, length = 255)
     private String email;
@@ -34,7 +44,7 @@ public class UserEntity {
     @Column(nullable = false, length = 20)
     private UserStatus status;
 
-    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
@@ -51,8 +61,12 @@ public class UserEntity {
     @Column(nullable = false)
     private boolean mfaEnabled;
 
-    @Column(length = 255)
+    /** Encrypted TOTP secret, {@code <key version>:<nonce>:<ciphertext>}; never the plaintext seed. */
+    @Column(length = 512)
     private String mfaSecret;
+
+    @Column
+    private Long mfaLastUsedStep;
 
     @Column(nullable = false)
     private int failedLoginAttempts;
@@ -71,7 +85,30 @@ public class UserEntity {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        UserEntity that = (UserEntity) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
+    }
+
     public UserEntity() {
+    }
+
+    @Override
+    public boolean isNew() {
+        return !persisted;
+    }
+
+    @PostPersist
+    @PostLoad
+    void markPersisted() {
+        this.persisted = true;
     }
 
     public UUID getId() {
@@ -160,6 +197,14 @@ public class UserEntity {
 
     public void setMfaSecret(String mfaSecret) {
         this.mfaSecret = mfaSecret;
+    }
+
+    public Long getMfaLastUsedStep() {
+        return mfaLastUsedStep;
+    }
+
+    public void setMfaLastUsedStep(Long mfaLastUsedStep) {
+        this.mfaLastUsedStep = mfaLastUsedStep;
     }
 
     public int getFailedLoginAttempts() {

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Local two-participant WebRTC meeting MVP">
+    <title>Advent Meeting</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<main class="meeting-shell">
+    <header>
+        <p class="eyebrow">Advent Academy</p>
+        <h1>Local peer-to-peer meeting</h1>
+        <p class="subtitle">A private room for exactly two browser participants.</p>
+    </header>
+
+    <section class="room-panel" aria-labelledby="room-heading">
+        <h2 id="room-heading">Room</h2>
+        <label>
+            <span>Access token</span>
+            <input id="access-token" type="password" autocomplete="off"
+                   placeholder="Paste a user-service access token">
+        </label>
+        <div class="room-actions">
+            <button id="create-room" class="primary" type="button">Create room</button>
+            <label>
+                <span>Room ID</span>
+                <input id="room-id" autocomplete="off" maxlength="64" placeholder="Paste a room ID">
+            </label>
+            <button id="join-room" type="button">Join room</button>
+        </div>
+        <div class="share-row">
+            <label>
+                <span>Shareable local link</span>
+                <input id="share-url" readonly placeholder="Create or join a room first">
+            </label>
+            <button id="copy-url" type="button" disabled>Copy link</button>
+        </div>
+        <div class="feedback" aria-live="polite">
+            <span>Status: <strong id="connection-status">Idle</strong></span>
+            <p id="error-message" class="error" role="alert" hidden></p>
+        </div>
+    </section>
+
+    <section class="video-grid" aria-label="Meeting videos">
+        <figure id="local-video-frame" class="video-frame" data-speaking="false">
+            <video id="local-video" autoplay muted playsinline></video>
+            <figcaption>You</figcaption>
+        </figure>
+        <figure id="remote-video-frame" class="video-frame" data-speaking="false">
+            <video id="remote-video" autoplay playsinline></video>
+            <figcaption>Other participant</figcaption>
+        </figure>
+    </section>
+
+    <section class="controls" aria-label="Media controls">
+        <button id="toggle-microphone" type="button" disabled aria-pressed="false">Mute microphone</button>
+        <button id="toggle-camera" type="button" disabled aria-pressed="false">Disable camera</button>
+        <button id="toggle-noise-suppression" type="button" disabled aria-pressed="true">
+            Noise suppression: On
+        </button>
+        <button id="toggle-background-blur" type="button" disabled aria-pressed="false">
+            Background blur: Off
+        </button>
+        <button id="leave-room" class="danger" type="button" disabled>Leave call</button>
+    </section>
+
+    <p class="local-note">Local development only. Use headphones when testing both tabs on one device.</p>
+</main>
+<script src="/vendor/mediapipe/selfie_segmentation.js"></script>
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>

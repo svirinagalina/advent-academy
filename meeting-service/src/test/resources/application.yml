@@ -1,0 +1,17 @@
+security:
+  jwt:
+    secret: test-secret-key-for-testing-purposes-only-32-bytes
+    issuer: advent-academy-user-service
+    audience: advent-academy-services
+    clock-skew-seconds: 30
+
+meeting:
+  allowed-origins:
+    - http://localhost:8084
+    - http://127.0.0.1:8084
+  max-message-bytes: 65536
+  capability-ttl-seconds: 60
+  room-creation-limit-per-minute: 100
+  capability-limit-per-minute: 100
+  join-limit-per-minute: 100
+  ice-servers: []

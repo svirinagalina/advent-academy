@@ -1,9 +1,13 @@
 package com.adventacademy.userservice.infrastructure.persistence.mapper;
 
+import com.adventacademy.userservice.domain.model.Role;
 import com.adventacademy.userservice.domain.model.User;
 import com.adventacademy.userservice.infrastructure.persistence.entity.UserEntity;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
@@ -20,16 +24,20 @@ public class UserMapper {
             return null;
         }
 
-        return new User(
+        Set<Role> roles = Hibernate.isInitialized(entity.getRoles())
+                ? entity.getRoles().stream()
+                        .map(roleMapper::toDomain)
+                        .collect(Collectors.toSet())
+                : new HashSet<>();
+
+        User user = new User(
                 entity.getId(),
                 entity.getEmail(),
                 entity.getPasswordHash(),
                 entity.getFirstName(),
                 entity.getLastName(),
                 entity.getStatus(),
-                entity.getRoles().stream()
-                        .map(roleMapper::toDomain)
-                        .collect(Collectors.toSet()),
+                roles,
                 entity.isEmailVerified(),
                 entity.getEmailVerificationToken(),
                 entity.isMfaEnabled(),
@@ -40,6 +48,8 @@ public class UserMapper {
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );
+        user.setMfaLastUsedStep(entity.getMfaLastUsedStep());
+        return user;
     }
 
     public UserEntity toEntity(User domain) {
@@ -61,6 +71,7 @@ public class UserMapper {
         entity.setEmailVerificationToken(domain.getEmailVerificationToken());
         entity.setMfaEnabled(domain.isMfaEnabled());
         entity.setMfaSecret(domain.getMfaSecret());
+        entity.setMfaLastUsedStep(domain.getMfaLastUsedStep());
         entity.setFailedLoginAttempts(domain.getFailedLoginAttempts());
         entity.setLockedUntil(domain.getLockedUntil());
         entity.setLastLoginAt(domain.getLastLoginAt());

@@ -1,0 +1,32 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB:advent_academy}
+    username: ${POSTGRES_USER:advent_user}
+    password: ${POSTGRES_PASSWORD:advent_password}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        default_schema: content
+
+  flyway:
+    enabled: true
+    schemas: content
+    default-schema: content
+    create-schemas: true
+    table: flyway_schema_history_content
+    locations: classpath:db/migration
+
+server:
+  port: 8081
+
+logging:
+  level:
+    com.adventacademy: INFO
+  pattern:
+    console: "%d{HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

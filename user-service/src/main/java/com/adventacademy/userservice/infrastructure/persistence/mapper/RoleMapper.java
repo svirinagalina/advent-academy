@@ -1,9 +1,13 @@
 package com.adventacademy.userservice.infrastructure.persistence.mapper;
 
+import com.adventacademy.userservice.domain.model.Permission;
 import com.adventacademy.userservice.domain.model.Role;
 import com.adventacademy.userservice.infrastructure.persistence.entity.RoleEntity;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
@@ -20,13 +24,17 @@ public class RoleMapper {
             return null;
         }
 
+        Set<Permission> permissions = Hibernate.isInitialized(entity.getPermissions())
+                ? entity.getPermissions().stream()
+                        .map(permissionMapper::toDomain)
+                        .collect(Collectors.toSet())
+                : new HashSet<>();
+
         return new Role(
                 entity.getId(),
                 entity.getName(),
                 entity.getDescription(),
-                entity.getPermissions().stream()
-                        .map(permissionMapper::toDomain)
-                        .collect(Collectors.toSet()),
+                permissions,
                 entity.isSystemRole(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()

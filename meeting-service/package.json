@@ -1,0 +1,20 @@
+{
+  "name": "advent-academy-meeting-ui",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "lint": "node --check src/main/resources/static/js/media-effects.js && node --check src/main/resources/static/js/network-quality.js && node --check src/main/resources/static/js/meeting-client.js && node --check src/main/resources/static/js/app.js",
+    "test": "node --test src/test/frontend/*.test.js",
+    "test:e2e": "playwright test",
+    "build": "node scripts/build-frontend.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.55.1"
+  },
+  "dependencies": {
+    "@mediapipe/selfie_segmentation": "0.1.1675465747"
+  }
+}

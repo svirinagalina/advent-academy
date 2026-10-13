@@ -1,7 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '4.0.3'
-    id 'io.spring.dependency-management' version '1.1.7'
+    alias(libs.plugins.spring.boot)
 }
 
 group = 'com.adventacademy'
@@ -25,23 +24,41 @@ repositories {
 }
 
 dependencies {
+    implementation platform(project(':platform'))
+    // annotationProcessor doesn't extend implementation, so it needs the
+    // platform too, or lombok/spring-boot-configuration-processor below
+    // resolve with no version.
+    annotationProcessor platform(project(':platform'))
+    // developmentOnly is another root configuration (added by the Boot
+    // plugin itself) that doesn't extend implementation.
+    developmentOnly platform(project(':platform'))
+
     // Spring Boot Starters
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'io.camunda:spring-boot-starter-camunda-sdk'
+    // Micrometer Prometheus
+    implementation 'io.micrometer:micrometer-registry-prometheus'
 
     // PostgreSQL
     runtimeOnly 'org.postgresql:postgresql'
 
     // JWT
-    implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-api'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson'
+
+    // TOTP & MFA
+    implementation 'dev.samstevens.totp:totp:1.7.1'
+    implementation 'com.google.zxing:core:3.5.3'
+    implementation 'com.google.zxing:javase:3.5.3'
 
     // OpenAPI/Swagger
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok'
@@ -51,16 +68,61 @@ dependencies {
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
+    // SQL tracing via slf4j (off by default, enabled in local profile only).
+    // Wraps the DataSource so every JDBC call is logged through slf4j, which
+    // means the requestId MDC entry from RequestIdFilter is attached to each
+    // SQL line — the audit trail / error log / SQL log can all be joined by
+    // X-Request-Id.
+    runtimeOnly 'com.github.gavlyukovskiy:p6spy-spring-boot-starter'
+
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
-    testImplementation 'org.testcontainers:testcontainers:1.19.3'
-    testImplementation 'org.testcontainers:postgresql:1.19.3'
-    testImplementation 'org.testcontainers:junit-jupiter:1.19.3'
+    testImplementation 'io.camunda:spring-boot-starter-camunda-test-testcontainer'
+    testImplementation 'org.testcontainers:testcontainers'
+    testImplementation 'org.testcontainers:testcontainers-postgresql'
+    testImplementation 'com.tngtech.archunit:archunit-junit5'
     testRuntimeOnly 'com.h2database:h2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+//Flyway
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+}
+
+// Keep exactly one artifact in build/libs so the Dockerfile can copy it with
+// a wildcard: the plain jar is not used by anything, and its presence makes
+// `COPY user-service/build/libs/*.jar app.jar` resolve to two sources.
+tasks.named('jar') {
+    enabled = false
 }
 
 tasks.named('test') {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags 'performance-regression', 'camunda-smoke'
+    }
+}
+
+tasks.register('camundaSmokeTest', Test) {
+    group = 'verification'
+    description = 'Starts user-service and verifies its connection to a local Zeebe broker.'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    shouldRunAfter tasks.named('test')
+
+    useJUnitPlatform {
+        includeTags 'camunda-smoke'
+    }
+}
+
+tasks.register('performanceRegressionTest', Test) {
+    group = 'verification'
+    description = 'Runs RoleRequest API performance regression tests.'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    shouldRunAfter tasks.named('test')
+
+    useJUnitPlatform {
+        includeTags 'performance-regression'
+    }
 }

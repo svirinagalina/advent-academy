@@ -5,6 +5,7 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 reports/
+node_modules/
 
 ### STS ###
 .apt_generated
@@ -36,3 +37,15 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Environment ###
+.env
+
+### macOS ###
+.DS_Store
+
+### personal notes ###
+/AGENTS.md
+.claude/
+konspekt-course-constructor.md
+planTask*.md

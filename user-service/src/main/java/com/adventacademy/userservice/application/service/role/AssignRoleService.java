@@ -1,8 +1,12 @@
 package com.adventacademy.userservice.application.service.role;
 
 import com.adventacademy.userservice.application.dto.response.UserResponse;
+import com.adventacademy.userservice.application.port.AuditTrailPort;
 import com.adventacademy.userservice.domain.exception.RoleNotFoundException;
 import com.adventacademy.userservice.domain.exception.UserNotFoundException;
+import com.adventacademy.userservice.domain.model.AuditEvent;
+import com.adventacademy.userservice.domain.model.AuditEventType;
+import com.adventacademy.userservice.domain.model.AuditResult;
 import com.adventacademy.userservice.domain.model.Role;
 import com.adventacademy.userservice.domain.model.User;
 import com.adventacademy.userservice.domain.repository.RoleRepository;
@@ -10,49 +14,90 @@ import com.adventacademy.userservice.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Use case service for managing role assignments on users.
- * <p>
- * Allows granting a role to a user and revoking it. Both operations
- * validate that the user and role exist before modifying the relationship.
- * </p>
- */
 @Service
 public class AssignRoleService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final AuditTrailPort auditTrailPort;
+    private final Clock clock;
 
-    public AssignRoleService(UserRepository userRepository, RoleRepository roleRepository) {
+    public AssignRoleService(
+            UserRepository userRepository,
+            RoleRepository roleRepository,
+            AuditTrailPort auditTrailPort,
+            Clock clock) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.auditTrailPort = auditTrailPort;
+        this.clock = clock;
     }
 
+    /**
+     * Idempotent: safe to call more than once for the same user/role pair (e.g. a
+     * redelivered Camunda job). {@code Role} has no {@code equals}/{@code hashCode}
+     * override and {@code user_roles} has a composite primary key, so a second
+     * {@code user.addRole(role)} with a freshly-loaded entity is a genuine duplicate
+     * insert, not a harmless Set no-op — checking {@code hasRole} first avoids it.
+     */
     @Transactional
-    public UserResponse assignRoleToUser(UUID userId, UUID roleId) {
-        User user = userRepository.findById(userId)
+    public UserResponse assignRoleToUser(UUID userId, UUID roleId, String ipAddress, String userAgent) {
+        User user = userRepository.findByIdWithRoles(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new RoleNotFoundException(roleId));
 
+        if (user.hasRole(role.getName())) {
+            return mapToUserResponse(user);
+        }
+
         user.addRole(role);
         User savedUser = userRepository.save(user);
+
+        auditTrailPort.record(new AuditEvent(
+                UUID.randomUUID(),
+                AuditEventType.ROLE_ASSIGNED,
+                userId,
+                userId,
+                LocalDateTime.now(clock),
+                ipAddress,
+                userAgent,
+                AuditResult.SUCCESS,
+                null,
+                Map.of("roleId", roleId.toString(), "roleName", role.getName())
+        ));
 
         return mapToUserResponse(savedUser);
     }
 
     @Transactional
-    public UserResponse removeRoleFromUser(UUID userId, UUID roleId) {
-        User user = userRepository.findById(userId)
+    public UserResponse removeRoleFromUser(UUID userId, UUID roleId, String ipAddress, String userAgent) {
+        User user = userRepository.findByIdWithRoles(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new RoleNotFoundException(roleId));
 
         user.removeRole(role);
         User savedUser = userRepository.save(user);
+
+        auditTrailPort.record(new AuditEvent(
+                UUID.randomUUID(),
+                AuditEventType.ROLE_REVOKED,
+                userId,
+                userId,
+                LocalDateTime.now(clock),
+                ipAddress,
+                userAgent,
+                AuditResult.SUCCESS,
+                null,
+                Map.of("roleId", roleId.toString(), "roleName", role.getName())
+        ));
 
         return mapToUserResponse(savedUser);
     }

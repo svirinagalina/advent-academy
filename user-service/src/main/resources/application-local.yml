@@ -8,3 +8,57 @@ spring:
     user:
       name: ${SPRING_SECURITY_USER_NAME:admin}
       password: ${SPRING_SECURITY_USER_PASSWORD:admin}
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+# Route SQL through slf4j (p6spy) so each statement is tagged with the
+# requestId MDC entry from RequestIdFilter and lines up with the
+# request/error log under the same X-Request-Id.
+decorator:
+  datasource:
+    enabled: true
+    p6spy:
+      enable-logging: true
+      logging: slf4j
+
+camunda:
+  client:
+    mode: self-managed
+    zeebe:
+      enabled: ${CAMUNDA_CLIENT_ZEEBE_ENABLED:true}
+      grpc-address: ${CAMUNDA_CLIENT_ZEEBE_GRPCADDRESS:http://localhost:26500}
+      rest-address: ${CAMUNDA_CLIENT_ZEEBE_RESTADDRESS:http://localhost:8088}
+      prefer-rest-over-grpc: false
+
+management:
+  health:
+    zeebe:
+      enabled: true
+  endpoint:
+    health:
+      group:
+        readiness:
+          include: db, diskSpace, zeebeClient
+
+logging:
+  level:
+    com.adventacademy: INFO
+    # p6spy logger — set to DEBUG locally to see each SQL with its requestId.
+    p6spy: DEBUG
+    # Enable on demand when debugging auth:
+    # org.springframework.security: DEBUG
+  structured:
+    format:
+      console:
+  pattern:
+    console: "%d{HH:mm:ss} [%thread] %-5level %logger{36} [requestId=%X{requestId}] - %msg%n"
+
+security:
+  mfa:
+    encryption:
+      keys:
+        # Development-only key (32 zero bytes). Never reuse outside the local profile.
+        v1: ${MFA_ENCRYPTION_KEY_V1:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=}
