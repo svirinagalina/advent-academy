@@ -23,6 +23,8 @@ test("two isolated browser contexts exchange live audio and video tracks", async
 
         await expectConnectedWithRemoteMedia(first.page);
         await expectConnectedWithRemoteMedia(second.page);
+        await expectRealNetworkQualitySnapshot(first.page);
+        await expectRealNetworkQualitySnapshot(second.page);
 
         await expect.poll(async () => first.page.locator(".video-frame.speaking").count())
             .toBeGreaterThan(0);
@@ -141,4 +143,14 @@ async function expectConnectedWithRemoteMedia(page) {
             && videoTracks[0].readyState === "live"
             && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
     })).toBe(true);
+}
+
+async function expectRealNetworkQualitySnapshot(page) {
+    await expect.poll(() => page.locator("#connection-status").evaluate(status =>
+        Number(status.dataset.qualitySamples ?? 0)
+    ), {timeout: 10_000}).toBeGreaterThan(0);
+    await expect(page.locator("#connection-status")).toHaveAttribute(
+        "data-network-quality",
+        /^(good|fair|poor|critical|offline)$/
+    );
 }

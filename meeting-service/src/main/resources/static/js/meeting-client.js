@@ -1,4 +1,5 @@
 import {BackgroundBlurProcessor} from "./media-effects.js";
+import {NetworkQualityMonitor} from "./network-quality.js";
 
 const PROTOCOL_VERSION = 1;
 const MAX_PENDING_ICE_CANDIDATES = 128;
@@ -28,6 +29,9 @@ export class MeetingClient {
         this.MediaStream = dependencies.MediaStreamImpl ?? globalThis.MediaStream;
         this.backgroundBlurFactory = dependencies.backgroundBlurFactory
             ?? (() => new BackgroundBlurProcessor({onError: message => this.onError(message)}));
+        this.qualityMonitorFactory = dependencies.qualityMonitorFactory
+            ?? (options => new NetworkQualityMonitor(options));
+        this.qualityMonitorConfig = dependencies.qualityMonitorConfig ?? {};
         this.location = dependencies.location ?? globalThis.location;
         this.setInterval = dependencies.setIntervalImpl ?? globalThis.setInterval.bind(globalThis);
         this.clearInterval = dependencies.clearIntervalImpl ?? globalThis.clearInterval.bind(globalThis);
@@ -35,6 +39,8 @@ export class MeetingClient {
         this.onError = dependencies.onError ?? (() => {});
         this.onLocalStream = dependencies.onLocalStream ?? (() => {});
         this.onRemoteStream = dependencies.onRemoteStream ?? (() => {});
+        this.onQualitySnapshot = dependencies.onQualitySnapshot ?? (() => {});
+        this.onQualityError = dependencies.onQualityError ?? (() => {});
         this.accessToken = dependencies.accessToken ?? null;
 
         this.roomId = null;
@@ -54,6 +60,7 @@ export class MeetingClient {
         this.iceServers = [];
         this.manualLeave = false;
         this.heartbeatTimer = null;
+        this.qualityMonitor = null;
         this.signalQueue = Promise.resolve();
         this.makingOffer = false;
         this.isInitiator = false;
@@ -442,6 +449,7 @@ export class MeetingClient {
         const connectionState = this.peerConnection?.connectionState;
         if (connectionState === "connected") {
             this.setState(STATES.CONNECTED);
+            this.startQualityMonitoring();
         } else if (connectionState === "disconnected") {
             this.setState(STATES.RECONNECTING);
         } else if (connectionState === "failed") {
@@ -496,6 +504,26 @@ export class MeetingClient {
         }
     }
 
+    startQualityMonitoring() {
+        if (this.qualityMonitor || !this.peerConnection) {
+            return;
+        }
+        this.qualityMonitor = this.qualityMonitorFactory({
+            peerConnection: this.peerConnection,
+            config: this.qualityMonitorConfig,
+            setIntervalImpl: this.setInterval,
+            clearIntervalImpl: this.clearInterval,
+            onSnapshot: this.onQualitySnapshot,
+            onError: this.onQualityError
+        });
+        this.qualityMonitor.start();
+    }
+
+    stopQualityMonitoring() {
+        this.qualityMonitor?.stop();
+        this.qualityMonitor = null;
+    }
+
     toggleTrack(kind) {
         const track = this.localStream?.getTracks().find(item => item.kind === kind);
         if (!track) {
@@ -539,6 +567,7 @@ export class MeetingClient {
     }
 
     cleanupPeerConnection() {
+        this.stopQualityMonitoring();
         if (this.peerConnection) {
             this.peerConnection.ontrack = null;
             this.peerConnection.onicecandidate = null;

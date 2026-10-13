@@ -514,6 +514,37 @@ test("uses explicit reconnecting, disconnected, and failed states", async () => 
     assert.equal(stream.tracks.every(item => item.stopped), true);
 });
 
+test("starts quality polling on connection and stops it during cleanup", async () => {
+    const monitor = {
+        starts: 0,
+        stops: 0,
+        start() {
+            this.starts += 1;
+        },
+        stop() {
+            this.stops += 1;
+        }
+    };
+    const {client} = createClient();
+    client.qualityMonitorFactory = () => monitor;
+    const socket = await joinClient(client);
+    await joinResponse(socket);
+    await socket.receive({
+        type: "PARTICIPANT_JOINED",
+        payload: {participantId: "participant-b", initiator: true}
+    });
+    const peer = FakePeerConnection.instances[0];
+
+    peer.connectionState = "connected";
+    peer.onconnectionstatechange();
+    peer.onconnectionstatechange();
+    assert.equal(monitor.starts, 1);
+
+    client.leave();
+    assert.equal(monitor.stops, 1);
+    assert.equal(client.qualityMonitor, null);
+});
+
 test("room-full failure is understandable and releases local media", async () => {
     const {client, errors, states, stream} = createClient();
     const socket = await joinClient(client);

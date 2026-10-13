@@ -33,7 +33,11 @@ const client = new MeetingClient({
     onStateChange: updateState,
     onError: showError,
     onLocalStream: stream => setVideoStream("local", elements.localVideo, stream),
-    onRemoteStream: stream => setVideoStream("remote", elements.remoteVideo, stream)
+    onRemoteStream: stream => setVideoStream("remote", elements.remoteVideo, stream),
+    onQualitySnapshot: snapshot => {
+        elements.status.dataset.networkQuality = snapshot.state.toLowerCase();
+        elements.status.dataset.qualitySamples = String(snapshot.sampleCount);
+    }
 });
 
 const roomFromUrl = new URLSearchParams(window.location.search).get("room");
