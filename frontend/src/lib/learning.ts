@@ -84,6 +84,8 @@ export type ReviewPage = {
 	size: number;
 };
 export type LiveData = {
+	meetingList: ReactNode;
+	nearestMeeting: ReactNode;
 	assignmentPanel: ReactNode;
 	assignmentList: ReactNode;
 	attention: ReactNode;
@@ -107,6 +109,14 @@ export class ClientError extends Error {
 	}
 }
 const messages: Record<string, string> = {
+    "Meeting version changed; reload it": "Занятие уже изменилось. Обновите расписание и повторите действие.",
+    "Meeting is not open for joining": "Вход ещё не открыт или занятие уже завершено.",
+    "Only a planned meeting can be rescheduled": "Перенести можно только ещё не начавшееся занятие.",
+    "This meeting transition is not available": "Действие больше недоступно. Обновите расписание.",
+    "Use a valid future meeting window of at most eight hours": "Проверьте время: окончание позже начала, длительность до 8 часов.",
+    "Select distinct enrolled students other than the meeting host": "Выберите учеников, назначенных этому курсу.",
+    "Course access cannot be verified right now": "Не удалось проверить доступ к курсу. Попробуйте позже.",
+    "Creation request was already used with different content": "Запрос уже сохранён с другими данными. Обновите расписание.",
 	"Assignment instructions have not been added":
 		"Условие задания пока не добавлено.",
 	"Use an absolute HTTPS link without credentials":

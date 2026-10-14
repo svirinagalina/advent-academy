@@ -15,3 +15,13 @@ meeting:
   capability-limit-per-minute: 100
   join-limit-per-minute: 100
   ice-servers: []
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:meeting-${random.uuid};MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  flyway:
+    schemas: meeting
+    default-schema: meeting
+    table: flyway_schema_history_meeting

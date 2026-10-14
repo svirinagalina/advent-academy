@@ -131,3 +131,6 @@ logging:
     include-application-name: true
   pattern:
     correlation: "[requestId=%mdc{requestId:-}] "
+
+teaching:
+  content-service-url: ${CONTENT_SERVICE_URL:http://localhost:8081}

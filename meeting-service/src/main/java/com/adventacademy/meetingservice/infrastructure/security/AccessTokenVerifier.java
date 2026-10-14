@@ -38,7 +38,13 @@ public class AccessTokenVerifier {
         this.clock = clock;
     }
 
+    public record Identity(UUID userId, java.util.List<String> roles) { }
+
     public UUID verify(String token) {
+        return verifyIdentity(token).userId();
+    }
+
+    public Identity verifyIdentity(String token) {
         final Claims claims = Jwts.parser()
                 .verifyWith(signingKey)
                 .requireIssuer(issuer)
@@ -51,6 +57,18 @@ public class AccessTokenVerifier {
                 || !"access".equals(claims.get("token_type", String.class))) {
             throw new JwtException("Invalid access token scope");
         }
-        return UUID.fromString(claims.getSubject());
+        final java.util.List<String> roles = new java.util.ArrayList<>();
+        final Object rawRoles = claims.get("roles");
+        if (rawRoles instanceof java.util.Collection<?> values) {
+            for (Object value : values) {
+                if (!(value instanceof String role) || !role.matches("[A-Z_]{1,64}")) {
+                    throw new JwtException("Invalid role claim");
+                }
+                roles.add(role);
+            }
+        } else if (rawRoles != null) {
+            throw new JwtException("Invalid role claim");
+        }
+        return new Identity(UUID.fromString(claims.getSubject()), java.util.List.copyOf(roles));
     }
 }

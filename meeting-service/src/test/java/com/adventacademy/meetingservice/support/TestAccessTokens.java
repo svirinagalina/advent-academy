@@ -20,6 +20,14 @@ public final class TestAccessTokens {
         return token(userId, "access", Instant.now().plus(Duration.ofMinutes(5)));
     }
 
+    public static String accessToken(UUID userId, java.util.List<String> roles) {
+        return Jwts.builder().subject(userId.toString()).issuer("advent-academy-user-service")
+                .audience().add("advent-academy-services").and()
+                .issuedAt(Date.from(Instant.now())).expiration(Date.from(Instant.now().plusSeconds(300)))
+                .claim("token_type", "access").claim("roles", roles)
+                .signWith(Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8))).compact();
+    }
+
     public static String refreshToken(UUID userId) {
         return token(userId, "refresh", Instant.now().plus(Duration.ofMinutes(5)));
     }

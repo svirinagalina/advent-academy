@@ -13,8 +13,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.UUID;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -38,9 +36,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         try {
             final String token = authorization.substring(BEARER_PREFIX.length());
-            final UUID userId = accessTokenVerifier.verify(token);
+            final AccessTokenVerifier.Identity identity = accessTokenVerifier.verifyIdentity(token);
+            final var authorities = identity.roles().stream()
+                    .map(role -> new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + role)).toList();
             final var authentication = new UsernamePasswordAuthenticationToken(
-                    userId.toString(), null, List.of());
+                    identity.userId().toString(), null, authorities);
             SecurityContextHolder.getContext().setAuthentication(authentication);
             filterChain.doFilter(request, response);
         } catch (JwtException | IllegalArgumentException exception) {

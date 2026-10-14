@@ -48,6 +48,26 @@ class MeetingSessionRegistryTest {
     }
 
     @Test
+    void groupCapacityIsEightAndEveryEarlierParticipantMayOfferToALaterOne() {
+        final String room = "group-room-eight";
+        roomService.ensureRoom(room, 8);
+        final List<SessionRegistration> participants = new ArrayList<>();
+        for (int index = 0; index < 8; index++) {
+            participants.add(registry.join("group-" + index, grant(room, index + 1)));
+        }
+        assertThatThrownBy(() -> registry.join("extra", grant(room, 9))).isInstanceOf(RoomFullException.class);
+        for (int sender = 0; sender < 8; sender++) {
+            for (int target = sender + 1; target < 8; target++) {
+                final String targetId = participants.get(target).session().participantId();
+                assertThat(registry.requireRoute("group-" + sender, room, targetId, SessionSignalType.OFFER)).isNotNull();
+            }
+        }
+        registry.leave("group-0");
+        assertThat(registry.current("group-1").room().participants()).hasSize(7);
+        assertThat(registry.current("group-1").room().status().name()).isEqualTo("ACTIVE");
+    }
+
+    @Test
     void assignsServerIdentityAndMakesDuplicateJoinIdempotent() {
         final RoomSnapshot room = roomService.createRoom();
 

@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "check": "npm run lint && npm run typecheck",
     "test:runtime": "node scripts/runtime-smoke.mjs",
-    "test:assignments": "node scripts/assignment-smoke.mjs"
+    "test:assignments": "node scripts/assignment-smoke.mjs",
+    "test:meetings": "node scripts/meeting-smoke.mjs"
   },
   "dependencies": {
     "next": "16.4.0",

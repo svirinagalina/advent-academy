@@ -1029,38 +1029,28 @@ export default function Academy({
 						)
 					) : live && view === "assignments" ? (
 						live.assignmentList
-					) : live &&
-						(invalidRoute ||
-							empty ||
-							view === "assignments" ||
-							view === "meetings" ||
-							view === "login") ? (
+					) : live && view === "meetings" ? (
+						live.meetingList
+					) : live && (invalidRoute || empty || view === "login") ? (
 						<section className="card empty-state">
 							{title(
 								invalidRoute
 									? "Курс или урок недоступен"
 									: empty
 										? "Курсы пока не назначены"
-										: view === "assignments"
-											? "Задания"
-											: view === "meetings"
-												? "Онлайн-занятия"
-												: "Вы вошли в кабинет",
+										: "Вы вошли в кабинет",
 							)}
 							<p>
 								{invalidRoute
 									? "Проверьте ссылку и доступ к курсу."
 									: empty
 										? "Назначенный вам курс появится здесь."
-										: view === "assignments"
-											? "Отправка и проверка заданий появятся на следующем этапе."
-											: view === "meetings"
-												? "Расписание занятий пока не подключено."
-												: "Перейдите к своим курсам."}
+										: "Перейдите к своим курсам."}
 							</p>
 							<Link href="/?view=courses" className="button primary">
 								Мои курсы
 							</Link>
+							{empty && view === "home" && live.nearestMeeting}
 						</section>
 					) : !validView ? (
 						<>
@@ -1129,7 +1119,11 @@ export default function Academy({
 										]?.title ?? "Завершение курса"}
 									</p>
 								</section>
-								{!live && <MeetingCard onDetails={() => setModal("meeting")} />}
+								{live ? (
+									live.nearestMeeting
+								) : (
+									<MeetingCard onDetails={() => setModal("meeting")} />
+								)}
 							</div>
 							{live?.attention}
 							{!live && (

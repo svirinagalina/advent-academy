@@ -44,6 +44,29 @@ public class LearningService {
     public record AssetView(UUID id, String filename, String contentType, long fileSize, String url) { }
     public record LessonView(UUID id, String title, String html, boolean assignment, List<AssetView> assets) { }
 
+    public record TeachingCourse(UUID id, String title) { }
+
+    @Transactional(readOnly = true)
+    public List<TeachingCourse> teachingCourses() {
+        return courses.findAll().stream().filter(course -> course.getStatus() == PublicationStatus.PUBLISHED)
+                .filter(course -> guard.mayCurate(course.getOwnerId()))
+                .map(course -> new TeachingCourse(course.getId(), course.getTitle())).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public TeachingCourse teachingCourse(UUID courseId) {
+        var course = courses.findById(courseId).orElseThrow(() -> new NotFoundException("Course not found"));
+        guard.requireCurator("COURSE_ACCESS", "Course", courseId, course.getOwnerId(), "MANAGE_MEETINGS");
+        if (course.getStatus() != PublicationStatus.PUBLISHED) { throw new org.springframework.security.access.AccessDeniedException("Course is not published"); }
+        return new TeachingCourse(courseId, course.getTitle());
+    }
+
+    @Transactional(readOnly = true)
+    public List<UUID> teachingStudents(UUID courseId) {
+        teachingCourse(courseId);
+        return jdbc.queryForList("SELECT user_id FROM content.learning_enrollments WHERE course_id=? ORDER BY user_id", UUID.class, courseId);
+    }
+
     public void assign(UUID courseId, UUID studentId) {
         var course = courses.findById(courseId).orElseThrow(() -> new NotFoundException("Course not found"));
         guard.requireCurator("COURSE_ACCESS", "Course", courseId, course.getOwnerId(), "ASSIGN_COURSE");

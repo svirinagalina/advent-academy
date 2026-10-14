@@ -1,6 +1,14 @@
 spring:
   application:
     name: meeting-service
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:5432/${POSTGRES_DB:advent_academy}
+    username: ${POSTGRES_USER:advent_user}
+    password: ${POSTGRES_PASSWORD}
+  flyway:
+    schemas: meeting
+    default-schema: meeting
+    table: flyway_schema_history_meeting
 
 server:
   port: 8084
@@ -22,11 +30,13 @@ management:
     health:
       probes:
         enabled: true
+      group:
+        readiness:
+          include: db, diskSpace
 
 meeting:
-  allowed-origins:
-    - http://localhost:8084
-    - http://127.0.0.1:8084
+  allowed-origins: ${MEETING_ALLOWED_ORIGINS:http://localhost:8084,http://127.0.0.1:8084,http://localhost:3000,http://localhost:3001}
+  content-service-url: ${CONTENT_SERVICE_URL:http://localhost:8081}
   max-message-bytes: 65536
   capability-ttl-seconds: 60
   room-creation-limit-per-minute: 10

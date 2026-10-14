@@ -10,18 +10,19 @@ import {
 } from "react";
 import Academy from "@/components/academy";
 import {
-	AssignmentPanel,
 	AssignmentList,
+	AssignmentPanel,
 	ReviewPanel,
 } from "@/components/assignments";
+import { Meetings, NearestMeeting } from "@/components/meetings";
 import {
+	type AssignmentSummary,
 	api,
 	ClientError,
-	toDemo,
 	type CourseView,
 	type LessonView,
 	type Profile,
-	type AssignmentSummary,
+	toDemo,
 } from "@/lib/learning";
 
 export default function LiveAcademy() {
@@ -206,6 +207,10 @@ export default function LiveAcademy() {
 			live={{
 				profile,
 				...adapted,
+				meetingList: <Meetings profile={profile} onExpired={expired} />,
+				nearestMeeting: (
+					<NearestMeeting profile={profile} onExpired={expired} />
+				),
 				assignmentPanel:
 					selected && selectedLesson && lesson?.assignment ? (
 						<AssignmentPanel
