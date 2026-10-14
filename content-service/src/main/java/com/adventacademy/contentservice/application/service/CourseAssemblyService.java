@@ -80,6 +80,14 @@ public class CourseAssemblyService {
                 .toList();
     }
 
+    /** Courses the caller can manage, including drafts and archived courses. */
+    @Transactional(readOnly = true)
+    public List<Course> findManaged() {
+        return courseRepository.findAll().stream()
+                .filter(course -> currentUserProvider.hasAnyRole(CURATOR_ROLES) || isOwnedByCurrentUser(course))
+                .toList();
+    }
+
     /**
      * Reads a single course, hiding drafts that belong to somebody else.
      *

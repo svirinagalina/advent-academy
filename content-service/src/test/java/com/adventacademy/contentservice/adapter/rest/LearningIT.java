@@ -27,6 +27,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @AutoConfigureMockMvc
 class LearningIT extends AbstractPostgresIT {
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private com.adventacademy.contentservice.application.port.EnrollmentUserPort enrollmentUsers;
     @Autowired private MockMvc mvc;
     @Autowired private JdbcTemplate jdbc;
 
@@ -112,6 +114,23 @@ class LearningIT extends AbstractPostgresIT {
         mvc.perform(put("/api/lessons/{id}/requirements", f.first()).header(HttpHeaders.AUTHORIZATION, f.editorToken())
                 .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void invalidStudentAndUnavailableIdentityServiceCannotCreateEnrollment() throws Exception {
+        Fixture f = fixture(false);
+        UUID unknown = UUID.randomUUID();
+        org.mockito.Mockito.doThrow(new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY, "User is not active"))
+                .when(enrollmentUsers).requireActiveUser(f.course(), unknown, f.editorToken());
+        mvc.perform(put("/api/learning/courses/{id}/students/{user}", f.course(), unknown)
+                        .header(HttpHeaders.AUTHORIZATION, f.editorToken())).andExpect(status().isUnprocessableEntity());
+        org.mockito.Mockito.doThrow(new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_GATEWAY, "Identity unavailable"))
+                .when(enrollmentUsers).requireActiveUser(f.course(), unknown, f.editorToken());
+        mvc.perform(put("/api/learning/courses/{id}/students/{user}", f.course(), unknown)
+                        .header(HttpHeaders.AUTHORIZATION, f.editorToken())).andExpect(status().isBadGateway());
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM content.learning_enrollments WHERE user_id=?", Integer.class, unknown)).isZero();
     }
 
     private Fixture fixture(boolean assignment) throws Exception {

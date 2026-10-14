@@ -41,6 +41,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      USER_SERVICE_URL: http://user-service:8080
       SPRING_PROFILES_ACTIVE: docker
       JWT_SECRET: sprint-isolated-signing-secret-at-least-32-bytes
       POSTGRES_DB: sprint

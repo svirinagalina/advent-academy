@@ -1,6 +1,7 @@
 package com.adventacademy.contentservice.application.service;
 
 import com.adventacademy.contentservice.application.port.CurrentUserProvider;
+import com.adventacademy.contentservice.application.port.EnrollmentUserPort;
 import com.adventacademy.contentservice.domain.ContentStatus;
 import com.adventacademy.contentservice.domain.LessonContent;
 import com.adventacademy.contentservice.domain.constructor.PublicationStatus;
@@ -25,15 +26,18 @@ public class LearningService {
     private final ComponentRepository components;
     private final LessonContentRepository contents;
     private final ContentAccessGuard guard;
+    private final EnrollmentUserPort enrollmentUsers;
 
     public LearningService(JdbcTemplate jdbc, CurrentUserProvider currentUser, CourseRepository courses,
-                           ComponentRepository components, LessonContentRepository contents, ContentAccessGuard guard) {
+                           ComponentRepository components, LessonContentRepository contents, ContentAccessGuard guard,
+                           EnrollmentUserPort enrollmentUsers) {
         this.jdbc = jdbc;
         this.currentUser = currentUser;
         this.courses = courses;
         this.components = components;
         this.contents = contents;
         this.guard = guard;
+        this.enrollmentUsers = enrollmentUsers;
     }
 
     public record LessonNode(UUID id, String title, int position, boolean assignment, boolean completed,
@@ -67,12 +71,13 @@ public class LearningService {
         return jdbc.queryForList("SELECT user_id FROM content.learning_enrollments WHERE course_id=? ORDER BY user_id", UUID.class, courseId);
     }
 
-    public void assign(UUID courseId, UUID studentId) {
+    public void assign(UUID courseId, UUID studentId, String authorization) {
         var course = courses.findById(courseId).orElseThrow(() -> new NotFoundException("Course not found"));
         guard.requireCurator("COURSE_ACCESS", "Course", courseId, course.getOwnerId(), "ASSIGN_COURSE");
         if (course.getStatus() != PublicationStatus.PUBLISHED) {
             throw new IllegalStateException("Course is not published");
         }
+        enrollmentUsers.requireActiveUser(courseId, studentId, authorization);
         jdbc.update("INSERT INTO content.learning_enrollments(user_id, course_id) VALUES (?, ?) "
                 + "ON CONFLICT (user_id, course_id) DO NOTHING", studentId, courseId);
     }

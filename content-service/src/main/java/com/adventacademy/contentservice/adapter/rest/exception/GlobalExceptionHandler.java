@@ -46,6 +46,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
             org.springframework.web.bind.MethodArgumentNotValidException.class,
+            org.springframework.web.bind.MissingRequestHeaderException.class,
             org.springframework.http.converter.HttpMessageNotReadableException.class,
             jakarta.validation.ConstraintViolationException.class,
             org.springframework.web.method.annotation.HandlerMethodValidationException.class})
@@ -144,6 +145,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse("Not found"));
+    }
+
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleUpstream(org.springframework.web.server.ResponseStatusException e) {
+        return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(e.getReason()));
     }
 
     @ExceptionHandler(Exception.class)
