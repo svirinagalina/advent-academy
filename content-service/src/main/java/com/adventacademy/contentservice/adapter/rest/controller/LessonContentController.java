@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -29,9 +30,12 @@ import java.util.UUID;
 public class LessonContentController {
 
     private final UploadLessonContentService uploadService;
+    private final com.adventacademy.contentservice.application.service.LearningService learning;
 
-    public LessonContentController(UploadLessonContentService uploadService) {
+    public LessonContentController(UploadLessonContentService uploadService,
+                                   com.adventacademy.contentservice.application.service.LearningService learning) {
         this.uploadService = uploadService;
+        this.learning = learning;
     }
 
     @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
@@ -65,6 +69,22 @@ public class LessonContentController {
             @RequestParam("file") MultipartFile file) {
         LessonContent content = uploadService.saveLessonContent(toCommand(lessonId, file));
         return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(content));
+    }
+
+    @PostMapping("/{lessonId}/content/publish")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
+    public ResponseEntity<Void> publish(@PathVariable UUID lessonId) {
+        learning.publishContent(lessonId);
+        return ResponseEntity.noContent().build();
+    }
+
+    public record Requirements(@jakarta.validation.constraints.NotNull Boolean requiredAssignment) { }
+
+    @PutMapping("/{lessonId}/requirements")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
+    public ResponseEntity<Void> requirements(@PathVariable UUID lessonId, @Valid @RequestBody Requirements request) {
+        learning.requirements(lessonId, request.requiredAssignment());
+        return ResponseEntity.noContent().build();
     }
 
     private UploadLessonContentCommand toCommand(UUID lessonId, MultipartFile file) {

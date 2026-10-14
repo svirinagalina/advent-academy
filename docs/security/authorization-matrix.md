@@ -62,3 +62,22 @@ Run:
 The check fails on undocumented annotated controller routes, undocumented gateway path predicates,
 duplicate matrix keys, unknown access levels, missing security documents, and forbidden settings in
 production-specific configuration files.
+
+## Learner cabinet (sprint 1)
+
+`/api/learning/**` uses authenticated identity plus enrollment and publication checks
+in LearningService. An authenticated subject cannot read/complete another student's
+course. Assignment is limited to the course owner or a curator and its controller
+role gate; publishing and requirements retain the content ownership gate.
+The Next.js BFF forwards only its explicit learner/catalog/asset allowlist; it never
+exposes management routes. Mutations require the configured frontend Origin.
+
+## Assignment review (sprint 2)
+
+Student submissions and history are bound to the current JWT subject and enrollment.
+Only the course owner with a teaching role, ADMIN or CONTENT_EDITOR can review;
+self-review is always refused. Definition edits use component ownership and are
+frozen after the first submission. Enrollment row locks serialize submissions,
+reviews and progress; conflicting decisions return 409. HTTPS solution URLs are
+validated and never fetched by the server. New BFF POST routes check Origin and
+read at most 32 KiB, including chunked requests.

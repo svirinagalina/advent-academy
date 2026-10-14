@@ -11,7 +11,9 @@
     "start": "next start --hostname 127.0.0.1",
     "lint": "biome lint . --error-on-warnings",
     "typecheck": "tsc --noEmit",
-    "check": "npm run lint && npm run typecheck"
+    "check": "npm run lint && npm run typecheck",
+    "test:runtime": "node scripts/runtime-smoke.mjs",
+    "test:assignments": "node scripts/assignment-smoke.mjs"
   },
   "dependencies": {
     "next": "16.4.0",
@@ -24,6 +26,7 @@
     "@types/node": "24.19.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "playwright": "1.64.0",
     "tailwindcss": "4.3.3",
     "typescript": "6.0.3"
   }

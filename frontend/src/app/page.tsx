@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import Academy from "@/components/academy";
+import LiveAcademy from "@/components/live-academy";
 
 export default function HomePage() {
 	return (
@@ -11,7 +11,7 @@ export default function HomePage() {
 				</main>
 			}
 		>
-			<Academy />
+			<LiveAcademy />
 		</Suspense>
 	);
 }

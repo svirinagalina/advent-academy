@@ -59,6 +59,7 @@ import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -590,6 +591,29 @@ class AuthSecurityIT {
     }
 
     // ---------------------------------------------------------------- helpers
+
+    @Test
+    void logoutRevokesOnlyItsRefreshSessionAndMeReturnsAuthenticatedProfile() throws Exception {
+        String email = "cabinet@example.com";
+        registerAndConfirm(email);
+        JsonNode first = readJson(login(email, PASSWORD, null).andReturn());
+        JsonNode second = readJson(login(email, PASSWORD, null).andReturn());
+        String refresh = first.get("refreshToken").asText();
+        mvc.perform(get("/api/users/me").header(HttpHeaders.AUTHORIZATION,
+                        "Bearer " + first.get("accessToken").asText()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.email").value(email));
+        mvc.perform(get("/api/users/me")).andExpect(status().isUnauthorized());
+        for (int i = 0; i < 2; i++) {
+            mvc.perform(postJson("/api/auth/logout", Map.of("refreshToken", refresh)))
+                    .andExpect(status().isNoContent());
+        }
+        mvc.perform(postJson("/api/auth/refresh", Map.of("refreshToken", refresh)))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(postJson("/api/auth/refresh", Map.of("refreshToken", second.get("refreshToken").asText())))
+                .andExpect(status().isOk());
+        mvc.perform(postJson("/api/auth/logout", Map.of("refreshToken", first.get("accessToken").asText())))
+                .andExpect(status().isNoContent());
+    }
 
     private String register(String email) throws Exception {
         mvc.perform(postJson("/api/auth/register", Map.of(

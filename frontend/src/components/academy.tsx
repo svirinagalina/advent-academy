@@ -1,18 +1,19 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import NextLink from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
 	useEffect,
 	useRef,
 	useState,
 	type FormEvent,
 	type ReactNode,
+	type ComponentProps,
 } from "react";
 import {
 	completedCount,
 	courseHref,
-	courses,
+	courses as demoCourses,
 	currentLesson,
 	initialState,
 	isAvailable,
@@ -25,6 +26,19 @@ import {
 	type DemoState,
 	type SubmissionStatus,
 } from "@/lib/demo";
+
+import type { LiveData } from "@/lib/learning";
+
+function Link(props: ComponentProps<typeof NextLink>) {
+	const path = usePathname();
+	const href =
+		path === "/demo" &&
+		typeof props.href === "string" &&
+		props.href.startsWith("/")
+			? `/demo${props.href.slice(1)}`
+			: props.href;
+	return <NextLink {...props} href={href} />;
+}
 
 type IconName =
 	| "home"
@@ -215,23 +229,29 @@ function Modal({
 				onClose();
 			}}
 			onKeyDown={(event) => {
-                if (event.key === "Tab") {
-                    const items = Array.from(event.currentTarget.querySelectorAll<HTMLElement>(
-                        'button:not(:disabled), a[href], input:not(:disabled), textarea:not(:disabled), select:not(:disabled), summary, [tabindex="0"]'
-                    )).filter((item) => item.getClientRects().length > 0);
-                    const first = items[0];
-                    const last = items[items.length - 1];
-                    if (!first) {
-                        event.preventDefault();
-                        heading.current?.focus();
-                    } else if (event.shiftKey && (document.activeElement === first || document.activeElement === heading.current)) {
-                        event.preventDefault();
-                        last.focus();
-                    } else if (!event.shiftKey && document.activeElement === last) {
-                        event.preventDefault();
-                        first.focus();
-                    }
-                }
+				if (event.key === "Tab") {
+					const items = Array.from(
+						event.currentTarget.querySelectorAll<HTMLElement>(
+							'button:not(:disabled), a[href], input:not(:disabled), textarea:not(:disabled), select:not(:disabled), summary, [tabindex="0"]',
+						),
+					).filter((item) => item.getClientRects().length > 0);
+					const first = items[0];
+					const last = items[items.length - 1];
+					if (!first) {
+						event.preventDefault();
+						heading.current?.focus();
+					} else if (
+						event.shiftKey &&
+						(document.activeElement === first ||
+							document.activeElement === heading.current)
+					) {
+						event.preventDefault();
+						last.focus();
+					} else if (!event.shiftKey && document.activeElement === last) {
+						event.preventDefault();
+						first.focus();
+					}
+				}
 				if (event.key === "Escape") {
 					event.preventDefault();
 					onClose();
@@ -511,11 +531,24 @@ function SubmissionBadge({ status }: { status: SubmissionStatus }) {
 	);
 }
 
-export default function Academy() {
+export default function Academy({
+	live,
+	empty = false,
+	invalidRoute = false,
+}: {
+	live?: LiveData;
+	empty?: boolean;
+	invalidRoute?: boolean;
+}) {
+	const isLive = Boolean(live);
+	const courses = live?.courses ?? demoCourses;
+	const name = live?.profile.firstName || "Александр";
+
 	const search = useSearchParams();
 	const router = useRouter();
 	const view = search.get("view") ?? "home";
-	const [state, setState] = useState<DemoState>(initialState);
+	const [demoState, setState] = useState<DemoState>(initialState);
+	const state = live?.state ?? demoState;
 	const [ready, setReady] = useState(false);
 	const [storageError, setStorageError] = useState(false);
 	const [modal, setModal] = useState<"program" | "meeting" | null>(null);
@@ -545,11 +578,16 @@ export default function Academy() {
 		"course",
 		"lesson",
 		"assignments",
+		"reviews",
 		"meetings",
 		"login",
 	].includes(view);
 	const routeKey = search.toString();
 	useEffect(() => {
+		if (isLive) {
+			setReady(true);
+			return;
+		}
 		try {
 			setState(parseState(localStorage.getItem(storageKey)));
 		} catch {
@@ -559,15 +597,15 @@ export default function Academy() {
 		return () => {
 			if (timer.current) clearTimeout(timer.current);
 		};
-	}, []);
+	}, [isLive]);
 	useEffect(() => {
-		if (!ready) return;
+		if (!ready || live) return;
 		try {
 			localStorage.setItem(storageKey, JSON.stringify(state));
 		} catch {
 			setStorageError(true);
 		}
-	}, [state, ready]);
+	}, [state, ready, live]);
 	useEffect(() => {
 		if (!routeKey && !ready) return;
 		setModal(null);
@@ -587,6 +625,7 @@ export default function Academy() {
 	}, [routeKey, ready]);
 	useEffect(() => {
 		if (
+			live ||
 			!ready ||
 			view !== "lesson" ||
 			!isAvailable(course, lesson, state) ||
@@ -597,7 +636,7 @@ export default function Academy() {
 			...previous,
 			started: [...new Set([...previous.started, course.id])],
 		}));
-	}, [ready, view, course, lesson, state]);
+	}, [ready, view, course, lesson, state, live]);
 	function run(action: "submit" | "complete", onSuccess: () => void) {
 		if (timer.current) return;
 		setPending(action);
@@ -636,6 +675,24 @@ export default function Academy() {
 		});
 	}
 	function completeLesson() {
+		if (live) {
+			if (pending) return;
+			setPending("complete");
+			setFormError("");
+			void live
+				.complete(course.id, lesson.id)
+				.then(() => setNotice("Урок завершён. Следующий урок доступен."))
+				.catch((error) =>
+					setFormError(
+						error instanceof Error
+							? error.message
+							: "Не удалось завершить урок",
+					),
+				)
+				.finally(() => setPending(null));
+			return;
+		}
+
 		run("complete", () => {
 			setState((previous) => ({
 				...previous,
@@ -662,7 +719,12 @@ export default function Academy() {
 				: "Демонстрация: преподаватель вернул задание на доработку.",
 		);
 	}
-	const java = courses[0];
+	const java =
+		courses.find(
+			(c) => completedCount(c, state) < c.total && state.started.includes(c.id),
+		) ??
+		courses.find((c) => completedCount(c, state) < c.total) ??
+		courses[0];
 	const javaCurrent = currentLesson(java, state);
 	const done = state.completed.includes(lessonKey(course.id, lesson.id));
 	const list = lessons(course);
@@ -781,6 +843,16 @@ export default function Academy() {
 							{item.label}
 						</Link>
 					))}
+					{live?.canReview && (
+						<Link
+							href="/?view=reviews"
+							className={view === "reviews" ? "active" : ""}
+							aria-current={view === "reviews" ? "page" : undefined}
+						>
+							<Icon name="file" />
+							Проверка заданий
+						</Link>
+					)}
 				</nav>
 				<div className="sidebar-bottom">
 					<span className="sidebar-dot" />
@@ -797,79 +869,87 @@ export default function Academy() {
 							<>
 								<Link href="/?view=courses">Мои курсы</Link>
 								<span className="breadcrumb-divider">/</span>
-								{course.id.toUpperCase()}
+								{live ? course.title : course.id.toUpperCase()}
 							</>
 						) : (
 							"Кабинет ученика"
 						)}
 					</span>
 					<div className="header-actions">
-						<details className="demo-tools">
-							<summary>Демо</summary>
-							<div className="demo-popover">
-								<strong>Демонстрационные данные</strong>
-								<p>Изменения сохраняются только в этом браузере.</p>
-								<label>
-									Состояние списка
-									<select
-										value={preview}
-										onChange={(event) => setPreview(event.target.value)}
-									>
-										<option value="normal">Обычное</option>
-										<option value="empty">Нет курсов</option>
-										<option value="loading">Загрузка</option>
-										<option value="error">Ошибка загрузки</option>
-									</select>
-								</label>
-								<label className="checkbox-label">
-									<input
-										type="checkbox"
-										checked={simulateError}
-										onChange={(event) => setSimulateError(event.target.checked)}
-									/>
-									Ошибка отправки / завершения
-								</label>
-								<div className="demo-review">
-									<span>Ответ преподавателя</span>
+						{!live && (
+							<details className="demo-tools">
+								<summary>Демо</summary>
+								<div className="demo-popover">
+									<strong>Демонстрационные данные</strong>
+									<p>Изменения сохраняются только в этом браузере.</p>
+									<label>
+										Состояние списка
+										<select
+											value={preview}
+											onChange={(event) => setPreview(event.target.value)}
+										>
+											<option value="normal">Обычное</option>
+											<option value="empty">Нет курсов</option>
+											<option value="loading">Загрузка</option>
+											<option value="error">Ошибка загрузки</option>
+										</select>
+									</label>
+									<label className="checkbox-label">
+										<input
+											type="checkbox"
+											checked={simulateError}
+											onChange={(event) =>
+												setSimulateError(event.target.checked)
+											}
+										/>
+										Ошибка отправки / завершения
+									</label>
+									<div className="demo-review">
+										<span>Ответ преподавателя</span>
+										<button
+											type="button"
+											className="button secondary"
+											disabled={
+												state.submission.status !== "review" || !!pending
+											}
+											onClick={() => review("accepted")}
+										>
+											Принять задание
+										</button>
+										<button
+											type="button"
+											className="button secondary"
+											disabled={
+												state.submission.status !== "review" || !!pending
+											}
+											onClick={() => review("changes")}
+										>
+											Нужны исправления
+										</button>
+									</div>
 									<button
 										type="button"
-										className="button secondary"
-										disabled={state.submission.status !== "review" || !!pending}
-										onClick={() => review("accepted")}
+										className="text-link"
+										disabled={!!pending}
+										onClick={() => {
+											setState(initialState);
+											setPreview("normal");
+											setSimulateError(false);
+											setNotice("Демонстрационные данные сброшены.");
+											router.push("/demo");
+										}}
 									>
-										Принять задание
-									</button>
-									<button
-										type="button"
-										className="button secondary"
-										disabled={state.submission.status !== "review" || !!pending}
-										onClick={() => review("changes")}
-									>
-										Нужны исправления
+										Сбросить прогресс
+										<Icon name="refresh" />
 									</button>
 								</div>
-								<button
-									type="button"
-									className="text-link"
-									disabled={!!pending}
-									onClick={() => {
-										setState(initialState);
-										setPreview("normal");
-										setSimulateError(false);
-										setNotice("Демонстрационные данные сброшены.");
-										router.push("/");
-									}}
-								>
-									Сбросить прогресс
-									<Icon name="refresh" />
-								</button>
-							</div>
-						</details>
+							</details>
+						)}
 						<div className="profile">
 							<button
 								type="button"
 								className="profile-button"
-                                aria-label="Меню пользователя Александр"
+								aria-label={`Меню пользователя ${name}`}
 								aria-expanded={profileOpen}
 								aria-controls="profile-menu"
 								onClick={() => setProfileOpen(!profileOpen)}
@@ -877,8 +957,8 @@ export default function Academy() {
 									if (event.key === "Escape") setProfileOpen(false);
 								}}
 							>
-								<span className="avatar">А</span>
-								<span className="profile-name">Александр</span>
+								<span className="avatar">{name.slice(0, 1)}</span>
+								<span className="profile-name">{name}</span>
 								<Icon name="chevron" />
 							</button>
 							{profileOpen && (
@@ -890,8 +970,8 @@ export default function Academy() {
 										onClick={() => setProfileOpen(false)}
 									/>
 									<div id="profile-menu" className="profile-menu">
-										<strong>Александр</strong>
-										<p>Демонстрационный кабинет</p>
+										<strong>{name}</strong>
+										<p>{live?.profile.email ?? "Демонстрационный кабинет"}</p>
 										<Link
 											href="/?view=login"
 											onKeyDown={(event) => {
@@ -902,7 +982,21 @@ export default function Academy() {
 														?.focus();
 												}
 											}}
-											onClick={() => setProfileOpen(false)}
+											onClick={(event) => {
+												setProfileOpen(false);
+												if (live) {
+													event.preventDefault();
+													void live
+														.logout()
+														.catch((error) =>
+															setNotice(
+																error instanceof Error
+																	? error.message
+																	: "Не удалось выйти",
+															),
+														);
+												}
+											}}
 										>
 											Выйти
 										</Link>
@@ -924,6 +1018,50 @@ export default function Academy() {
 					</div>
 					{!ready ? (
 						statePanel()
+					) : live && view === "reviews" ? (
+						live.canReview ? (
+							live.reviewPanel
+						) : (
+							<section className="card empty-state">
+								{title("Доступ запрещён")}
+								<p>Этот экран доступен преподавателям.</p>
+							</section>
+						)
+					) : live && view === "assignments" ? (
+						live.assignmentList
+					) : live &&
+						(invalidRoute ||
+							empty ||
+							view === "assignments" ||
+							view === "meetings" ||
+							view === "login") ? (
+						<section className="card empty-state">
+							{title(
+								invalidRoute
+									? "Курс или урок недоступен"
+									: empty
+										? "Курсы пока не назначены"
+										: view === "assignments"
+											? "Задания"
+											: view === "meetings"
+												? "Онлайн-занятия"
+												: "Вы вошли в кабинет",
+							)}
+							<p>
+								{invalidRoute
+									? "Проверьте ссылку и доступ к курсу."
+									: empty
+										? "Назначенный вам курс появится здесь."
+										: view === "assignments"
+											? "Отправка и проверка заданий появятся на следующем этапе."
+											: view === "meetings"
+												? "Расписание занятий пока не подключено."
+												: "Перейдите к своим курсам."}
+							</p>
+							<Link href="/?view=courses" className="button primary">
+								Мои курсы
+							</Link>
+						</section>
 					) : !validView ? (
 						<>
 							{title("Страница не найдена")}
@@ -956,7 +1094,10 @@ export default function Academy() {
 						</>
 					) : view === "home" ? (
 						<>
-							{title("Привет, Александр!", "Продолжим изучать Java.")}
+							{title(
+								`Привет, ${name}!`,
+								live ? "Продолжим обучение." : "Продолжим изучать Java.",
+							)}
 							<div className="dashboard-grid">
 								<section className="card continue-card">
 									<p className="eyebrow">Текущий курс</p>
@@ -988,26 +1129,29 @@ export default function Academy() {
 										]?.title ?? "Завершение курса"}
 									</p>
 								</section>
-								<MeetingCard onDetails={() => setModal("meeting")} />
+								{!live && <MeetingCard onDetails={() => setModal("meeting")} />}
 							</div>
-							<section className="attention-section">
-								<h2>Требует внимания</h2>
-								{state.submission.status === "accepted" ? (
-									<div className="card accepted-summary">
-										<Icon name="check" />
-										<span>Задание принято. Можно продолжать обучение.</span>
-										<Link
-											className="text-link"
-											href={lessonHref(java, javaCurrent)}
-										>
-											К уроку
-											<Icon name="arrow" />
-										</Link>
-									</div>
-								) : (
-									assignmentRow()
-								)}
-							</section>
+							{live?.attention}
+							{!live && (
+								<section className="attention-section">
+									<h2>Требует внимания</h2>
+									{state.submission.status === "accepted" ? (
+										<div className="card accepted-summary">
+											<Icon name="check" />
+											<span>Задание принято. Можно продолжать обучение.</span>
+											<Link
+												className="text-link"
+												href={lessonHref(java, javaCurrent)}
+											>
+												К уроку
+												<Icon name="arrow" />
+											</Link>
+										</div>
+									) : (
+										assignmentRow()
+									)}
+								</section>
+							)}
 							<section>
 								<div className="section-heading">
 									<h2>Другие курсы</h2>
@@ -1017,9 +1161,11 @@ export default function Academy() {
 									</Link>
 								</div>
 								<div className="other-courses">
-									{courses.slice(1).map((item) => (
-										<CourseCard key={item.id} course={item} state={state} />
-									))}
+									{courses
+										.filter((item) => item.id !== java.id)
+										.map((item) => (
+											<CourseCard key={item.id} course={item} state={state} />
+										))}
 								</div>
 							</section>
 						</>
@@ -1156,63 +1302,142 @@ export default function Academy() {
 									</div>
 									{title(lesson.title)}
 									<p className="mobile-course-name">{course.title}</p>
-									<div className="demo-video">
-										<span className="video-play">
-											<Icon name="play" />
-										</span>
-										<strong>Видеоурок: {lesson.title.toLowerCase()}</strong>
-										<p>Видео появится вместе с материалами курса</p>
-										<Badge>Демонстрация</Badge>
-									</div>
-									<section className="lesson-material">
-										<h2>
-											{lesson.id === "conditions"
-												? "Как работает if / else"
-												: lesson.title}
-										</h2>
-										<p>
-											{lesson.id === "conditions"
-												? "Условие определяет, какой блок кода выполнится. Если условие истинно, выполняется if; иначе — else."
-												: "В этом демонстрационном уроке показана структура учебного материала. Полное содержание будет добавлено вместе с курсом."}
-										</p>
-										{course.id === "java" && (
-											<section aria-label="Пример кода Java">
-												{/* biome-ignore lint/a11y/noNoninteractiveTabindex: Scrollable code must be keyboard accessible. */}
-												<pre tabIndex={0}>
-													<code>
-														<span className="code-keyword">int</span> age ={" "}
-														<span className="code-number">18</span>;{"\n"}
-														<span className="code-keyword">if</span> (age &gt;={" "}
-														<span className="code-number">18</span>) {"{"}
-														{"\n"} System.out.println(
-														<span className="code-string">
-															"Доступ разрешён"
-														</span>
-														);{"\n"}
-														{"}"} <span className="code-keyword">else</span>{" "}
-														{"{"}
-														{"\n"} System.out.println(
-														<span className="code-string">"Доступ закрыт"</span>
-														);{"\n"}
-														{"}"}
-													</code>
-												</pre>
+									{live ? (
+										live.lessonLoading ? (
+											<section className="card" role="status">
+												Загружаем материал…
 											</section>
-										)}
-									</section>
-									<a
-										className="card attachment"
-										href={`data:text/plain;charset=utf-8,${encodeURIComponent(`Advent Academy — демонстрационный конспект\n${lesson.title}\n\nЭто пример вложения. Учебные материалы будут добавлены позже.`)}`}
-										download="advent-lesson-demo.txt"
-									>
-										<Icon name="file" />
-										<span>Демонстрационный конспект.txt</span>
-										<span className="text-link">
-											Скачать
-											<Icon name="download" />
-										</span>
-									</a>
-									{lesson.assignment ? (
+										) : live.lessonError ? (
+											<section className="card" role="alert">
+												<p>{live.lessonError}</p>
+												<button
+													className="button secondary"
+													type="button"
+													onClick={() => window.location.reload()}
+												>
+													Повторить
+												</button>
+											</section>
+										) : live.lesson ? (
+											<>
+												{live.lesson.assets
+													.filter((asset) =>
+														asset.contentType.startsWith("video/"),
+													)
+													.map((asset) => (
+														<video
+															key={asset.id}
+															className="lesson-video"
+															controls
+															preload="metadata"
+															aria-label={asset.filename}
+															src={asset.url.replace(
+																"/api/assets/",
+																"/api/backend/assets/",
+															)}
+														>
+															<track kind="captions" />
+														</video>
+													))}
+												<section
+													className="lesson-material"
+													// biome-ignore lint/security/noDangerouslySetInnerHtml: content-service sanitizes HTML with OWASP before persistence.
+													dangerouslySetInnerHTML={{
+														__html: live.lesson.html.replaceAll(
+															"/api/assets/",
+															"/api/backend/assets/",
+														),
+													}}
+												/>
+												{live.lesson.assets
+													.filter(
+														(asset) => !asset.contentType.startsWith("video/"),
+													)
+													.map((asset) => (
+														<a
+															key={asset.id}
+															className="card attachment"
+															href={asset.url.replace(
+																"/api/assets/",
+																"/api/backend/assets/",
+															)}
+														>
+															<Icon name="file" />
+															<span>{asset.filename}</span>
+															<span className="text-link">
+																Скачать
+																<Icon name="download" />
+															</span>
+														</a>
+													))}
+											</>
+										) : null
+									) : (
+										<>
+											<div className="demo-video">
+												<span className="video-play">
+													<Icon name="play" />
+												</span>
+												<strong>Видеоурок: {lesson.title.toLowerCase()}</strong>
+												<p>Видео появится вместе с материалами курса</p>
+												<Badge>Демонстрация</Badge>
+											</div>
+											<section className="lesson-material">
+												<h2>
+													{lesson.id === "conditions"
+														? "Как работает if / else"
+														: lesson.title}
+												</h2>
+												<p>
+													{lesson.id === "conditions"
+														? "Условие определяет, какой блок кода выполнится. Если условие истинно, выполняется if; иначе — else."
+														: "В этом демонстрационном уроке показана структура учебного материала. Полное содержание будет добавлено вместе с курсом."}
+												</p>
+												{!live && course.id === "java" && (
+													<section aria-label="Пример кода Java">
+														{/* biome-ignore lint/a11y/noNoninteractiveTabindex: Scrollable code must be keyboard accessible. */}
+														<pre tabIndex={0}>
+															<code>
+																<span className="code-keyword">int</span> age ={" "}
+																<span className="code-number">18</span>;{"\n"}
+																<span className="code-keyword">if</span> (age
+																&gt;= <span className="code-number">18</span>){" "}
+																{"{"}
+																{"\n"} System.out.println(
+																<span className="code-string">
+																	"Доступ разрешён"
+																</span>
+																);{"\n"}
+																{"}"} <span className="code-keyword">else</span>{" "}
+																{"{"}
+																{"\n"} System.out.println(
+																<span className="code-string">
+																	"Доступ закрыт"
+																</span>
+																);{"\n"}
+																{"}"}
+															</code>
+														</pre>
+													</section>
+												)}
+											</section>
+											<a
+												className="card attachment"
+												href={`data:text/plain;charset=utf-8,${encodeURIComponent(`Advent Academy — демонстрационный конспект\n${lesson.title}\n\nЭто пример вложения. Учебные материалы будут добавлены позже.`)}`}
+												download="advent-lesson-demo.txt"
+											>
+												<Icon name="file" />
+												<span>Демонстрационный конспект.txt</span>
+												<span className="text-link">
+													Скачать
+													<Icon name="download" />
+												</span>
+											</a>
+										</>
+									)}
+									{live && lesson.assignment ? (
+										live.assignmentPanel
+									) : lesson.assignment ? (
 										<section
 											className="card assignment-form"
 											aria-busy={pending === "submit"}
@@ -1388,7 +1613,15 @@ export default function Academy() {
 													<button
 														type="button"
 														className="button primary"
-														disabled={!!pending}
+														disabled={
+															!!pending ||
+															Boolean(
+																live &&
+																	(!live.lesson ||
+																		live.lessonLoading ||
+																		live.lessonError),
+															)
+														}
 														onClick={completeLesson}
 													>
 														{pending === "complete"
@@ -1531,7 +1764,10 @@ export default function Academy() {
 				</footer>
 			</div>
 			{view !== "lesson" && (
-				<nav className="bottom-nav" aria-label="Мобильная навигация">
+				<nav
+					className={`bottom-nav ${live?.canReview ? "with-review" : ""}`}
+					aria-label="Мобильная навигация"
+				>
 					{nav.map((item) => (
 						<Link
 							key={item.id}
@@ -1543,6 +1779,15 @@ export default function Academy() {
 							<span>{item.short}</span>
 						</Link>
 					))}
+					{live?.canReview && (
+						<Link
+							href="/?view=reviews"
+							className={view === "reviews" ? "active" : ""}
+						>
+							<Icon name="file" />
+							<span>Проверка</span>
+						</Link>
+					)}
 				</nav>
 			)}
 			{modal === "program" && (
