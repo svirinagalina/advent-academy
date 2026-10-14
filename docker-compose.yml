@@ -1,6 +1,27 @@
 # Local development only. This stack disables authentication for selected components
 # and uses resource-saving settings that are not suitable for production deployments.
 services:
+  frontend:
+    profiles: ["frontend"]
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    environment:
+      API_GATEWAY_URL: http://api-gateway:8090
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
+      SESSION_ENCRYPTION_KEY: ${SESSION_ENCRYPTION_KEY}
+      MEETING_SIGNALING_URL: ${MEETING_SIGNALING_URL:-ws://localhost:8090/ws/meetings}
+    ports:
+      - "127.0.0.1:3000:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - advent-network
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
     platform: linux/amd64
@@ -172,6 +193,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      CONTENT_SERVICE_URL: http://content-service:8081
       CAMUNDA_CLIENT_MODE: self-managed
       CAMUNDA_CLIENT_ZEEBE_ENABLED: "true"
       CAMUNDA_CLIENT_ZEEBE_GRPCADDRESS: http://zeebe:26500
@@ -204,6 +226,7 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: docker
+      JWT_SECRET: ${JWT_SECRET}
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -224,10 +247,19 @@ services:
       dockerfile: meeting-service/Dockerfile
       network: host
     container_name: advent-meeting-service
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "127.0.0.1:8084:8084"
     environment:
       JWT_SECRET: ${JWT_SECRET}
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      CONTENT_SERVICE_URL: http://content-service:8081
+      MEETING_ALLOWED_ORIGINS: ${MEETING_ALLOWED_ORIGINS:-http://localhost:8084,http://127.0.0.1:8084,http://localhost:3000,http://localhost:3001}
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8084/actuator/health/readiness"]
       interval: 30s

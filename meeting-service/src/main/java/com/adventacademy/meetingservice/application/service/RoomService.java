@@ -39,6 +39,11 @@ public class RoomService {
         }
     }
 
+    public RoomSnapshot ensureRoom(String value, int capacity) {
+        final RoomId id = new RoomId(value);
+        return rooms.computeIfAbsent(id, key -> new MeetingRoom(key, clock.instant(), capacity)).snapshot();
+    }
+
     public RoomSnapshot getRoom(String rawRoomId) {
         return getExistingRoom(new RoomId(rawRoomId)).snapshot();
     }

@@ -40,12 +40,17 @@ public class MeetingCapabilityService {
     }
 
     public synchronized IssuedCapability issue(String roomId, UUID userId, MeetingRole role) {
+        return issueScheduled(roomId, userId, role, null, null);
+    }
+
+    public synchronized IssuedCapability issueScheduled(String roomId, UUID userId, MeetingRole role,
+                                                        Long scheduleVersion, String authorization) {
         removeExpired();
         final byte[] tokenBytes = new byte[TOKEN_BYTES];
         secureRandom.nextBytes(tokenBytes);
         final String token = Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
         final Instant expiresAt = clock.instant().plusSeconds(ttlSeconds);
-        capabilities.put(hash(token), new StoredCapability(roomId, userId, role, expiresAt));
+        capabilities.put(hash(token), new StoredCapability(roomId, userId, role, expiresAt, scheduleVersion, authorization));
         return new IssuedCapability(token, expiresAt, role);
     }
 
@@ -58,7 +63,7 @@ public class MeetingCapabilityService {
         if (stored == null || !stored.roomId().equals(requestedRoomId)) {
             throw invalid();
         }
-        return new MeetingGrant(stored.roomId(), stored.userId(), stored.role());
+        return new MeetingGrant(stored.roomId(), stored.userId(), stored.role(), stored.scheduleVersion(), stored.authorization());
     }
 
     public synchronized void revoke(String roomId, UUID userId) {
@@ -105,6 +110,8 @@ public class MeetingCapabilityService {
             String roomId,
             UUID userId,
             MeetingRole role,
-            Instant expiresAt) {
+            Instant expiresAt,
+            Long scheduleVersion,
+            String authorization) {
     }
 }

@@ -44,6 +44,7 @@ import java.util.UUID;
 @Tag(name = "Authentication", description = "Authentication and registration endpoints")
 public class AuthController {
 
+    private final com.adventacademy.userservice.application.port.JwtProvider jwtProvider;
     private final RegisterUserService registerUserService;
     private final LoginService loginService;
     private final RefreshTokenService refreshTokenService;
@@ -53,6 +54,7 @@ public class AuthController {
     private final MfaService mfaService;
 
     public AuthController(
+            com.adventacademy.userservice.application.port.JwtProvider jwtProvider,
             RegisterUserService registerUserService,
             LoginService loginService,
             RefreshTokenService refreshTokenService,
@@ -60,6 +62,7 @@ public class AuthController {
             ChangePasswordService changePasswordService,
             PasswordResetService passwordResetService,
             MfaService mfaService) {
+        this.jwtProvider = jwtProvider;
         this.registerUserService = registerUserService;
         this.loginService = loginService;
         this.refreshTokenService = refreshTokenService;
@@ -109,6 +112,14 @@ public class AuthController {
     public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         AuthResponse response = refreshTokenService.refresh(request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        // consumeRefreshToken verifies signature/type/expiry and revokes only this session.
+        // Already revoked/expired tokens still yield a successful, idempotent logout.
+        jwtProvider.consumeRefreshToken(request.refreshToken());
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/confirm-email")

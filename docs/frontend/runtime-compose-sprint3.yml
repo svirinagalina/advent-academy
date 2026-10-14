@@ -1,0 +1,107 @@
+# Isolated integration test only: synthetic secrets, tmpfs database, no production data.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: sprint
+      POSTGRES_USER: sprint
+      POSTGRES_PASSWORD: sprint-isolated
+    tmpfs: ["/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sprint -d sprint"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  user-service:
+    image: advent-sprint3-user
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      JWT_SECRET: sprint-isolated-signing-secret-at-least-32-bytes
+      MFA_ENCRYPTION_KEY_V1: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      POSTGRES_DB: sprint
+      POSTGRES_USER: sprint
+      POSTGRES_PASSWORD: sprint-isolated
+      CONTENT_SERVICE_URL: http://content-service:8081
+      CAMUNDA_CLIENT_ZEEBE_ENABLED: "false"
+      MANAGEMENT_HEALTH_ZEEBE_ENABLED: "false"
+      MANAGEMENT_ENDPOINT_HEALTH_GROUP_READINESS_INCLUDE: db,diskSpace
+      SECURITY_RATE_LIMIT_ENABLED: "false"
+      JAVA_TOOL_OPTIONS: ""
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8080/actuator/health/readiness"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  content-service:
+    image: advent-sprint3-content
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      JWT_SECRET: sprint-isolated-signing-secret-at-least-32-bytes
+      POSTGRES_DB: sprint
+      POSTGRES_USER: sprint
+      POSTGRES_PASSWORD: sprint-isolated
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8081/actuator/health/readiness"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  api-gateway:
+    image: advent-sprint3-gateway
+    depends_on:
+      user-service:
+        condition: service_healthy
+      content-service:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      USER_SERVICE_URL: http://user-service:8080
+      CONTENT_SERVICE_URL: http://content-service:8081
+      MEETING_SERVICE_URL: http://meeting-service:8084
+      MEETING_SERVICE_WS_URL: ws://meeting-service:8084
+    ports: ["127.0.0.1:18092:8090"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8090/actuator/health/readiness"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  frontend:
+    image: advent-sprint3-frontend
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    environment:
+      API_GATEWAY_URL: http://api-gateway:8090
+      MEETING_SIGNALING_URL: ws://localhost:18092/ws/meetings
+      FRONTEND_ORIGIN: http://localhost:13011
+      SESSION_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+    ports: ["127.0.0.1:13011:3000"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  meeting-service:
+    image: advent-sprint3-meeting
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: sprint
+      POSTGRES_USER: sprint
+      POSTGRES_PASSWORD: sprint-isolated
+      JWT_SECRET: sprint-isolated-signing-secret-at-least-32-bytes
+      CONTENT_SERVICE_URL: http://content-service:8081
+      MEETING_ALLOWED_ORIGINS: http://localhost:13011
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8084/actuator/health/readiness"]
+      interval: 3s
+      timeout: 3s
+      retries: 30

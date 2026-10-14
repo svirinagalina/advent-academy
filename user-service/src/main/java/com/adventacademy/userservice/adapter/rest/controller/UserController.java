@@ -48,6 +48,11 @@ public class UserController {
         this.accountLockService = accountLockService;
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> me(org.springframework.security.core.Authentication authentication) {
+        return ResponseEntity.ok(getUserService.getUserById(UUID.fromString(authentication.getName())));
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("#id.toString() == authentication.name or hasRole('ADMIN')")
     @Operation(summary = "Get user by ID", description = "Retrieve user details by user ID")

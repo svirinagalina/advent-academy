@@ -7,6 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 @SpringBootApplication(exclude = UserDetailsServiceAutoConfiguration.class)
 @ConfigurationPropertiesScan
+@org.springframework.scheduling.annotation.EnableScheduling
 public class MeetingServiceApplication {
 
     public static void main(String[] args) {

@@ -8,5 +8,9 @@ build/*
 .DS_Store
 .git
 .gitignore
+**/node_modules
+**/.next
+**/.npm
+frontend/design-reference
 README.md
 *.md

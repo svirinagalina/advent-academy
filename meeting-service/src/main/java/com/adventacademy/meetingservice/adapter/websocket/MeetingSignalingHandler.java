@@ -22,6 +22,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.adventacademy.meetingservice.application.service.ScheduledMeetingService;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -47,6 +49,8 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
     private final int maxMessageBytes;
     private final MeetingCapabilityService capabilityService;
     private final MeetingRateLimiter rateLimiter;
+    private final ScheduledMeetingService scheduled;
+    private final ConcurrentMap<String, MeetingGrant> scheduledGrants = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
 
     public MeetingSignalingHandler(
@@ -57,6 +61,14 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
             MeetingProperties properties,
             MeetingCapabilityService capabilityService,
             MeetingRateLimiter rateLimiter) {
+        this(sessionRegistry, validator, objectMapper, clock, properties, capabilityService, rateLimiter, null);
+    }
+
+    @Autowired
+    public MeetingSignalingHandler(MeetingSessionRegistry sessionRegistry, SignalMessageValidator validator,
+            ObjectMapper objectMapper, Clock clock, MeetingProperties properties,
+            MeetingCapabilityService capabilityService, MeetingRateLimiter rateLimiter, ScheduledMeetingService scheduled) {
+        this.scheduled = scheduled;
         this.sessionRegistry = sessionRegistry;
         this.validator = validator;
         this.objectMapper = objectMapper;
@@ -126,6 +138,15 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
         });
     }
 
+    public void revokeRoom(String roomId) {
+        capabilityService.revokeRoom(roomId);
+        for (MeetingGrant grant : scheduledGrants.values()) {
+            if (grant.roomId().equals(roomId)) {
+                revoke(roomId, grant.userId());
+            }
+        }
+    }
+
     private SignalMessage parseAndValidate(TextMessage textMessage) throws JsonProcessingException {
         if (textMessage.getPayload().getBytes(StandardCharsets.UTF_8).length > maxMessageBytes) {
             throw new InvalidSignalException(
@@ -155,6 +176,10 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
     }
 
     private void routeMessage(WebSocketSession session, SignalMessage message) {
+        final MeetingGrant current = scheduledGrants.get(session.getId());
+        if (current != null && message.type() != SignalType.JOIN && message.type() != SignalType.LEAVE) {
+            scheduled.requireOpen(current);
+        }
         switch (message.type()) {
             case JOIN -> joinRoom(session, message);
             case OFFER, ANSWER, ICE_CANDIDATE -> forwardSignal(session, message);
@@ -171,21 +196,35 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
         final MeetingGrant grant;
         if (existing.isPresent()) {
             final MeetingSession binding = existing.orElseThrow();
-            grant = new MeetingGrant(binding.roomId(), binding.userId(), binding.role());
+            grant = scheduledGrants.getOrDefault(session.getId(),
+                    new MeetingGrant(binding.roomId(), binding.userId(), binding.role()));
         } else {
             rateLimiter.requireJoinAllowed(remoteKey(session));
             grant = capabilityService.consume(message.capability(), message.roomId());
         }
-        SessionRegistration registration = sessionRegistry.join(session.getId(), grant);
+        SessionRegistration registration;
+        if (grant.scheduleVersion() != null) {
+            registration = scheduled.join(grant, () -> {
+                final SessionRegistration joined = sessionRegistry.join(session.getId(), grant);
+                scheduledGrants.put(session.getId(), grant);
+                return joined;
+            });
+        } else {
+            registration = sessionRegistry.join(session.getId(), grant);
+        }
         registration = removeClosedPeer(registration);
         if (!sendJoined(session, registration)) {
             cleanupBinding(session.getId(), false);
             return;
         }
-        if (registration.newlyJoined() && registration.peer().isPresent()) {
-            final MeetingSession peer = registration.peer().orElseThrow();
-            if (!notifyParticipantJoined(registration.session(), peer)) {
-                cleanupBinding(peer.sessionId(), true);
+        if (registration.newlyJoined()) {
+            for (ParticipantId id : registration.room().participants()) {
+                if (!id.value().equals(registration.session().participantId())) {
+                    final MeetingSession peer = sessionRegistry.findByParticipant(id.value()).orElse(null);
+                    if (peer != null && !notifyParticipantJoined(registration.session(), peer)) {
+                        cleanupBinding(peer.sessionId(), true);
+                    }
+                }
             }
         }
         logger.info("Participant joined meeting participantCount={} newlyJoined={}",
@@ -193,16 +232,16 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
     }
 
     private SessionRegistration removeClosedPeer(SessionRegistration registration) {
-        final Optional<MeetingSession> peer = registration.peer();
-        if (peer.isEmpty()) {
-            return registration;
+        for (ParticipantId id : registration.room().participants()) {
+            if (!id.value().equals(registration.session().participantId())) {
+                final Optional<MeetingSession> peer = sessionRegistry.findByParticipant(id.value());
+                if (peer.isPresent() && openSession(peer.orElseThrow()).isEmpty()) {
+                    cleanupBinding(peer.orElseThrow().sessionId(), false);
+                }
+            }
         }
-        final MeetingSession peerSession = peer.orElseThrow();
-        if (openSession(peerSession).isPresent()) {
-            return registration;
-        }
-        cleanupBinding(peerSession.sessionId(), false);
-        return sessionRegistry.current(registration.session().sessionId());
+        final SessionRegistration current = sessionRegistry.current(registration.session().sessionId());
+        return new SessionRegistration(current.session(), current.room(), current.peer(), registration.newlyJoined());
     }
 
     private void forwardSignal(WebSocketSession senderSession, SignalMessage message) {
@@ -253,6 +292,14 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
         final boolean initiator = !registration.room().participants().isEmpty()
                 && registration.room().participants().getFirst().value()
                 .equals(registration.session().participantId());
+        final var peers = payload.putArray("peers");
+        final var order = registration.room().participants();
+        final int ownIndex = order.indexOf(new ParticipantId(registration.session().participantId()));
+        for (int index = 0; index < order.size(); index++) {
+            if (index != ownIndex) {
+                peers.addObject().put("participantId", order.get(index).value()).put("initiator", ownIndex < index);
+            }
+        }
         payload.put("initiator", initiator);
         payload.put("status", registration.room().status().name());
         payload.put("role", registration.session().role().name());
@@ -281,6 +328,7 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
     }
 
     private void cleanupBinding(String sessionId, boolean notifyPeers) {
+        scheduledGrants.remove(sessionId);
         final Optional<SessionDeparture> departure = sessionRegistry.leave(sessionId);
         if (departure.isEmpty()) {
             return;

@@ -14,7 +14,7 @@ spring:
         - id: content-service-api
           uri: ${CONTENT_SERVICE_URL}
           predicates:
-            - Path=/api/courses/**,/api/directions/**,/api/components/**,/api/catalog/**,/api/lessons/**,/api/assets/**,/api/markdown/**
+            - Path=/api/courses/**,/api/directions/**,/api/components/**,/api/catalog/**,/api/lessons/**,/api/assets/**,/api/markdown/**,/api/learning/**,/api/teaching/**
 
         # Static Markdown preview page, served directly by content-service.
         - id: content-service-markdown-preview-ui

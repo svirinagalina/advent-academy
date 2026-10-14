@@ -28,9 +28,19 @@
 Изменения публичных content/meeting контроллеров дополнительно проверяют gateway.
 При добавлении Java-сервиса обнови список модулей в selector и пути `rules:changes`.
 
-Обычная документация не запускает backend или Docker. Job для отдельного `frontend/`
-пока не добавлен: модуль ещё не смержен в dev. После его merge нужно согласовать
-frontend job и его Docker dependency с этой конфигурацией.
+Обычная документация не запускает backend или Docker.
+`frontend-check` использует Node.js 24 и выполняет `npm ci`, `npm run check` и
+`npm run build`. Запускается при изменениях `frontend/`, CI, `.dockerignore`,
+Compose, а также в полном режиме, scheduled/UI pipeline и для тегов.
+
+`frontend-docker-build` зависит от `frontend-check` и собирает образ через
+`frontend/Dockerfile` с контекстом корня репозитория. Для обычного MR и полного
+режима запускается вручную и не блокирует MR; для тегов автоматический и
+обязательный. Backend Docker job сохраняет собственный выбор четырёх сервисов:
+frontend не передаётся в selector Gradle-модулей. Изменение только frontend
+запускает его проверку и даёт отдельную ручную сборку его образа.
+
+`.next/` и `*.tsbuildinfo` — локальные результаты сборки, в Git не хранятся.
 
 ## Полная проверка
 
