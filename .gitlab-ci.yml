@@ -1,4 +1,4 @@
-# Active development: verify affected backend modules. No frontend job until it is merged.
+# Active development: verify affected backend modules and the frontend independently.
 stages:
   - build
   - test
@@ -59,6 +59,14 @@ frontend-check:
   stage: build
   image: node:24-alpine
   before_script: []
+  rules:
+    - if: '$FULL_CI == "true" || $CI_PIPELINE_SOURCE == "schedule" || $CI_PIPELINE_SOURCE == "web" || $CI_COMMIT_TAG'
+    - changes: &frontend_changes
+        - "frontend/**/*"
+        - ".gitlab-ci.yml"
+        - "ci/**/*"
+        - ".dockerignore"
+        - "docker-compose*.yml"
   cache:
     key:
       prefix: frontend-npm
@@ -252,3 +260,25 @@ docker-build:
       allow_failure: true
   script:
     - bash ci/build-images.sh
+
+frontend-docker-build:
+  extends: .docker-test-services
+  stage: docker-build
+  image: docker:27
+  before_script: []
+  cache: []
+  needs:
+    - job: frontend-check
+      artifacts: false
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: on_success
+      allow_failure: false
+    - if: '$FULL_CI == "true" || $CI_PIPELINE_SOURCE == "schedule" || $CI_PIPELINE_SOURCE == "web"'
+      when: manual
+      allow_failure: true
+    - changes: *frontend_changes
+      when: manual
+      allow_failure: true
+  script:
+    - docker build -f frontend/Dockerfile -t "${CI_PROJECT_PATH_SLUG}-frontend:${CI_COMMIT_SHORT_SHA}" .
