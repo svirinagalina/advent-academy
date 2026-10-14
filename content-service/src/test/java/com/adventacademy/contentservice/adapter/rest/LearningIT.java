@@ -133,6 +133,78 @@ class LearningIT extends AbstractPostgresIT {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM content.learning_enrollments WHERE user_id=?", Integer.class, unknown)).isZero();
     }
 
+    @Test
+    void authoringReadReturnsPersistedDraftAndPublishedContentWithObjectAuthorization() throws Exception {
+        Fixture f = fixture(false);
+        UUID owner = jdbc.queryForObject("SELECT owner_id FROM content.components WHERE id=(SELECT component_id FROM content.lessons WHERE id=?)",
+                UUID.class, f.first());
+        String instructor = token(owner, "INSTRUCTOR");
+        jdbc.update("UPDATE content.lesson_contents SET status='DRAFT' WHERE lesson_id=?", f.first());
+        mvc.perform(get("/api/lessons/{id}/content", f.first()).header(HttpHeaders.AUTHORIZATION, instructor))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.status").value("DRAFT"))
+                .andExpect(jsonPath("$.markdown").value("# Real lesson"))
+                .andExpect(jsonPath("$.html").value("<h1>Real lesson</h1>\n"));
+        mvc.perform(get("/api/lessons/{id}/content", f.second()).header(HttpHeaders.AUTHORIZATION, instructor))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PUBLISHED"));
+        mvc.perform(get("/api/lessons/{id}/content", f.first())).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/lessons/{id}/content", f.first()).header(HttpHeaders.AUTHORIZATION, f.studentToken()))
+                .andExpect(status().isForbidden());
+        UUID foreign = UUID.randomUUID();
+        // Even the owner of a course cannot read private material owned by another component curator.
+        jdbc.update("UPDATE content.courses SET owner_id=? WHERE id=?", foreign, f.course());
+        mvc.perform(get("/api/lessons/{id}/content", f.first()).header(HttpHeaders.AUTHORIZATION, token(foreign, "INSTRUCTOR")))
+                .andExpect(status().isForbidden());
+        jdbc.update("DELETE FROM content.lesson_contents WHERE lesson_id=?", f.first());
+        mvc.perform(get("/api/lessons/{id}/content", f.first()).header(HttpHeaders.AUTHORIZATION, instructor))
+                .andExpect(status().isNotFound());
+        mvc.perform(get("/api/lessons/{id}/content", f.first()).header(HttpHeaders.AUTHORIZATION, token(foreign, "INSTRUCTOR")))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/api/lessons/{id}/content", UUID.randomUUID()).header(HttpHeaders.AUTHORIZATION, f.editorToken()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void courseTreeIncludesPresenceAndStatusWithoutContentBodies() throws Exception {
+        Fixture f = fixture(false);
+        jdbc.update("UPDATE content.lesson_contents SET status='REVIEW' WHERE lesson_id=?", f.first());
+        jdbc.update("DELETE FROM content.lesson_contents WHERE lesson_id=?", f.second());
+        mvc.perform(get("/api/courses/{id}", f.course()).header(HttpHeaders.AUTHORIZATION, f.editorToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.components[0].lessons[0].contentPresent").value(true))
+                .andExpect(jsonPath("$.components[0].lessons[0].contentStatus").value("REVIEW"))
+                .andExpect(jsonPath("$.components[0].lessons[0].html").doesNotExist())
+                .andExpect(jsonPath("$.components[0].lessons[1].contentPresent").value(false))
+                .andExpect(jsonPath("$.components[0].lessons[1].contentStatus").doesNotExist());
+        jdbc.update("UPDATE content.courses SET status='DRAFT' WHERE id=?", f.course());
+        mvc.perform(get("/api/courses/{id}", f.course()).header(HttpHeaders.AUTHORIZATION, token(UUID.randomUUID(), "INSTRUCTOR")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void archivedRosterRemainsReadableButTeachingAndEnrollmentStayPublishedOnly() throws Exception {
+        Fixture f = fixture(false);
+        UUID owner = jdbc.queryForObject("SELECT owner_id FROM content.courses WHERE id=?", UUID.class, f.course());
+        String instructor = token(owner, "INSTRUCTOR");
+        jdbc.update("UPDATE content.courses SET status='ARCHIVED' WHERE id=?", f.course());
+        mvc.perform(get("/api/teaching/courses/{id}/students", f.course()).header(HttpHeaders.AUTHORIZATION, instructor))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0]").value(f.student().toString()));
+        mvc.perform(get("/api/teaching/courses/{id}/students", f.course()).header(HttpHeaders.AUTHORIZATION, token(UUID.randomUUID(), "INSTRUCTOR")))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/api/teaching/courses/{id}/students", f.course()).header(HttpHeaders.AUTHORIZATION, f.studentToken()))
+                .andExpect(status().isForbidden());
+        mvc.perform(get("/api/teaching/courses/{id}", f.course()).header(HttpHeaders.AUTHORIZATION, instructor))
+                .andExpect(status().isForbidden());
+        mvc.perform(put("/api/learning/courses/{id}/students/{user}", f.course(), UUID.randomUUID()).header(HttpHeaders.AUTHORIZATION, instructor))
+                .andExpect(status().isConflict());
+        jdbc.update("UPDATE content.courses SET status='DRAFT' WHERE id=?", f.course());
+        mvc.perform(get("/api/teaching/courses/{id}/students", f.course()).header(HttpHeaders.AUTHORIZATION, instructor))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/api/components").header(HttpHeaders.AUTHORIZATION, instructor)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"title\":\"Denied\",\"description\":\"\"}"))
+                .andExpect(status().isForbidden());
+    }
+
     private Fixture fixture(boolean assignment) throws Exception {
         UUID student = UUID.randomUUID();
         String editor = token(UUID.randomUUID(), "CONTENT_EDITOR");

@@ -67,7 +67,11 @@ public class LearningService {
 
     @Transactional(readOnly = true)
     public List<UUID> teachingStudents(UUID courseId) {
-        teachingCourse(courseId);
+        var course = courses.findById(courseId).orElseThrow(() -> new NotFoundException("Course not found"));
+        guard.requireCurator("COURSE_ACCESS", "Course", courseId, course.getOwnerId(), "READ_COURSE_ROSTER");
+        if (course.getStatus() != PublicationStatus.PUBLISHED && course.getStatus() != PublicationStatus.ARCHIVED) {
+            throw new AccessDeniedException("Course roster is available only for published or archived courses");
+        }
         return jdbc.queryForList("SELECT user_id FROM content.learning_enrollments WHERE course_id=? ORDER BY user_id", UUID.class, courseId);
     }
 

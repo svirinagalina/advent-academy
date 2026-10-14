@@ -62,6 +62,78 @@ Backend и gateway должны быть запущены отдельно.
 видеохостинга этот спринт не добавляет. HTML материалов очищает content-service;
 браузер не использует HTML из `design-reference/`.
 
+## Управление курсами и темы
+
+Панель доступна на `/?view=manage` и по ссылке «Управление курсами» в верхней
+панели кабинета для ADMIN, CONTENT_EDITOR и INSTRUCTOR. Работают список/фильтры,
+создание и редактирование черновика, модули и уроки, порядок программы, удаление
+связи с модулем, сохранённый HTML-предпросмотр, загрузка `.md` и ZIP до 5 MiB,
+отдельная публикация материала, модуля и курса, архивирование, поиск и назначение
+учеников. При потере ответа загрузки сначала проверяется сохранённый материал.
+Преподаватель управляет своими курсами; создание курса и модуля ему недоступно.
+Права на общий модуль определяются его владельцем отдельно от владельца курса.
+Список учеников архивного курса доступен для просмотра; новые назначения запрещены.
+
+Светлая/тёмная тема общая для обоих кабинетов и демоверсии. При первом посещении
+используется системная настройка, ручной выбор сохраняется в `advent-academy.theme`.
+Изменение темы синхронизируется между вкладками и не сбрасывает формы, вкладку
+курса или результаты поиска. Недоступный localStorage не блокирует переключение.
+
+BFF пропускает только перечисленные пути и методы; операции изменения требуют
+правильный Origin. JSON ограничен 32 KiB, multipart-тело — 6 MiB с учётом служебных
+полей; сам файл дополнительно проверяется backend (5 MiB для материала).
+Токены остаются только в зашифрованной HttpOnly cookie.
+
+### Изолированная браузерная проверка
+
+Из корня репозитория, после сборки backend:
+
+```bash
+./gradlew :content-service:check :content-service:bootJar :user-service:bootJar :api-gateway:bootJar :meeting-service:bootJar --no-daemon
+docker compose -p advent-course-api -f docs/backend/runtime-course-management.yml up -d --build --wait --wait-timeout 120
+python3 scripts/management-browser-fixture.py
+```
+
+Затем в отдельном терминале (Node.js 24):
+
+```bash
+cd frontend
+npm run check
+npm run build
+API_GATEWAY_URL=http://127.0.0.1:18094 FRONTEND_ORIGIN=http://127.0.0.1:13014 MEETING_SIGNALING_URL=ws://127.0.0.1:18094/ws/meetings SESSION_ENCRYPTION_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= npm run start -- --port 13014
+```
+
+Ключ выше предназначен только для этого отдельного локального тестового стенда.
+В третьем терминале из `frontend`:
+
+```bash
+ADVENT_TEST_ORIGIN=http://127.0.0.1:13014 npm run test:management
+ADVENT_TEST_ORIGIN=http://127.0.0.1:13014 npm run test:themes
+# Перед проверкой ошибок заново выполните Python-фикстуру из корня репозитория:
+ADVENT_TEST_ORIGIN=http://127.0.0.1:13014 npm run test:management:errors
+ADVENT_TEST_ORIGIN=http://127.0.0.1:13014 npm run test:layout-meetings
+```
+
+Браузерные скрипты используют локальный Google Chrome (`/usr/bin/google-chrome`).
+Перед каждым повтором `test:management` заново выполните фикстуру: сценарий
+меняет роль создателя на преподавателя и архивирует созданный курс.
+Фикстура создаёт синтетические аккаунты и ZIP в `/tmp`; перед SQL проверяет имя
+Compose-проекта и tmpfs PostgreSQL. `test:management` выполняет действия через UI,
+проверяет прямые отказы BFF, потерю ответа загрузки, реальный файл больше 1 MiB,
+вход ученика, черновик преподавателя, чужой курс, архив и мобильную ширину 390 px.
+`test:themes` проверяет системные изменения, сохранение выбора и отказ хранилища.
+`test:layout-meetings` проверяет полноэкранный фон входа, центрирование всех форм
+в двух темах и двух размерах экрана, а затем создание занятия через UI и обмен
+видеокадрами в двух браузерах с тестовыми камерой и микрофоном.
+Скриншоты сохраняются в `/tmp/management-*.png` и `/tmp/learner-*.png`.
+
+Стенд включает user-service, content-service, meeting-service и gateway.
+Для WebSocket используется адрес gateway `ws://127.0.0.1:18094/ws/meetings`. Данные тестового стенда удаляются при его остановке:
+
+```bash
+docker compose -p advent-course-api -f docs/backend/runtime-course-management.yml down
+```
+
 ## Проверки
 
 ```bash

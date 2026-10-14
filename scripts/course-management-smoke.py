@@ -62,12 +62,17 @@ for title in ("Первый модуль", "Второй модуль"):
     component = req("POST", "/api/components", {"title": title, "description": "Программа"}, owner, 201)
     component = req("POST", f"/api/components/{component['id']}/lessons", {"title": "Урок"}, owner, 201)
     lid = component["lessons"][0]["id"]
+    req("GET", f"/api/lessons/{lid}/content", token=owner, expected=404)
     boundary = "course-api-boundary"
     raw = (f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="lesson.md"\r\nContent-Type: text/markdown\r\n\r\n# Markdown lesson\n\n<script>alert(1)</script>\n\r\n--{boundary}--\r\n').encode()
     uploaded = req("POST", f"/api/lessons/{lid}/content", token=owner, expected=201, raw=raw, content_type=f"multipart/form-data; boundary={boundary}")
     assert uploaded["status"] == "DRAFT" and "<h1>Markdown lesson</h1>" in uploaded["html"]
     assert "<script>" not in uploaded["html"]
+    saved = req("GET", f"/api/lessons/{lid}/content", token=owner)
+    assert saved["html"] == uploaded["html"] and saved["status"] == "DRAFT"
+    req("GET", f"/api/lessons/{lid}/content", token=foreign)  # Admin may curate any material.
     req("POST", f"/api/lessons/{lid}/content/publish", token=owner, expected=204)
+    assert req("GET", f"/api/lessons/{lid}/content", token=owner)["status"] == "PUBLISHED"
     req("POST", f"/api/components/{component['id']}/publish", token=owner)
     req("POST", f"/api/courses/{cid}/components", {"componentId": component["id"]}, owner, 201)
     modules.append(component["id"])
@@ -78,6 +83,10 @@ req("POST", f"/api/courses/{cid}/publish", token=owner)
 # The same owner is now an instructor; subsequent JWTs have no administrator privileges.
 sql(f"DELETE FROM user_roles WHERE user_id='{ids['owner']}'; INSERT INTO user_roles(user_id,role_id) SELECT '{ids['owner']}',id FROM roles WHERE name='INSTRUCTOR';")
 owner = login("owner")
+req("POST", "/api/components", {"title": "Denied", "description": ""}, owner, 403)
+tree = req("GET", f"/api/courses/{cid}", token=owner)
+assert all(lesson["contentPresent"] and lesson["contentStatus"] == "PUBLISHED"
+           for component in tree["components"] for lesson in component["lessons"])
 managed = req("GET", "/api/courses?managed=true", token=owner)
 assert {x["id"] for x in managed} == {cid, draft["id"]}
 req("POST", "/api/courses", {"title": "Denied", "description": ""}, owner, 403)
@@ -121,6 +130,10 @@ finally:
 req("POST", f"/api/courses/{cid}/archive", token=owner)
 managed = req("GET", "/api/courses?managed=true", token=owner)
 assert next(x for x in managed if x["id"] == cid)["status"] == "ARCHIVED"
+archived_roster = req("GET", f"/api/users/teaching/courses/{cid}/students", token=owner)
+assert len(archived_roster) == 1 and archived_roster[0]["id"] == ids["learner"]
+req("GET", f"/api/users/teaching/courses/{cid}/candidates?query=course", token=owner, expected=403)
+req("GET", f"/api/lessons/{lesson}/content", token=learner, expected=403)
 assert req("GET", "/api/learning/courses", token=learner) == []
 req("PUT", f"/api/learning/courses/{cid}/students/{ids['foreign']}", token=owner, expected=409)
 print("PASS: create, edit, reorder, Markdown upload/sanitization, publish, scoped candidate search, invalid-user rejection, idempotent enrollment, student login/read, ownership and role denials, identity outage without enrollment, archive")

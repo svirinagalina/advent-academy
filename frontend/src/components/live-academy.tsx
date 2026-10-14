@@ -9,6 +9,7 @@ import {
 	useState,
 } from "react";
 import Academy from "@/components/academy";
+import Management from "@/components/management";
 import {
 	AssignmentList,
 	AssignmentPanel,
@@ -184,6 +185,7 @@ export default function LiveAcademy() {
 				</section>
 			</main>
 		);
+	if (view === "manage") return <Management profile={profile} logout={logout} />;
 	const adapted = toDemo(courses);
 	// An empty structure keeps hooks stable without putting demonstration courses in the real UI.
 	if (!adapted.courses.length)
@@ -316,7 +318,7 @@ function Login({ onSuccess }: { onSuccess: () => Promise<void> }) {
 		}
 	}
 	return (
-		<main className="main-content">
+		<main className="main-content auth-screen">
 			<section className="card demo-login auth-card">
 				<p className="eyebrow">Advent Academy</p>
 				<h1>Войти в кабинет</h1>

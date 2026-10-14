@@ -7,6 +7,7 @@ import com.adventacademy.contentservice.adapter.rest.dto.CourseTreeResponse;
 import com.adventacademy.contentservice.adapter.rest.dto.ReorderRequest;
 import com.adventacademy.contentservice.application.service.CourseAssemblyService;
 import com.adventacademy.contentservice.application.service.GetCatalogService;
+import com.adventacademy.contentservice.application.service.LessonContentReadService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -44,11 +45,14 @@ public class CourseController {
 
     private final CourseAssemblyService assemblyService;
     private final GetCatalogService catalogService;
+    private final LessonContentReadService contentRead;
 
     public CourseController(CourseAssemblyService assemblyService,
-                            GetCatalogService catalogService) {
+                            GetCatalogService catalogService,
+                            LessonContentReadService contentRead) {
         this.assemblyService = assemblyService;
         this.catalogService = catalogService;
+        this.contentRead = contentRead;
     }
 
     @PostMapping
@@ -73,7 +77,9 @@ public class CourseController {
         // Refuses drafts that belong to somebody else before the tree is assembled.
         assemblyService.get(id);
         GetCatalogService.CourseTree tree = catalogService.getCourseTree(id);
-        return CourseTreeResponse.from(tree.course(), tree.componentsById());
+        var lessonIds = tree.componentsById().values().stream()
+                .flatMap(component -> component.getLessons().stream()).map(lesson -> lesson.getId()).toList();
+        return CourseTreeResponse.from(tree.course(), tree.componentsById(), contentRead.statuses(lessonIds));
     }
 
     @PatchMapping("/{id}")

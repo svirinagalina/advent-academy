@@ -14,7 +14,11 @@
     "check": "npm run lint && npm run typecheck",
     "test:runtime": "node scripts/runtime-smoke.mjs",
     "test:assignments": "node scripts/assignment-smoke.mjs",
-    "test:meetings": "node scripts/meeting-smoke.mjs"
+    "test:meetings": "node scripts/meeting-smoke.mjs",
+    "test:management": "node scripts/management-smoke.mjs",
+    "test:themes": "node scripts/theme-smoke.mjs",
+    "test:management:errors": "node scripts/management-errors-smoke.mjs",
+    "test:layout-meetings": "node scripts/layout-and-meetings-smoke.mjs"
   },
   "dependencies": {
     "next": "16.4.0",
