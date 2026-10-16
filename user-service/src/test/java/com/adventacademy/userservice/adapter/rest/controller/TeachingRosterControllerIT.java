@@ -4,8 +4,6 @@ import com.adventacademy.userservice.domain.model.UserStatus;
 import com.adventacademy.userservice.infrastructure.persistence.entity.UserEntity;
 import com.adventacademy.userservice.infrastructure.persistence.jpa.UserJpaRepository;
 import com.sun.net.httpserver.HttpServer;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,9 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
