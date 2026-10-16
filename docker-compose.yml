@@ -256,6 +256,7 @@ services:
     ports:
       - "127.0.0.1:8084:8084"
     environment:
+      USER_SERVICE_URL: http://user-service:8080
       JWT_SECRET: ${JWT_SECRET}
       POSTGRES_HOST: postgres
       POSTGRES_DB: ${POSTGRES_DB}

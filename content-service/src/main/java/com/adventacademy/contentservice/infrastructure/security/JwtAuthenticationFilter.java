@@ -25,10 +25,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private final JwtProvider jwtProvider;
     private final ObjectMapper objectMapper;
+    private final com.adventacademy.security.AccessTokenStatusClient accessTokenStatusClient;
 
-    public JwtAuthenticationFilter(JwtProvider jwtProvider, ObjectMapper objectMapper) {
+    public JwtAuthenticationFilter(JwtProvider jwtProvider, ObjectMapper objectMapper,
+            com.adventacademy.security.AccessTokenStatusClient accessTokenStatusClient) {
         this.jwtProvider = jwtProvider;
         this.objectMapper = objectMapper;
+        this.accessTokenStatusClient = accessTokenStatusClient;
     }
 
     @Override
@@ -38,6 +41,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = extractToken(request);
             if (token != null) {
                 JwtProvider.ValidatedToken validatedToken = jwtProvider.validate(token);
+                accessTokenStatusClient.requireActive(token);
 
                 var authorities = validatedToken.roles().stream()
                         .map(JwtAuthenticationFilter::normalizeRole)
@@ -54,6 +58,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             filterChain.doFilter(request, response);
+        } catch (com.adventacademy.security.AccessTokenStatusClient.InactiveTokenException e) {
+            sendUnauthorizedError(response, "Invalid access token");
+        } catch (com.adventacademy.security.AccessTokenStatusClient.IdentityUnavailableException e) {
+            response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.getWriter().write("{\"error\":\"Identity service unavailable\",\"status\":503}");
         } catch (JwtException e) {
             log.debug("JWT authentication failed: {}", e.getMessage());
             sendUnauthorizedError(response, e.getMessage());

@@ -44,6 +44,10 @@ public class UserEntity implements Persistable<UUID> {
     @Column(nullable = false, length = 20)
     private UserStatus status;
 
+    // Database triggers own this field; Hibernate must not overwrite their increments.
+    @Column(nullable = false, insertable = false, updatable = false, columnDefinition = "bigint default 0")
+    private long authorizationVersion;
+
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "user_roles",

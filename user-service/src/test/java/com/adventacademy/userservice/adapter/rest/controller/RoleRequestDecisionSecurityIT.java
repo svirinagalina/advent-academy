@@ -140,7 +140,8 @@ class RoleRequestDecisionSecurityIT {
         user.setFirstName("Test");
         user.setLastName("User");
         user.setStatus(UserStatus.ACTIVE);
-        return userJpaRepository.save(user).getId();
+        user.setEmailVerified(true);
+        return userJpaRepository.saveAndFlush(user).getId();
     }
 
     private UUID seedAdminUser() {
@@ -155,8 +156,9 @@ class RoleRequestDecisionSecurityIT {
         user.setFirstName("Admin");
         user.setLastName("User");
         user.setStatus(UserStatus.ACTIVE);
+        user.setEmailVerified(true);
         user.setRoles(Set.of(savedAdminRole));
-        return userJpaRepository.save(user).getId();
+        return userJpaRepository.saveAndFlush(user).getId();
     }
 
     private UUID seedRole() {

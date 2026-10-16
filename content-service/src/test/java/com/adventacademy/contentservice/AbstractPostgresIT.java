@@ -18,6 +18,12 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 @SpringBootTest
 public abstract class AbstractPostgresIT {
 
+    // These module tests own local JWT/ownership behavior. The production Compose
+    // pentest exercises the real identity boundary and fail-closed behavior.
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    protected com.adventacademy.security.AccessTokenStatusClient accessTokenStatusClient;
+
+
     // Testcontainers 2.x: PostgreSQLContainer is a concrete, non-generic class —
     // the 1.x self-type generic (PostgreSQLContainer<SELF extends ...>) is gone.
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");

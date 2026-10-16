@@ -29,6 +29,12 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfiguration {
 
+    @Bean
+    public com.adventacademy.security.AccessTokenStatusClient accessTokenStatusClient(
+            @Value("${USER_SERVICE_URL:http://localhost:8080}") String identityUrl) {
+        return new com.adventacademy.security.AccessTokenStatusClient(identityUrl);
+    }
+
     @Value("${security.cors.allowed-origins}")
     private String allowedOrigins;
 
@@ -36,7 +42,8 @@ public class SecurityConfiguration {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             JwtProvider jwtProvider,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            com.adventacademy.security.AccessTokenStatusClient accessTokenStatusClient
     ) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
@@ -60,7 +67,7 @@ public class SecurityConfiguration {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
-                        new JwtAuthenticationFilter(jwtProvider, objectMapper),
+                        new JwtAuthenticationFilter(jwtProvider, objectMapper, accessTokenStatusClient),
                         UsernamePasswordAuthenticationFilter.class
                 )
                 .exceptionHandling(exceptions -> exceptions

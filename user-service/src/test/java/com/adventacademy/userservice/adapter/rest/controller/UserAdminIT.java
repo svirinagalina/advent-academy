@@ -61,6 +61,76 @@ class UserAdminIT {
     String auth;
 
     @Test
+    void blockAndUnblockNeverRestoreAnOldAccessToken() throws Exception {
+        UUID target = account("blocked-token@example.test", "CONTENT_EDITOR");
+        String old = bearer(target, "CONTENT_EDITOR");
+        assertThat(call("GET", "/api/auth/access-check", null, old).status()).isEqualTo(204);
+        var user = call("GET", "/api/users/admin/" + target, null, auth).body();
+        var blocked = call("POST", "/api/users/admin/" + target + "/block",
+                Map.of("version", user.path("version").asLong()), auth);
+        assertThat(blocked.status()).isEqualTo(200);
+        assertThat(call("GET", "/api/auth/access-check", null, old).status()).isEqualTo(401);
+        assertThat(call("POST", "/api/users/admin/" + target + "/unblock",
+                Map.of("version", blocked.body().path("version").asLong()), auth).status()).isEqualTo(200);
+        assertThat(call("GET", "/api/auth/access-check", null, old).status()).isEqualTo(401);
+        assertThat(call("GET", "/api/auth/access-check", null, bearer(target, "CONTENT_EDITOR")).status()).isEqualTo(204);
+    }
+
+    @Test
+    void removingAndRegrantingAdminNeverRestoresAnOldToken() throws Exception {
+        UUID target = account("demoted-token@example.test", "ADMIN");
+        String old = bearer(target, "ADMIN");
+        var user = call("GET", "/api/users/admin/" + target, null, auth).body();
+        var changed = call("PUT", "/api/users/admin/" + target + "/roles",
+                Map.of("version", user.path("version").asLong(), "roles", List.of("STUDENT")), auth);
+        assertThat(changed.status()).isEqualTo(200);
+        assertThat(call("GET", "/api/users", null, old).status()).isEqualTo(401);
+        assertThat(call("GET", "/api/roles", null, old).status()).isEqualTo(401);
+        assertThat(call("PUT", "/api/users/admin/" + target + "/roles",
+                Map.of("version", changed.body().path("version").asLong(), "roles", List.of("ADMIN")), auth).status()).isEqualTo(200);
+        assertThat(call("GET", "/api/auth/access-check", null, old).status()).isEqualTo(401);
+        assertThat(call("GET", "/api/roles", null, bearer(target, "ADMIN")).status()).isEqualTo(200);
+    }
+
+    @Test
+    void legacyRoleRemovalAndPasswordChangeAlsoAdvanceAuthorizationVersion() throws Exception {
+        UUID target = account("legacy-token@example.test", "INSTRUCTOR");
+        String old = bearer(target, "INSTRUCTOR");
+        UUID role = jdbc.queryForObject("SELECT id FROM roles WHERE name='INSTRUCTOR'", UUID.class);
+        assertThat(call("DELETE", "/api/roles/users/" + target + "/roles/" + role, null, auth).status()).isEqualTo(200);
+        assertThat(call("GET", "/api/auth/access-check", null, old).status()).isEqualTo(401);
+        String replacement = bearer(target, "STUDENT");
+        jdbc.update("UPDATE users SET password_hash='replacement' WHERE id=?", target);
+        assertThat(call("GET", "/api/auth/access-check", null, replacement).status()).isEqualTo(401);
+    }
+
+    @Test
+    void anExpiredReceiptCannotRestoreConsumedRefreshEvenBeforeCleanup() throws Exception {
+        String old = jwt.generateRefreshToken(admin), key = "f".repeat(64);
+        var request = Map.of("refreshToken", old);
+        var first = mvc.perform(post("/api/auth/refresh").header("X-Refresh-Request", key)
+                .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(request)))
+                .andReturn().getResponse();
+        assertThat(first.getStatus()).isEqualTo(200);
+        String replacement = json.readTree(first.getContentAsString()).path("refreshToken").asText();
+        jdbc.update("UPDATE refresh_rotation_receipts SET expires_at=now()-interval '1 second'");
+        mvc.perform(post("/api/auth/refresh").header("X-Refresh-Request", key)
+                .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(request)))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isUnauthorized());
+        assertThat(jwt.validateRefreshToken(replacement)).isTrue();
+        assertThat(jwt.validateRefreshToken(old)).isFalse();
+    }
+
+    @Test
+    void malformedJsonAndMissingResourcesAreClientErrors() throws Exception {
+        mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content("{\"email\":"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.errorCode").value("VALIDATION_ERROR"));
+        mvc.perform(get("/api/not-a-resource").header("Authorization", auth))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isNotFound());
+    }
+
+    @Test
     void deletingAPendingAccountPreventsFurtherInvitations() throws Exception {
         String id =
                 call("POST", "/api/users/admin", createInput(UUID.randomUUID()), auth)
@@ -253,7 +323,7 @@ class UserAdminIT {
                     .isEqualTo(403);
         }
         jdbc.update("DELETE FROM user_roles WHERE user_id=?", admin);
-        assertThat(call("GET", "/api/users/admin", null, auth).status()).isEqualTo(403);
+        assertThat(call("GET", "/api/users/admin", null, auth).status()).isEqualTo(401);
     }
 
     @Test
