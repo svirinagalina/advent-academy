@@ -72,6 +72,12 @@ public class AuthController {
         this.mfaService = mfaService;
     }
 
+    /** Authentication filter checks the signature, account status and authorization version. */
+    @GetMapping("/access-check")
+    public ResponseEntity<Void> accessCheck() {
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/register")
     @Operation(summary = "Register new user", description = "Register a new user account. Email verification required before login.")
     @ApiResponse(responseCode = "201", description = "User registered successfully")

@@ -24,11 +24,28 @@ import java.util.UUID;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 class MeetingControllerIT {
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private com.adventacademy.security.AccessTokenStatusClient accessTokenStatusClient;
+
 
     @Autowired
     private MockMvc mockMvc;
 
     private final UUID hostId = UUID.randomUUID();
+
+    @Test
+    void refusesRevokedTokensAndUnavailableIdentity() throws Exception {
+        final String bearer = bearer(hostId);
+        final String token = bearer.substring("Bearer ".length());
+        org.mockito.Mockito.doThrow(new com.adventacademy.security.AccessTokenStatusClient.InactiveTokenException())
+                .when(accessTokenStatusClient).requireActive(token);
+        mockMvc.perform(get("/api/meetings/config").header(HttpHeaders.AUTHORIZATION, bearer))
+                .andExpect(status().isUnauthorized());
+        org.mockito.Mockito.doThrow(new com.adventacademy.security.AccessTokenStatusClient.IdentityUnavailableException())
+                .when(accessTokenStatusClient).requireActive(token);
+        mockMvc.perform(get("/api/meetings/config").header(HttpHeaders.AUTHORIZATION, bearer))
+                .andExpect(status().isServiceUnavailable());
+    }
 
     @Test
     void servesLocalMediaProcessingAssetsWithoutAuthentication() throws Exception {

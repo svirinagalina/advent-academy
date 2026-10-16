@@ -76,6 +76,23 @@ bound to a token and BFF-derived request key, and valid for 30 seconds. Concurre
 result. Logout, password reset, and account blocking refuse receipt replay. A retry after this bounded
 window can require reauthentication. Never put multiple BFF keys behind one browser origin.
 
+Access tokens carry the user's database-maintained `authorization_version`. Account status,
+verification, password and role membership changes invalidate old access tokens, including when
+permissions are changed through legacy APIs or workflows. Regranting a role or unblocking a user
+does not revive an old token. Content and meeting REST bearer requests first verify the JWT locally,
+then check its current authorization with user-service (`GET /api/auth/access-check`); a network
+failure, timeout or unexpected identity response fails closed with 503. Configure `USER_SERVICE_URL`
+for both services, restrict it to the internal identity endpoint, and allow this dependency in
+network policy. There is no successful-result cache, so each authenticated resource request adds
+one internal HTTP request and depends on identity availability.
+
+For the first deployment of versioned access tokens, deploy user-service and migration V16 before
+the updated resource services. Existing access tokens without the version are rejected; the BFF can
+rotate an active refresh session to obtain a versioned token, otherwise the user must log in again.
+Do not downgrade user-service while the new resource services depend on its access-check route.
+The migration adds a default-zero column and triggers to existing identity tables; schedule the
+schema update according to the installation's normal PostgreSQL lock/DDL policy.
+
 Key rotation uses mounted public keys. First distribute the new public key to all verifiers and the
 new private key to the issuer, retaining the previous public file and setting
 `JWT_PREVIOUS_PUBLIC_KEY_FILE=/run/secrets/jwt-previous.pem` and `JWT_PREVIOUS_KEY_ID`. Restart the

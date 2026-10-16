@@ -111,6 +111,7 @@ class AuthSecurityIT {
     @Autowired private TotpProvider totp;
     @Autowired private RateLimiter rateLimiter;
     @Autowired private RefreshTokenStore refreshTokenStore;
+    @Autowired private com.adventacademy.userservice.infrastructure.security.AccessTokenState accessState;
 
     private final List<String> secretsSeen = new ArrayList<>();
     private ListAppender<ILoggingEvent> logs;
@@ -223,7 +224,7 @@ class AuthSecurityIT {
     private JjwtProvider replicaProvider() {
         return new JjwtProvider("test-secret-key-for-testing-purposes-only-32-bytes",
                 "advent-academy-user-service", "advent-academy-services", 15, 7, 30,
-                java.time.Clock.systemUTC(), refreshTokenStore);
+                java.time.Clock.systemUTC(), refreshTokenStore, accessState);
     }
 
     private <T> List<T> concurrently(int count, Callable<T> operation) throws Exception {

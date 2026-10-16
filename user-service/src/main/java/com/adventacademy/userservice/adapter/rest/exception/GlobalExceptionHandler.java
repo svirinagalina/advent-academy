@@ -198,11 +198,17 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler({org.springframework.web.bind.MissingServletRequestParameterException.class,
+            org.springframework.http.converter.HttpMessageNotReadableException.class,
             org.springframework.web.bind.MissingRequestHeaderException.class,
             org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
             org.springframework.web.method.annotation.HandlerMethodValidationException.class})
     public ResponseEntity<ErrorResponse> handleInvalidRequest(Exception ex) {
         return ResponseEntity.badRequest().body(new ErrorResponse("VALIDATION_ERROR", "Invalid request"));
+    }
+
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleMissingResource(Exception ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("NOT_FOUND", "Resource not found"));
     }
 
     @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)

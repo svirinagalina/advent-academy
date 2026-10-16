@@ -81,6 +81,7 @@ services:
     depends_on: {postgres: {condition: service_healthy}}
     volumes: ["${SECRETS_DIR:?}/meeting:/run/secrets:ro"]
     environment:
+      USER_SERVICE_URL: http://user-service:8080
       SPRING_PROFILES_ACTIVE: production
       POSTGRES_HOST: postgres
       POSTGRES_DB: academy

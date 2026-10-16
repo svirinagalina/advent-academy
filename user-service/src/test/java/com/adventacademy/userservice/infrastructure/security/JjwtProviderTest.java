@@ -59,7 +59,7 @@ class JjwtProviderTest {
                 7,
                 30,
                 Clock.fixed(NOW, ZoneOffset.UTC),
-                new TestRefreshTokenStore());
+                new TestRefreshTokenStore(), state());
 
         assertThat(other.validateAccessToken(token)).isFalse();
         assertThatThrownBy(() -> new JjwtProvider(
@@ -70,7 +70,7 @@ class JjwtProviderTest {
                 7,
                 30,
                 Clock.systemUTC(),
-                new TestRefreshTokenStore()))
+                new TestRefreshTokenStore(), state()))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -104,6 +104,12 @@ class JjwtProviderTest {
                 7,
                 30,
                 clock,
-                new TestRefreshTokenStore());
+                new TestRefreshTokenStore(), state());
+    }
+    private static AccessTokenState state() {
+        AccessTokenState state = org.mockito.Mockito.mock(AccessTokenState.class);
+        org.mockito.Mockito.when(state.isActive(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyLong()))
+                .thenReturn(true);
+        return state;
     }
 }

@@ -1,4 +1,5 @@
 surface;method;path;current_access;target_access;owner;source;tracking
+user-service;GET;/api/auth/access-check;authenticated;authenticated;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/AuthController.java;SEC-104
 user-service;POST;/api/auth/register;public;public;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/AuthController.java;SEC-103
 user-service;POST;/api/auth/login;public;public;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/AuthController.java;SEC-103
 user-service;POST;/api/auth/refresh;public;public;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/AuthController.java;SEC-104

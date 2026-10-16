@@ -83,6 +83,19 @@ public class SecurityIT extends AbstractPostgresIT {
     // ---------------------------------------------------------------- authentication
 
     @Test
+    void revocationAndIdentityOutageFailClosedAfterLocalJwtValidation() throws Exception {
+        String token = token(UUID.randomUUID(), ROLE_CONTENT_EDITOR);
+        org.mockito.Mockito.doThrow(new com.adventacademy.security.AccessTokenStatusClient.InactiveTokenException())
+                .when(accessTokenStatusClient).requireActive(token);
+        mvc.perform(get("/api/courses").header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isUnauthorized());
+        org.mockito.Mockito.doThrow(new com.adventacademy.security.AccessTokenStatusClient.IdentityUnavailableException())
+                .when(accessTokenStatusClient).requireActive(token);
+        mvc.perform(get("/api/courses").header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isServiceUnavailable());
+    }
+
+    @Test
     void anonymousAccessReturnsUnauthorized() throws Exception {
         mvc.perform(get("/api/courses"))
                 .andExpect(status().isUnauthorized())

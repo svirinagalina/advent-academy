@@ -73,6 +73,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      USER_SERVICE_URL: http://user-service:8080
       POSTGRES_HOST: postgres
       POSTGRES_DB: sprint
       POSTGRES_USER: sprint

@@ -31,6 +31,7 @@ public class JjwtProvider implements JwtProvider {
     private final long clockSkewSeconds;
     private final Clock clock;
     private final RefreshTokenStore refreshTokens;
+    private final AccessTokenState accessState;
 
     public JjwtProvider(
             @Value("#{environment.getProperty('security.jwt.secret','').isEmpty() ? 'construction-only-placeholder-key-32-bytes' : environment.getProperty('security.jwt.secret')}") String secret,
@@ -40,7 +41,8 @@ public class JjwtProvider implements JwtProvider {
             @Value("${security.jwt.refresh-token-expiration-days:7}") long refreshTokenDays,
             @Value("${security.jwt.clock-skew-seconds:30}") long clockSkewSeconds,
             Clock clock,
-            RefreshTokenStore refreshTokens) {
+            RefreshTokenStore refreshTokens,
+            AccessTokenState accessState) {
         this.keys = new com.adventacademy.security.JwtKeys(secret, "", "", "", "", "");
         this.issuer = issuer;
         this.audience = audience;
@@ -49,6 +51,7 @@ public class JjwtProvider implements JwtProvider {
         this.clockSkewSeconds = clockSkewSeconds;
         this.clock = clock;
         this.refreshTokens = refreshTokens;
+        this.accessState = accessState;
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -84,7 +87,14 @@ public class JjwtProvider implements JwtProvider {
 
     @Override
     public boolean validateAccessToken(String token) {
-        return hasType(token, ACCESS_TOKEN);
+        try {
+            Claims claims = parseClaims(token);
+            Number version = claims.get("authorization_version", Number.class);
+            return ACCESS_TOKEN.equals(claims.get(TOKEN_TYPE_CLAIM, String.class))
+                    && accessState.isActive(UUID.fromString(claims.getSubject()), version == null ? null : version.longValue());
+        } catch (JwtException | IllegalArgumentException exception) {
+            return false;
+        }
     }
 
     @Override
@@ -150,15 +160,10 @@ public class JjwtProvider implements JwtProvider {
         if (email != null) {
             builder.claim("email", email);
         }
-        return keys.sign(builder);
-    }
-
-    private boolean hasType(String token, String expectedType) {
-        try {
-            return expectedType.equals(parseClaims(token).get(TOKEN_TYPE_CLAIM, String.class));
-        } catch (JwtException | IllegalArgumentException exception) {
-            return false;
+        if (ACCESS_TOKEN.equals(tokenType)) {
+            builder.claim("authorization_version", accessState.version(userId));
         }
+        return keys.sign(builder);
     }
 
     private Claims parseClaims(String token) {

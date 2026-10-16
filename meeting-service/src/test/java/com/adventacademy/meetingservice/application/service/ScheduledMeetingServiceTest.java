@@ -28,6 +28,9 @@ import static org.mockito.Mockito.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ScheduledMeetingServiceTest {
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private com.adventacademy.security.AccessTokenStatusClient accessTokenStatusClient;
+
     private static final PostgreSQLContainer DATABASE = new PostgreSQLContainer("postgres:16-alpine");
     static {
         DATABASE.start();

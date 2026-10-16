@@ -4,8 +4,6 @@ import com.adventacademy.userservice.domain.model.UserStatus;
 import com.adventacademy.userservice.infrastructure.persistence.entity.UserEntity;
 import com.adventacademy.userservice.infrastructure.persistence.jpa.UserJpaRepository;
 import com.sun.net.httpserver.HttpServer;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,9 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,6 +34,7 @@ class TeachingRosterControllerIT {
     private static volatile String forwarded;
     @Autowired MockMvc mvc;
     @Autowired UserJpaRepository users;
+    @Autowired com.adventacademy.userservice.application.port.JwtProvider jwt;
 
     private static HttpServer server() {
         try {
@@ -124,9 +120,7 @@ class TeachingRosterControllerIT {
     }
     private String path() { return "/api/users/teaching/courses/" + COURSE + "/candidates"; }
     private String token(String role) {
-        return "Bearer " + Jwts.builder().subject(UUID.randomUUID().toString()).issuer("advent-academy-user-service")
-                .audience().add("advent-academy-services").and().claim("token_type", "access").claim("roles", List.of(role))
-                .issuedAt(Date.from(Instant.now())).expiration(Date.from(Instant.now().plusSeconds(900)))
-                .signWith(Keys.hmacShaKeyFor("test-secret-key-for-testing-purposes-only-32-bytes".getBytes(StandardCharsets.UTF_8))).compact();
+        var actor = seed(UUID.randomUUID() + "@actor.test", UserStatus.ACTIVE, true);
+        return "Bearer " + jwt.generateAccessToken(actor.getId(), actor.getEmail(), java.util.Set.of(role));
     }
 }

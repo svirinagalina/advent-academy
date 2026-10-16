@@ -69,12 +69,16 @@ public class RefreshRotationCoordinator {
             if (!key.equals(receipt.get("request_digest"))) { throw new InvalidCredentialsException("Refresh replay refused"); }
             try {
                 jdbc.queryForList("SELECT id FROM users WHERE id=? FOR UPDATE", receipt.get("user_id"));
+                if (!((java.sql.Timestamp) receipt.get("expires_at")).toInstant().isAfter(clock.instant())) {
+                    throw new InvalidCredentialsException("Refresh replay refused");
+                }
                 AuthResponse response = mapper.readValue(cipher.decrypt((String) receipt.get("response_ciphertext")), AuthResponse.class);
                 // Logout/password reset/blocking must also invalidate an overlapping receipt.
                 boolean active = Boolean.TRUE.equals(jdbc.queryForObject(
                         "SELECT EXISTS(SELECT 1 FROM users WHERE id=? AND status='ACTIVE' AND email_verified=true)",
                         Boolean.class, receipt.get("user_id")));
-                if (!active || !jwt.validateRefreshToken(response.refreshToken())) { throw new InvalidCredentialsException("Refresh session revoked"); }
+                if (!active || !jwt.validateAccessToken(response.accessToken())
+                        || !jwt.validateRefreshToken(response.refreshToken())) { throw new InvalidCredentialsException("Refresh session revoked"); }
                 return response;
             } catch (java.io.IOException exception) { throw new IllegalStateException("Invalid rotation receipt", exception); }
         }

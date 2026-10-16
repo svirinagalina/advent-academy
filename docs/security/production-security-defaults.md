@@ -17,6 +17,14 @@ missing. Exceptions are allowed only through a documented, owned, expiring risk 
 ## Authentication and authorization
 
 - Resource services validate access tokens and enforce object authorization independently.
+- Access JWTs include `authorization_version`. Identity checks this against the current database
+  version and account status; database triggers advance it on status, verification, password and
+  membership changes, including legacy/workflow writes. Restoring a role or unblocking an account
+  does not restore old tokens. Tokens without a version are refused.
+- After local JWT verification, content-service and meeting-service call the authenticated,
+  bodyless `GET /api/auth/access-check` in user-service for each bearer request. There is no
+  positive cache. Inactive tokens receive 401; identity failures/timeouts receive 503. The check
+  has a two-second connection/response timeout and never follows redirects.
 - Only user-service owns JWT private signing keys. Resource services consume public JWKS keys.
 - Allowed algorithms, issuer, audience, token type, expiry, and key ID are explicit and fail closed.
 - Administrative, publication, role, recovery, and meeting-host actions require server-derived
