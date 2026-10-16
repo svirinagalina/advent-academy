@@ -1,6 +1,7 @@
 "use client";
 
 import NextLink from "next/link";
+import { ThemeToggle } from "@/components/theme";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
 	useEffect,
@@ -945,7 +946,9 @@ export default function Academy({
 								</div>
 							</details>
 						)}
-						<div className="profile">
+						<ThemeToggle />
+                        {live?.canReview && <Link className="text-link" href="/?view=manage">Управление курсами</Link>}
+                        <div className="profile">
 							<button
 								type="button"
 								className="profile-button"

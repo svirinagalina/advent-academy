@@ -188,6 +188,14 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse("VALIDATION_ERROR", message));
     }
 
+    @ExceptionHandler({org.springframework.web.bind.MissingServletRequestParameterException.class,
+            org.springframework.web.bind.MissingRequestHeaderException.class,
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
+            org.springframework.web.method.annotation.HandlerMethodValidationException.class})
+    public ResponseEntity<ErrorResponse> handleInvalidRequest(Exception ex) {
+        return ResponseEntity.badRequest().body(new ErrorResponse("VALIDATION_ERROR", "Invalid request"));
+    }
+
     @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
     public ResponseEntity<ErrorResponse> handleUpstream(org.springframework.web.server.ResponseStatusException ex) {
         return ResponseEntity.status(ex.getStatusCode()).body(new ErrorResponse("UPSTREAM_UNAVAILABLE", ex.getReason()));

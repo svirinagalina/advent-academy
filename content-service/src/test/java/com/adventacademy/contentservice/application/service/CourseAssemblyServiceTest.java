@@ -167,4 +167,19 @@ public class CourseAssemblyServiceTest {
         assertThatThrownBy(() -> service.get(foreign.getId()))
                 .isInstanceOf(CourseAccessDeniedException.class);
     }
+    @Test
+    void managedCoursesExcludeForeignPublishedAndArchivedCourses() {
+        Course own = Course.create("Own", "", OWNER_ID, CLOCK);
+        Course foreign = Course.create("Foreign", "", UUID.randomUUID(), CLOCK);
+        UUID componentId = UUID.randomUUID();
+        foreign.addComponent(componentId, CLOCK);
+        when(coursePublicationPolicy.findUnpublishedComponents(List.of(componentId))).thenReturn(Set.of());
+        foreign.publish(coursePublicationPolicy, CLOCK);
+        when(courseRepository.findAll()).thenReturn(List.of(own, foreign));
+        assertThat(service.findManaged()).containsExactly(own);
+        foreign.archive(CLOCK);
+        assertThat(service.findManaged()).containsExactly(own);
+        currentUserProvider.roles = Set.of("ADMIN");
+        assertThat(service.findManaged()).containsExactly(own, foreign);
+    }
 }

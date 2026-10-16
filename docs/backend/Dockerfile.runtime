@@ -1,0 +1,7 @@
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+ARG SERVICE
+RUN addgroup -S spring && adduser -S spring -G spring
+COPY ${SERVICE}/build/libs/${SERVICE}-0.0.1-SNAPSHOT.jar app.jar
+USER spring:spring
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

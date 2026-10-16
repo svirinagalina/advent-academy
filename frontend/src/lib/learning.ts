@@ -109,6 +109,7 @@ export class ClientError extends Error {
 	}
 }
 const messages: Record<string, string> = {
+ "Internal Server Error": "Сервис временно недоступен. Попробуйте обновить страницу позже.",
     "Meeting version changed; reload it": "Занятие уже изменилось. Обновите расписание и повторите действие.",
     "Meeting is not open for joining": "Вход ещё не открыт или занятие уже завершено.",
     "Only a planned meeting can be rescheduled": "Перенести можно только ещё не начавшееся занятие.",
@@ -147,7 +148,8 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 		const message = data.message || data.error || "Не удалось выполнить запрос";
 		throw new ClientError(response.status, messages[message] || message);
 	}
-	return response.status === 204 ? (undefined as T) : response.json();
+	const text = await response.text();
+	return text ? JSON.parse(text) : (undefined as T);
 }
 export function toDemo(courses: CourseView[]): {
 	courses: Course[];

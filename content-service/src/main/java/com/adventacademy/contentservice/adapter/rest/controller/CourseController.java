@@ -7,6 +7,7 @@ import com.adventacademy.contentservice.adapter.rest.dto.CourseTreeResponse;
 import com.adventacademy.contentservice.adapter.rest.dto.ReorderRequest;
 import com.adventacademy.contentservice.application.service.CourseAssemblyService;
 import com.adventacademy.contentservice.application.service.GetCatalogService;
+import com.adventacademy.contentservice.application.service.LessonContentReadService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -43,11 +45,14 @@ public class CourseController {
 
     private final CourseAssemblyService assemblyService;
     private final GetCatalogService catalogService;
+    private final LessonContentReadService contentRead;
 
     public CourseController(CourseAssemblyService assemblyService,
-                            GetCatalogService catalogService) {
+                            GetCatalogService catalogService,
+                            LessonContentReadService contentRead) {
         this.assemblyService = assemblyService;
         this.catalogService = catalogService;
+        this.contentRead = contentRead;
     }
 
     @PostMapping
@@ -60,9 +65,9 @@ public class CourseController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
-    @Operation(summary = "List all courses visible to the caller")
-    public List<CourseResponse> findAll() {
-        return assemblyService.findAll().stream().map(CourseResponse::from).toList();
+    @Operation(summary = "List visible courses; managed=true returns only courses the caller can manage")
+    public List<CourseResponse> findAll(@RequestParam(defaultValue = "false") boolean managed) {
+        return (managed ? assemblyService.findManaged() : assemblyService.findAll()).stream().map(CourseResponse::from).toList();
     }
 
     @GetMapping("/{id}")
@@ -72,7 +77,9 @@ public class CourseController {
         // Refuses drafts that belong to somebody else before the tree is assembled.
         assemblyService.get(id);
         GetCatalogService.CourseTree tree = catalogService.getCourseTree(id);
-        return CourseTreeResponse.from(tree.course(), tree.componentsById());
+        var lessonIds = tree.componentsById().values().stream()
+                .flatMap(component -> component.getLessons().stream()).map(lesson -> lesson.getId()).toList();
+        return CourseTreeResponse.from(tree.course(), tree.componentsById(), contentRead.statuses(lessonIds));
     }
 
     @PatchMapping("/{id}")

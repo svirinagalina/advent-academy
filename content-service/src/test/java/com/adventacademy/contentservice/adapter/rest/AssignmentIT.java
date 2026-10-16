@@ -34,6 +34,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @AutoConfigureMockMvc
 class AssignmentIT extends AbstractPostgresIT {
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private com.adventacademy.contentservice.application.port.EnrollmentUserPort enrollmentUsers;
     @Autowired private MockMvc mvc;
     @Autowired private JdbcTemplate jdbc;
     @MockitoSpyBean private AuditTrailPort audit;

@@ -1,6 +1,7 @@
 package com.adventacademy.contentservice.application.service;
 
 import com.adventacademy.contentservice.application.port.CurrentUserProvider;
+import com.adventacademy.contentservice.application.port.EnrollmentUserPort;
 import com.adventacademy.contentservice.domain.ContentStatus;
 import com.adventacademy.contentservice.domain.LessonContent;
 import com.adventacademy.contentservice.domain.constructor.PublicationStatus;
@@ -25,15 +26,18 @@ public class LearningService {
     private final ComponentRepository components;
     private final LessonContentRepository contents;
     private final ContentAccessGuard guard;
+    private final EnrollmentUserPort enrollmentUsers;
 
     public LearningService(JdbcTemplate jdbc, CurrentUserProvider currentUser, CourseRepository courses,
-                           ComponentRepository components, LessonContentRepository contents, ContentAccessGuard guard) {
+                           ComponentRepository components, LessonContentRepository contents, ContentAccessGuard guard,
+                           EnrollmentUserPort enrollmentUsers) {
         this.jdbc = jdbc;
         this.currentUser = currentUser;
         this.courses = courses;
         this.components = components;
         this.contents = contents;
         this.guard = guard;
+        this.enrollmentUsers = enrollmentUsers;
     }
 
     public record LessonNode(UUID id, String title, int position, boolean assignment, boolean completed,
@@ -63,16 +67,21 @@ public class LearningService {
 
     @Transactional(readOnly = true)
     public List<UUID> teachingStudents(UUID courseId) {
-        teachingCourse(courseId);
+        var course = courses.findById(courseId).orElseThrow(() -> new NotFoundException("Course not found"));
+        guard.requireCurator("COURSE_ACCESS", "Course", courseId, course.getOwnerId(), "READ_COURSE_ROSTER");
+        if (course.getStatus() != PublicationStatus.PUBLISHED && course.getStatus() != PublicationStatus.ARCHIVED) {
+            throw new AccessDeniedException("Course roster is available only for published or archived courses");
+        }
         return jdbc.queryForList("SELECT user_id FROM content.learning_enrollments WHERE course_id=? ORDER BY user_id", UUID.class, courseId);
     }
 
-    public void assign(UUID courseId, UUID studentId) {
+    public void assign(UUID courseId, UUID studentId, String authorization) {
         var course = courses.findById(courseId).orElseThrow(() -> new NotFoundException("Course not found"));
         guard.requireCurator("COURSE_ACCESS", "Course", courseId, course.getOwnerId(), "ASSIGN_COURSE");
         if (course.getStatus() != PublicationStatus.PUBLISHED) {
             throw new IllegalStateException("Course is not published");
         }
+        enrollmentUsers.requireActiveUser(courseId, studentId, authorization);
         jdbc.update("INSERT INTO content.learning_enrollments(user_id, course_id) VALUES (?, ?) "
                 + "ON CONFLICT (user_id, course_id) DO NOTHING", studentId, courseId);
     }
@@ -140,9 +149,9 @@ public class LearningService {
                 .filter(value -> value.getStatus() == ContentStatus.PUBLISHED)
                 .orElseThrow(() -> new IllegalStateException("Lesson content is not published"));
         List<AssetView> assets = jdbc.query("SELECT id, filename, content_type, file_size FROM content.assets "
-                        + "WHERE lesson_id=? ORDER BY filename, id",
+                        + "WHERE lesson_id=? AND created_at<=? ORDER BY filename, id",
                 (rs, n) -> new AssetView(rs.getObject("id", UUID.class), rs.getString("filename"),
-                        rs.getString("content_type"), rs.getLong("file_size"), "/api/assets/" + rs.getObject("id")), lessonId);
+                        rs.getString("content_type"), rs.getLong("file_size"), "/api/assets/" + rs.getObject("id")), lessonId, java.sql.Timestamp.from(content.getUpdatedAt()));
         jdbc.update("UPDATE content.learning_enrollments SET started_at=COALESCE(started_at, CURRENT_TIMESTAMP) "
                 + "WHERE user_id=? AND course_id=?", currentUser.requireCurrentUserId(), courseId);
         return new LessonView(lessonId, node.title(), content.getHtml(), node.assignment(), assets);
@@ -167,6 +176,11 @@ public class LearningService {
     public void publishContent(UUID lessonId) {
         var component = components.findByLessonId(lessonId).orElseThrow(() -> new NotFoundException("Lesson not found"));
         guard.requireCurator("LESSON_CONTENT_ACCESS", "Component", component.getId(), component.getOwnerId(), "PUBLISH_LESSON_CONTENT");
+        jdbc.queryForObject("SELECT id FROM content.lessons WHERE id=? FOR UPDATE", UUID.class, lessonId);
+        if (Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM content.lesson_drafts WHERE lesson_id=?)",
+                Boolean.class, lessonId))) {
+            throw new IllegalStateException("Use the versioned draft publication API");
+        }
         var content = contents.findByLessonId(lessonId).orElseThrow(() -> new NotFoundException("Content not found"));
         if (content.getStatus() == ContentStatus.PUBLISHED) { return; }
         if (content.getStatus() == ContentStatus.DRAFT) { content.changeStatus(ContentStatus.REVIEW); }

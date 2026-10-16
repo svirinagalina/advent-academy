@@ -32,5 +32,8 @@ public class LearningController {
 
     @PutMapping("/courses/{courseId}/students/{studentId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'CONTENT_EDITOR', 'INSTRUCTOR')")
-    public void assign(@PathVariable UUID courseId, @PathVariable UUID studentId) { learning.assign(courseId, studentId); }
+    public void assign(@PathVariable UUID courseId, @PathVariable UUID studentId,
+                       @RequestHeader("Authorization") String authorization) {
+        learning.assign(courseId, studentId, authorization);
+    }
 }
