@@ -375,6 +375,45 @@ class MeetingSignalingHandlerTest {
         return joined.path("payload").path("participantId").textValue();
     }
 
+    @Test
+    void accountRevocationClosesAnExistingSocketAndRejectsPreissuedGrant() throws Exception {
+        var status = mock(com.adventacademy.security.AccessTokenStatusClient.class);
+        handler.accessStatus(status);
+        var room = roomService.createRoom().roomId().value();
+        var session = connectedSession("revoked-session");
+        var user = UUID.randomUUID();
+        var grant = capabilityService.issueScheduled(room, user, MeetingRole.HOST, null, "Bearer access");
+        send(session, "{\"version\":1,\"type\":\"JOIN\",\"roomId\":\"" + room + "\",\"capability\":\"" + grant.token() + "\"}");
+        var pending = capabilityService.issueScheduled(room, UUID.randomUUID(), MeetingRole.PARTICIPANT, null, "Bearer access");
+        org.mockito.Mockito.doThrow(new com.adventacademy.security.AccessTokenStatusClient.InactiveTokenException())
+                .when(status).requireActive("access");
+        handler.revokeInactiveSessions();
+        verify(session).close(CloseStatus.POLICY_VIOLATION);
+        assertThat(sessionRegistry.findBySession(session.getId())).isEmpty();
+        var newcomer = connectedSession("pending-session");
+        send(newcomer, "{\"version\":1,\"type\":\"JOIN\",\"roomId\":\"" + room + "\",\"capability\":\"" + pending.token() + "\"}");
+        assertError(newcomer, "ACCESS_REVOKED");
+        assertThat(sessionRegistry.findBySession(newcomer.getId())).isEmpty();
+    }
+
+    @Test
+    void renewedCapabilityUpdatesAuthorizationWithoutRejoiningTheRoom() throws Exception {
+        var status = mock(com.adventacademy.security.AccessTokenStatusClient.class);
+        handler.accessStatus(status);
+        var room = roomService.createRoom().roomId().value();
+        var session = connectedSession("renewed-session");
+        var user = UUID.randomUUID();
+        var first = capabilityService.issueScheduled(room, user, MeetingRole.HOST, null, "Bearer old");
+        send(session, "{\"version\":1,\"type\":\"JOIN\",\"roomId\":\"" + room + "\",\"capability\":\"" + first.token() + "\"}");
+        var next = capabilityService.issueScheduled(room, user, MeetingRole.HOST, null, "Bearer new");
+        send(session, "{\"version\":1,\"type\":\"REAUTHORIZE\",\"roomId\":\"" + room + "\",\"capability\":\"" + next.token() + "\"}");
+        org.mockito.Mockito.doThrow(new com.adventacademy.security.AccessTokenStatusClient.InactiveTokenException())
+                .when(status).requireActive("old");
+        send(session, baseMessage("PING", room));
+        assertThat(lastMessage(session).path("type").asText()).isEqualTo("PONG");
+        assertThat(roomService.getRoom(room).participants()).hasSize(1);
+    }
+
     private String joinMessage(String roomId) {
         final int userIndex = userSequence.incrementAndGet();
         MeetingRole role = MeetingRole.PARTICIPANT;

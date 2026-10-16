@@ -31,6 +31,9 @@ class MeetingWebSocketIT {
 
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
 
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private com.adventacademy.security.AccessTokenStatusClient accessTokenStatusClient;
+
     @LocalServerPort
     private int port;
 
@@ -177,7 +180,7 @@ class MeetingWebSocketIT {
     }
 
     private String capability(String roomId, UUID userId) {
-        return meetingAccessService.issueCapability(roomId, userId).token();
+        return meetingAccessService.issueCapability(roomId, userId, "Bearer fixture-token").token();
     }
 
     private String join(String roomId, String capability) {
