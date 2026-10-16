@@ -541,6 +541,48 @@ export default function Management({
 		</div>
 	);
 }
+function InstructorPicker({course, close, changed}: {course: CourseTree; close: () => void; changed: () => Promise<void>}) {
+    const [query, setQuery] = useState("");
+    const [items, setItems] = useState<Student[] | null>(null);
+    const [selected, setSelected] = useState("");
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState("");
+    async function search(event: FormEvent) {
+        event.preventDefault(); if (busy) return;
+        setBusy(true); setError(""); setSelected(""); setItems(null);
+        try { setItems(await request<Student[]>(`users/teaching/instructors?query=${encodeURIComponent(query.trim())}`)); }
+        catch (e) { setError(managementError(e)); }
+        finally { setBusy(false); }
+    }
+    async function assign(instructorId: string | null) {
+        if (busy) return;
+        setBusy(true); setError("");
+        try {
+            await request(`courses/${course.id}/instructor`, "PUT", {instructorId, version: course.version});
+            await changed(); close();
+        } catch (e) { setError(managementError(e)); await changed().catch(() => {}); }
+        finally { setBusy(false); }
+    }
+    return <Dialog title="Назначить преподавателя" busy={busy} close={close}>
+        <p>Преподаватель получит доступ к ученикам, проверке работ и занятиям этого курса. Предыдущее назначение будет снято.</p>
+        <form className="management-form" onSubmit={search}>
+            <label>Имя или email преподавателя<input required minLength={2} maxLength={100} value={query} disabled={busy}
+                onChange={e => {setQuery(e.target.value);setItems(null);setSelected("");}}/></label>
+            <button className="button secondary" type="submit" disabled={busy || query.trim().length < 2}>Найти преподавателей</button>
+        </form>
+        {busy && <p role="status">Сохраняем или ищем преподавателей…</p>}
+        {items && !items.length && <p role="status">Активные преподаватели не найдены.</p>}
+        {items && items.length > 0 && <fieldset disabled={busy}><legend>Преподаватели</legend>{items.map(person =>
+            <label key={person.id}><input type="radio" name="instructor" value={person.id} checked={selected === person.id}
+                onChange={() => setSelected(person.id)}/>{person.firstName} {person.lastName} · {person.email}</label>)}</fieldset>}
+        {error && <Alert>{error}</Alert>}
+        <div className="management-actions">
+            <button className="button primary" type="button" disabled={busy || !selected} onClick={() => void assign(selected)}>Назначить выбранного</button>
+            <button className="button secondary" type="button" disabled={busy} onClick={() => void assign(null)}>Снять назначение и передать курс себе</button>
+        </div>
+    </Dialog>;
+}
+
 function CourseCard({
 	id,
 	profile,
@@ -561,6 +603,7 @@ function CourseCard({
 	const [form, setForm] = useState<FormKind | null>(null);
 	const [moduleId, setModuleId] = useState("");
 	const [picker, setPicker] = useState(false);
+    const [instructorPicker, setInstructorPicker] = useState(false);
 	const [returnModule, setReturnModule] = useState("");
 	const [material, setMaterial] = useState<{
 		lesson: LessonNode;
@@ -659,6 +702,8 @@ function CourseCard({
 				</p>
 			)}
 			<div className="management-actions">
+                {curator && course.status === "PUBLISHED" && <button className="button secondary" type="button" disabled={busy}
+                    onClick={() => setInstructorPicker(true)}>Назначить преподавателя</button>}
 				{draft && (
 					<button
 						className="button primary"
@@ -984,6 +1029,7 @@ function CourseCard({
 					})}
 				</section>
 			)}
+            {instructorPicker && <InstructorPicker course={course} close={() => setInstructorPicker(false)} changed={load}/> }
 			{picker && (
 				<ModulePicker
 					course={course}

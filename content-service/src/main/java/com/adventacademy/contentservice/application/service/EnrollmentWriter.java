@@ -12,6 +12,19 @@ public class EnrollmentWriter {
     public EnrollmentWriter(JdbcTemplate jdbc, ContentAccessGuard guard) { this.jdbc = jdbc; this.guard = guard; }
 
     @Transactional
+    public void assignInstructor(UUID courseId, UUID instructorId, long version) {
+        if (!guard.isCurator()) { throw new org.springframework.security.access.AccessDeniedException("Curator role required"); }
+        var rows = jdbc.queryForList("SELECT owner_id,status,version FROM content.courses WHERE id=? FOR UPDATE", courseId);
+        if (rows.isEmpty()) { throw new NotFoundException("Course not found"); }
+        var row = rows.getFirst();
+        if (!"PUBLISHED".equals(row.get("status"))) { throw new IllegalStateException("Only a published course can be delegated"); }
+        if (((Number) row.get("version")).longValue() != version) { throw new IllegalStateException("Course version changed; reload it"); }
+        UUID owner = instructorId == null ? guard.requireCurrentUserId() : instructorId;
+        jdbc.update("UPDATE content.courses SET owner_id=?,version=version+1,updated_at=now() WHERE id=?", owner, courseId);
+        guard.recordSuccess("COURSE_ACCESS", "Course", courseId, "ASSIGN_INSTRUCTOR:" + row.get("owner_id") + "->" + owner);
+    }
+
+    @Transactional
     public void assign(UUID courseId, UUID userId) {
         var rows = jdbc.queryForList("SELECT owner_id,status FROM content.courses WHERE id=? FOR SHARE", courseId);
         if (rows.isEmpty()) { throw new NotFoundException("Course not found"); }

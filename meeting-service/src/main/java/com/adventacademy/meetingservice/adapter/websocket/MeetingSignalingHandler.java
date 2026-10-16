@@ -179,9 +179,13 @@ public class MeetingSignalingHandler extends TextWebSocketHandler {
     @org.springframework.scheduling.annotation.Scheduled(fixedDelay = 15000)
     public void revokeInactiveSessions() {
         grants.forEach((session, grant) -> {
-            try { requireActive(grant); }
+            try {
+                requireActive(grant);
+                if (grant.scheduleVersion() != null) { scheduled.requireOpen(grant); }
+            }
             catch (com.adventacademy.security.AccessTokenStatusClient.InactiveTokenException
-                   | com.adventacademy.security.AccessTokenStatusClient.IdentityUnavailableException exception) {
+                   | com.adventacademy.security.AccessTokenStatusClient.IdentityUnavailableException
+                   | MeetingException exception) {
                 revoke(grant.roomId(), grant.userId());
             }
         });

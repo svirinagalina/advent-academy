@@ -12,17 +12,27 @@ import java.util.UUID;
 
 @Validated
 @RestController
-@RequestMapping("/api/users/teaching/courses")
+@RequestMapping("/api/users/teaching")
 public class TeachingRosterController {
     private final TeachingRosterService roster;
     public TeachingRosterController(TeachingRosterService roster) { this.roster = roster; }
-    @GetMapping("/{courseId}/students")
+    @GetMapping("/instructors")
+    @PreAuthorize("hasAnyRole('ADMIN','CONTENT_EDITOR')")
+    public List<TeachingRosterService.Student> instructors(@RequestParam @Size(min = 2, max = 100) String query) {
+        return roster.instructors(query);
+    }
+
+    @GetMapping("/instructors/{userId}")
+    @PreAuthorize("hasAnyRole('ADMIN','CONTENT_EDITOR')")
+    public TeachingRosterService.Student instructor(@PathVariable UUID userId) { return roster.instructor(userId); }
+
+    @GetMapping("/courses/{courseId}/students")
     @PreAuthorize("hasAnyRole('ADMIN','CONTENT_EDITOR','INSTRUCTOR')")
     public List<TeachingRosterService.Student> students(@PathVariable UUID courseId,
                                                        @RequestHeader("Authorization") String authorization) {
         return roster.students(courseId, authorization);
     }
-    @GetMapping("/{courseId}/candidates")
+    @GetMapping("/courses/{courseId}/candidates")
     @PreAuthorize("hasAnyRole('ADMIN','CONTENT_EDITOR','INSTRUCTOR')")
     public List<TeachingRosterService.Student> candidates(@PathVariable UUID courseId,
             @RequestHeader("Authorization") String authorization,
@@ -31,7 +41,7 @@ public class TeachingRosterController {
         return roster.candidates(courseId, authorization, query, limit);
     }
 
-    @GetMapping("/{courseId}/candidates/{userId}")
+    @GetMapping("/courses/{courseId}/candidates/{userId}")
     @PreAuthorize("hasAnyRole('ADMIN','CONTENT_EDITOR','INSTRUCTOR')")
     public TeachingRosterService.Student candidate(@PathVariable UUID courseId, @PathVariable UUID userId,
             @RequestHeader("Authorization") String authorization,

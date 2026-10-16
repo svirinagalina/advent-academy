@@ -175,3 +175,6 @@ user-service;GET;/.well-known/jwks.json;public;public;Identity team;user-service
 api-gateway;ANY;/.well-known/jwks.json;public;public;Platform team;api-gateway/src/main/resources/application.yml;SEC-104
 content-service;GET;/api/lessons/{lessonId}/assignment/configuration;authenticated;authenticated;Content team;content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/controller/AssignmentController.java;SEC-102
 content-service;PUT;/api/lessons/{lessonId}/assignment/configuration;authenticated;authenticated;Content team;content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/controller/AssignmentController.java;SEC-102
+user-service;GET;/api/users/teaching/instructors;content-editor-or-admin;content-editor-or-admin;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/TeachingRosterController.java;SEC-105
+user-service;GET;/api/users/teaching/instructors/{userId};content-editor-or-admin;content-editor-or-admin;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/TeachingRosterController.java;SEC-105
+content-service;PUT;/api/courses/{id}/instructor;content-editor-or-admin;content-editor-or-admin;Content team;content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/controller/CourseController.java;SEC-105

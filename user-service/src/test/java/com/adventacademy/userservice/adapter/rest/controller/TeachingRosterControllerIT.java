@@ -33,6 +33,7 @@ class TeachingRosterControllerIT {
     private static volatile int upstreamStatus = 200;
     private static volatile String forwarded;
     @Autowired MockMvc mvc;
+    @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
     @Autowired UserJpaRepository users;
     @Autowired com.adventacademy.userservice.application.port.JwtProvider jwt;
 
@@ -109,6 +110,27 @@ class TeachingRosterControllerIT {
         for (UUID id : List.of(unverified.getId(), UUID.randomUUID())) {
             mvc.perform(get(path() + "/" + id).header("Authorization", token("INSTRUCTOR")))
                     .andExpect(status().isUnprocessableEntity());
+        }
+    }
+
+    @Test
+    void onlyCuratorsCanFindActiveVerifiedInstructors() throws Exception {
+        var teacher = seed("teacher-candidate@example.test", UserStatus.ACTIVE, true);
+        var blocked = seed("teacher-blocked@example.test", UserStatus.BLOCKED, true);
+        var student = seed("teacher-student@example.test", UserStatus.ACTIVE, true);
+        var ids = jdbc.queryForList("SELECT id FROM roles WHERE name='INSTRUCTOR'", UUID.class);
+        UUID role = ids.isEmpty() ? UUID.randomUUID() : ids.getFirst();
+        if (ids.isEmpty()) { jdbc.update("INSERT INTO roles(id,name,description,system_role,created_at,updated_at) VALUES(?,'INSTRUCTOR','Teacher',true,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)", role); }
+        for (UUID user : List.of(teacher.getId(), blocked.getId())) { jdbc.update("INSERT INTO user_roles(user_id,role_id) VALUES(?,?)", user, role); }
+        String route = "/api/users/teaching/instructors";
+        mvc.perform(get(route).param("query", "teacher")).andExpect(status().isUnauthorized());
+        mvc.perform(get(route).param("query", "teacher").header("Authorization", token("INSTRUCTOR"))).andExpect(status().isForbidden());
+        String curator = token("CONTENT_EDITOR");
+        mvc.perform(get(route).param("query", "teacher").header("Authorization", curator))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(teacher.getId().toString()));
+        for (UUID id : List.of(blocked.getId(), student.getId(), UUID.randomUUID())) {
+            mvc.perform(get(route+"/"+id).header("Authorization", curator)).andExpect(status().isUnprocessableEntity());
         }
     }
 

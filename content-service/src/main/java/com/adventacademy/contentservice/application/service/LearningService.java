@@ -97,6 +97,13 @@ public class LearningService {
     private EnrollmentWriter enrollmentWriter;
 
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
+    public void assignInstructor(UUID courseId, UUID instructorId, long version, String authorization) {
+        if (!guard.isCurator()) { throw new AccessDeniedException("Curator role required"); }
+        if (instructorId != null) { enrollmentUsers.requireActiveInstructor(instructorId, authorization); }
+        enrollmentWriter.assignInstructor(courseId, instructorId, version);
+    }
+
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
     public void assign(UUID courseId, UUID studentId, String authorization) {
         var course = courses.findById(courseId).orElseThrow(() -> new NotFoundException("Course not found"));
         guard.requireCurator("COURSE_ACCESS", "Course", courseId, course.getOwnerId(), "ASSIGN_COURSE");

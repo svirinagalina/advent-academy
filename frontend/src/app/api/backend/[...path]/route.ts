@@ -17,7 +17,7 @@ const completing = new RegExp(
 );
 const management: Record<string, RegExp> = {
 	GET: new RegExp(
-		`^(courses(?:/${uuid})?|components(?:/${uuid})?|lessons/${uuid}/(?:content(?:/draft)?|assignment/configuration)|users/teaching/courses/${uuid}/candidates)$`,
+		`^(courses(?:/${uuid})?|components(?:/${uuid})?|lessons/${uuid}/(?:content(?:/draft)?|assignment/configuration)|users/teaching/courses/${uuid}/candidates|users/teaching/instructors(?:/${uuid})?)$`,
 	),
 	POST: new RegExp(
 		`^(courses|components|courses/${uuid}/(?:components|publish|archive)|components/${uuid}/(?:lessons|publish)|lessons/${uuid}/(?:assets|content(?:/publish|/draft/(?:preview|publish))?))$`,
@@ -25,7 +25,7 @@ const management: Record<string, RegExp> = {
 	PATCH: new RegExp(`^courses/${uuid}$`),
 	DELETE: new RegExp(`^courses/${uuid}/components/${uuid}$`),
 	PUT: new RegExp(
-		`^(lessons/${uuid}/(?:content/draft|assignment/configuration)|courses/${uuid}/components/order|learning/courses/${uuid}/students/${uuid})$`,
+		`^(courses/${uuid}/instructor|lessons/${uuid}/(?:content/draft|assignment/configuration)|courses/${uuid}/components/order|learning/courses/${uuid}/students/${uuid})$`,
 	),
 };
 const administration: Record<string, RegExp> = {
@@ -87,7 +87,7 @@ async function proxy(
 					? ["page", "size"]
 					: path === "courses"
 						? ["managed", "page", "size", "status", "id"]
-						: path.endsWith("/candidates")
+						: path.endsWith("/candidates") || path === "users/teaching/instructors"
 							? ["query", "limit"]
 							: path === "teaching/submissions" ||
 									path.startsWith("meetings/scheduled")

@@ -201,9 +201,10 @@ public class ScheduledMeetingService {
         return register.get();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
     public void requireOpen(MeetingGrant grant) {
         final ScheduledMeetingStore.Entry entry = store.get(meetingId(grant.roomId()), "");
+        authorize(entry, grant.userId(), grant.authorization(), grant.role() == MeetingRole.HOST);
         requireOpen(entry);
         if (grant.scheduleVersion() == null || entry.version() != grant.scheduleVersion()) {
             throw conflict("Meeting version changed; reconnect");

@@ -27,6 +27,24 @@ public class TeachingRosterService {
         this.jdbc = jdbc; this.mapper = mapper; this.base = base;
     }
     public record Student(UUID id, String firstName, String lastName, String email) { }
+    private static final String INSTRUCTORS = "SELECT u.id,u.first_name,u.last_name,u.email FROM users u "
+            + "WHERE u.status='ACTIVE' AND u.email_verified=true AND EXISTS(SELECT 1 FROM user_roles ur "
+            + "JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=u.id AND r.name='INSTRUCTOR') ";
+
+    public List<Student> instructors(String query) {
+        String term = query.strip();
+        if (term.length() < 2 || term.length() > 100) { throw new IllegalArgumentException("Query must contain 2 to 100 characters"); }
+        return jdbc.query(INSTRUCTORS + "AND (POSITION(lower(?) IN lower(u.email))>0 "
+                + "OR POSITION(lower(?) IN lower(u.first_name || ' ' || u.last_name))>0) ORDER BY u.last_name,u.first_name,u.id LIMIT 20",
+                (r,n) -> new Student(r.getObject(1,UUID.class),r.getString(2),r.getString(3),r.getString(4)), term, term);
+    }
+
+    public Student instructor(UUID id) {
+        return jdbc.query(INSTRUCTORS + "AND u.id=?", (r,n) ->
+                new Student(r.getObject(1,UUID.class),r.getString(2),r.getString(3),r.getString(4)), id).stream().findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Active verified instructor required"));
+    }
+
     public List<Student> students(UUID courseId, String authorization) {
         final HttpRequest request = HttpRequest.newBuilder(URI.create(base + "/api/teaching/courses/" + courseId + "/students"))
                 .timeout(Duration.ofSeconds(5)).header("Authorization", authorization).GET().build();
