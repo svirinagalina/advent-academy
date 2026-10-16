@@ -1,0 +1,41 @@
+spring:
+  config:
+    import: configtree:/run/secrets/
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST}:5432/${POSTGRES_DB}?currentSchema=content
+    username: academy_content
+    hikari:
+      maximum-pool-size: 16
+      connection-timeout: 3000
+  flyway:
+    locations: classpath:db/migration,classpath:db/production-callbacks
+    url: jdbc:postgresql://${POSTGRES_HOST}:5432/${POSTGRES_DB}?currentSchema=content
+    user: academy_content_migrate
+    schemas: content
+    default-schema: content
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: content
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+asset:
+  public-published: false
+server:
+  shutdown: graceful
+  tomcat:
+    threads:
+      max: 48
+    max-connections: 128

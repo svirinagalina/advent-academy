@@ -22,7 +22,7 @@ try{
  const csrf=await context.request.post(`${base}/api/backend/learning/courses/${fixture.course}/lessons/${fixture.lessons[0]}/complete`,{headers:{Origin:'https://foreign.example'}});assert.equal(csrf.status(),403);
  const unknown=await context.request.get(`${base}/api/backend/users`);assert.equal(unknown.status(),404);
  await page.getByRole('link',{name:'Продолжить обучение',exact:true}).click();
- await page.getByRole('heading',{name:'Реальный материал',exact:true}).waitFor();
+ await page.frameLocator('.lesson-material.safe-html').getByRole('heading',{name:'Реальный материал',exact:true}).waitFor();
  await page.getByRole('button',{name:'Завершить урок',exact:true}).click();
  await page.getByText('Урок завершён',{exact:true}).waitFor();
  assert.equal((await (await context.request.get(`${base}/api/backend/learning/courses/${fixture.course}`)).json()).completed,1);
@@ -39,7 +39,7 @@ try{
  assert.equal((await context.cookies()).some(c=>c.name==='advent_session'),false);assert.equal((await context.request.get(`${base}/api/session`)).status(),401);
  await login();await page.getByRole('heading',{name:'Привет, Мария!'}).waitFor();await page.goto(`${base}/?view=lesson&course=${fixture.course}&lesson=${fixture.lessons[0]}`);await page.getByText('Урок завершён',{exact:true}).waitFor();
  await page.goto(`${base}/?view=lesson&course=${fixture.course}&lesson=${fixture.lessons[2]}`);await page.getByText('Урок недоступен',{exact:true}).waitFor();
- await page.goto(`${base}/?view=lesson&course=${fixture.course}&lesson=${fixture.lessons[1]}`);await page.getByRole('heading',{name:'Реальный материал'}).waitFor();await page.getByRole('button',{name:'Завершить урок',exact:true}).click();await page.getByText('Урок завершён',{exact:true}).waitFor();
+ await page.goto(`${base}/?view=lesson&course=${fixture.course}&lesson=${fixture.lessons[1]}`);await page.frameLocator('.lesson-material.safe-html').getByRole('heading',{name:'Реальный материал'}).waitFor();await page.getByRole('button',{name:'Завершить урок',exact:true}).click();await page.getByText('Урок завершён',{exact:true}).waitFor();
  await page.setViewportSize({width:1440,height:1000});await page.getByRole('link',{name:'Главная',exact:true}).click();await page.locator('.attention-section .assignment-row').waitFor();
  await page.goto(`${base}/?view=lesson&course=${fixture.course}&lesson=${fixture.lessons[2]}`);await page.getByRole('heading',{name:fixture.assignmentTitle || 'Обязательное задание'}).waitFor();assert.equal(await page.getByRole('button',{name:'Завершить урок'}).count(),0);
  await page.getByRole('button',{name:'Меню пользователя Мария'}).click();await page.getByRole('link',{name:'Выйти',exact:true}).click();await page.getByRole('heading',{name:'Войти в кабинет'}).waitFor();await login(fixture.otherEmail);await page.getByRole('heading',{name:'Курсы пока не назначены'}).waitFor();

@@ -50,3 +50,8 @@ out/
 .claude/
 konspekt-course-constructor.md
 planTask*.md
+
+# Disposable architecture verification and operator secrets
+.ci-tmp/
+/secrets/
+/tls/

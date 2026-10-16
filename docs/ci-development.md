@@ -77,3 +77,12 @@ FULL_CI=true bash ci/check-backend.sh
 `CI_MERGE_REQUEST_DIFF_BASE_SHA` и `CI_COMMIT_SHA`. Для push используются
 `CI_COMMIT_BEFORE_SHA` и `CI_COMMIT_SHA`. При отсутствующей/нулевой базе выбираются все
 сервисы; ошибка Git завершает job, а не превращается в пропуск тестов.
+
+## Production regression gate
+
+`production-readiness` builds a Java 21 / Node 24 / Chrome / Docker helper and runs the isolated
+production-profile browser scenario in the DinD network namespace. The GitLab build directory
+is shared with the daemon for temporary secret/TLS mounts. Backend/frontend/runtime changes
+and full/release pipelines run this gate; failures block the pipeline and retain artifacts.
+`frontend-check` also blocks high/critical npm advisories. Updating `security-common` selects all
+backend modules. The gate does not claim complete Java/container/secret/SBOM security scanning.

@@ -46,9 +46,13 @@ class DownloadAssetServiceTest {
         public boolean existsById(UUID id) { throw new UnsupportedOperationException(); }
         public void deleteById(UUID id) { throw new UnsupportedOperationException(); }
     };
+    private int bodyReads;
     private final AssetStorage assets = new AssetStorage() {
         public StoredAsset save(StoredAsset value) { throw new UnsupportedOperationException(); }
-        public Optional<StoredAsset> findById(UUID id) { return id.equals(asset.getId()) ? Optional.of(asset) : Optional.empty(); }
+        public Optional<StoredAsset> findById(UUID id) { bodyReads++; return id.equals(asset.getId()) ? Optional.of(asset) : Optional.empty(); }
+        public Optional<com.adventacademy.contentservice.domain.AssetMetadata> findMetadataById(UUID id) {
+            return id.equals(asset.getId()) ? Optional.of(com.adventacademy.contentservice.domain.AssetMetadata.from(asset)) : Optional.empty();
+        }
         public List<StoredAsset> findAllByLessonId(UUID id) { throw new UnsupportedOperationException(); }
     };
     private final LessonContentRepository contents = new LessonContentRepository() {
@@ -61,6 +65,16 @@ class DownloadAssetServiceTest {
         public Optional<UUID> currentUserId() { return Optional.ofNullable(caller); }
         public Set<String> currentRoles() { return roles; }
     }, audit::add, components);
+
+    @Test
+    void unauthorizedReadNeverLoadsBinaryBody() {
+        caller = null; roles = Set.of();
+        assertThatThrownBy(() -> service.getAssetById(asset.getId())).isInstanceOf(AssetAccessDeniedException.class);
+        assertThat(bodyReads).isZero();
+        caller = owner; roles = Set.of("INSTRUCTOR");
+        assertThat(service.getAssetById(asset.getId())).isEqualTo(asset);
+        assertThat(bodyReads).isEqualTo(1);
+    }
 
     @Test
     void lessonOwnerCanReadImageUploadedByAnotherUserAfterPublication() {

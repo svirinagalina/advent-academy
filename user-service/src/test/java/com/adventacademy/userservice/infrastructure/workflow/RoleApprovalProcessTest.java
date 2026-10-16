@@ -18,6 +18,9 @@ class RoleApprovalProcessTest {
     @Autowired
     private ZeebeClient zeebeClient;
 
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private BindRoleRequestWorker binder;
+
     @Test
     void deploysRoleApprovalAndWaitsForReview() {
         var processInstance = zeebeClient.newCreateInstanceCommand()
@@ -29,6 +32,9 @@ class RoleApprovalProcessTest {
                 .send()
                 .join();
 
+        assertThat(processInstance).isWaitingExactlyAtElements("ServiceTask_bind_request");
+        var jobs = zeebeClient.newActivateJobsCommand().jobType("role-request-bind").maxJobsToActivate(1).send().join().getJobs();
+        zeebeClient.newCompleteCommand(jobs.getFirst().getKey()).variables(Map.of("workflowCanonical",true)).send().join();
         assertThat(processInstance)
                 .isStarted()
                 .isActive()

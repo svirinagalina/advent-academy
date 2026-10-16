@@ -105,20 +105,25 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private RefreshRotationCoordinator rotations;
+
     @PostMapping("/refresh")
     @Operation(summary = "Refresh access token", description = "Get new access token using refresh token")
     @ApiResponse(responseCode = "200", description = "Token refreshed successfully")
     @ApiResponse(responseCode = "401", description = "Invalid refresh token")
-    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
-        AuthResponse response = refreshTokenService.refresh(request);
+    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request,
+            @RequestHeader(value = "X-Refresh-Request", defaultValue = "") String requestKey) {
+        AuthResponse response = rotations.rotate(request, requestKey);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
+    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request,
+            @RequestHeader(value = "X-Refresh-Request", defaultValue = "") String requestKey) {
         // consumeRefreshToken verifies signature/type/expiry and revokes only this session.
         // Already revoked/expired tokens still yield a successful, idempotent logout.
-        jwtProvider.consumeRefreshToken(request.refreshToken());
+        rotations.logout(request, requestKey);
         return ResponseEntity.noContent().build();
     }
 

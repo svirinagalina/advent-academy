@@ -64,8 +64,18 @@ public class TeachingRosterService {
                 term, term, limit);
     }
 
+    @org.springframework.beans.factory.annotation.Value("${enrollment.validation-key:${security.jwt.secret:}}")
+    private String validationKey;
+
     public Student candidate(UUID courseId, UUID userId, String authorization) {
-        authorizeCourse(courseId, authorization);
+        return candidate(courseId, userId, authorization, "");
+    }
+
+    public Student candidate(UUID courseId, UUID userId, String authorization, String assertion) {
+        if (!com.adventacademy.security.SignedRequest.verify(validationKey, "enrollment",
+                courseId + ":" + userId + ":" + authorization, assertion)) {
+            authorizeCourse(courseId, authorization);
+        }
         var users = jdbc.query("SELECT id,first_name,last_name,email FROM users WHERE id=? AND status='ACTIVE' AND email_verified=true",
                 (rs,n) -> new Student(rs.getObject("id",UUID.class),rs.getString("first_name"),rs.getString("last_name"),rs.getString("email")), userId);
         if (users.isEmpty()) {

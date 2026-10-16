@@ -63,6 +63,7 @@ public class AssignmentService {
         jdbc.update("INSERT INTO content.lesson_assignments(lesson_id,title,description) VALUES (?,?,?) "
                 + "ON CONFLICT (lesson_id) DO UPDATE SET title=EXCLUDED.title,description=EXCLUDED.description,updated_at=CURRENT_TIMESTAMP",
                 lessonId, definition.title().trim(), definition.description().trim());
+        jdbc.update("UPDATE content.lessons SET assignment_revision=assignment_revision+1 WHERE id=?", lessonId);
         guard.recordSuccess("ASSIGNMENT_ACCESS", "Lesson", lessonId, "DEFINE_ASSIGNMENT");
     }
 
@@ -75,14 +76,26 @@ public class AssignmentService {
 
     @Transactional(readOnly = true)
     public List<Summary> list() {
+        UUID student = user.requireCurrentUserId();
+        var definitions = new java.util.HashMap<UUID, Definition>();
+        jdbc.query("SELECT a.lesson_id,a.title,a.description FROM content.lesson_assignments a "
+                + "WHERE EXISTS(SELECT 1 FROM content.lessons l JOIN content.course_components cc ON cc.component_id=l.component_id "
+                + "JOIN content.learning_enrollments e ON e.course_id=cc.course_id WHERE l.id=a.lesson_id AND e.user_id=?)",
+                (org.springframework.jdbc.core.RowCallbackHandler) r -> definitions.put(r.getObject(1,UUID.class), new Definition(r.getString(2),r.getString(3))), student);
+        record State(String status, int count) { }
+        var attempts = new java.util.HashMap<String, State>();
+        jdbc.query("SELECT DISTINCT ON(course_id,lesson_id) course_id,lesson_id,status, "
+                + "count(*) OVER(PARTITION BY course_id,lesson_id) AS attempts FROM content.assignment_submissions "
+                + "WHERE user_id=? ORDER BY course_id,lesson_id,attempt DESC",
+                (org.springframework.jdbc.core.RowCallbackHandler) r -> attempts.put(r.getObject(1)+":"+r.getObject(2),
+                        new State(r.getString(3),r.getInt(4))), student);
         return learning.list().stream().flatMap(course -> course.modules().stream().flatMap(module -> module.lessons().stream())
                 .filter(LearningService.LessonNode::assignment).map(lesson -> {
-                    List<Definition> definitions = definitions(lesson.id());
-                    List<Attempt> attempts = attempts(user.requireCurrentUserId(), course.id(), lesson.id());
-                    String status = attempts.isEmpty() ? "draft" : attempts.get(attempts.size() - 1).status();
-                    return new Summary(course.id(), course.title(), lesson.id(), lesson.title(),
-                            definitions.isEmpty() ? lesson.title() : definitions.get(0).title(), status,
-                            lesson.available(), !definitions.isEmpty(), attempts.size());
+                    Definition definition = definitions.get(lesson.id());
+                    State state = attempts.get(course.id()+":"+lesson.id());
+                    return new Summary(course.id(),course.title(),lesson.id(),lesson.title(),
+                            definition == null ? lesson.title() : definition.title(), state == null ? "draft" : state.status(),
+                            lesson.available(), definition != null, state == null ? 0 : state.count());
                 })).toList();
     }
 
@@ -122,6 +135,7 @@ public class AssignmentService {
         requireTeacher();
         if (!List.of("review", "changes", "accepted").contains(status)) { throw new IllegalArgumentException("Invalid status"); }
         String where = " FROM content.assignment_submissions s JOIN content.courses c ON c.id=s.course_id "
+                + "JOIN content.lessons l ON l.id=s.lesson_id JOIN content.lesson_assignments a ON a.lesson_id=l.id "
                 + "WHERE s.status=? AND c.status='PUBLISHED' AND s.user_id<>? "
                 + (guard.isCurator() ? "" : "AND c.owner_id=? ");
         var args = new java.util.ArrayList<Object>();
@@ -129,8 +143,11 @@ public class AssignmentService {
         if (!guard.isCurator()) { args.add(user.requireCurrentUserId()); }
         Long total = jdbc.queryForObject("SELECT count(*)" + where, Long.class, args.toArray());
         args.add(size); args.add((long) page * size);
-        List<Attempt> attempts = jdbc.query("SELECT s.*" + where + "ORDER BY s.submitted_at, s.id LIMIT ? OFFSET ?", this::attempt, args.toArray());
-        return new ReviewPage(attempts.stream().map(this::item).toList(), total == null ? 0 : total, page, size);
+        List<ReviewItem> items = jdbc.query("SELECT s.*,c.title AS course_title,l.title AS lesson_title,a.title AS assignment_title,"
+                + "a.description AS assignment_description" + where + "ORDER BY s.submitted_at,s.id LIMIT ? OFFSET ?",
+                (r,n) -> new ReviewItem(attempt(r,n),r.getString("course_title"),r.getString("lesson_title"),
+                        r.getString("assignment_title"),r.getString("assignment_description")), args.toArray());
+        return new ReviewPage(items, total == null ? 0 : total, page, size);
     }
 
     @Transactional(readOnly = true)

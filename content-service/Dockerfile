@@ -6,6 +6,7 @@ COPY gradle gradle
 COPY gradlew settings.gradle build.gradle ./
 
 COPY platform/build.gradle platform/build.gradle
+COPY security-common security-common
 COPY user-service/build.gradle user-service/build.gradle
 COPY content-service/build.gradle content-service/build.gradle
 COPY meeting-service/build.gradle meeting-service/build.gradle

@@ -1,0 +1,35 @@
+spring:
+  config:
+    import: configtree:/run/secrets/
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST}:5432/${POSTGRES_DB}?currentSchema=meeting
+    username: academy_meeting
+    hikari:
+      maximum-pool-size: 16
+      connection-timeout: 3000
+  flyway:
+    locations: classpath:db/migration,classpath:db/production-callbacks
+    url: jdbc:postgresql://${POSTGRES_HOST}:5432/${POSTGRES_DB}?currentSchema=meeting
+    user: academy_meeting_migrate
+    schemas: meeting
+    default-schema: meeting
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: meeting
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+server:
+  shutdown: graceful

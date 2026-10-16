@@ -17,8 +17,9 @@ public class AuthRateLimitConfiguration {
     @Bean
     public FilterRegistrationBean<AuthRateLimitFilter> authRateLimitFilter(RateLimiter rateLimiter,
                                                                           AuthRateLimitProperties properties,
-                                                                          ObjectMapper objectMapper) {
-        var registration = new FilterRegistrationBean<>(new AuthRateLimitFilter(rateLimiter, properties, objectMapper));
+                                                                          ObjectMapper objectMapper,
+                                                                          @org.springframework.beans.factory.annotation.Value("${security.bff-request-key:}") String bffKey) {
+        var registration = new FilterRegistrationBean<>(new AuthRateLimitFilter(rateLimiter, properties, objectMapper, bffKey));
         registration.addUrlPatterns("/api/auth/*");
         registration.setOrder(2);
         registration.setName("authRateLimitFilter");

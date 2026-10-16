@@ -1,0 +1,18 @@
+# Non-secret deployment settings. Keep real secret files outside this repository.
+DEPLOYMENT_NAME=advent-production
+SECRETS_DIR=/secure/academy/secrets
+TLS_DIR=/secure/academy/tls
+PUBLIC_HOST=academy.example.com
+PUBLIC_ORIGIN=https://academy.example.com
+SIGNALING_URL=wss://academy.example.com/ws/meetings
+JWT_KEY_ID=academy-v1
+BIND_ADDRESS=127.0.0.1
+HTTPS_PORT=443
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USERNAME=academy
+EMAIL_FROM=academy@example.com
+TURN_URL=turns:turn.example.com:5349
+TURN_USERNAME=academy
+BOOTSTRAP_ENABLED=false
+BOOTSTRAP_EMAIL=

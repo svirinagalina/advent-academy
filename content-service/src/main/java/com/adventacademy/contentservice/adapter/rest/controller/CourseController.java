@@ -63,6 +63,20 @@ public class CourseController {
         return ResponseEntity.status(HttpStatus.CREATED).body(CourseResponse.from(course));
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.adventacademy.contentservice.application.service.CourseDirectory directory;
+
+    @GetMapping(params = "page")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
+    public com.adventacademy.contentservice.application.service.CourseDirectory.Page page(
+            @RequestParam(defaultValue = "false") boolean managed,
+            @RequestParam(defaultValue = "ALL") String status,
+            @RequestParam(required = false) UUID id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return directory.page(managed,status,id,page,size);
+    }
+
     @GetMapping
     @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
     @Operation(summary = "List visible courses; managed=true returns only courses the caller can manage")

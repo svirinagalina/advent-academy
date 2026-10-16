@@ -3,14 +3,10 @@ package com.adventacademy.contentservice.infrastructure.security;
 import com.adventacademy.contentservice.application.port.JwtProvider;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -19,32 +15,42 @@ import java.util.UUID;
 @Slf4j
 @Component
 public class JjwtProvider implements JwtProvider {
-    private final SecretKey secretKey;
+    private com.adventacademy.security.JwtKeys keys;
     private final String issuer;
     private final String audience;
     private final int clockSkewSeconds;
 
     public JjwtProvider(
-            @Value("${security.jwt.secret}") String secret,
+            @Value("#{environment.getProperty('security.jwt.secret','').isEmpty() ? 'construction-only-placeholder-key-32-bytes' : environment.getProperty('security.jwt.secret')}") String secret,
             @Value("${security.jwt.issuer}") String issuer,
             @Value("${security.jwt.audience}") String audience,
             @Value("${security.jwt.clock-skew-seconds}") int clockSkewSeconds
     ) {
-        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.keys = new com.adventacademy.security.JwtKeys(secret, "", "", "", "", "");
         this.issuer = issuer;
         this.audience = audience;
         this.clockSkewSeconds = clockSkewSeconds;
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
+    public void configureKeys(
+            @Value("${security.jwt.secret:}") String secret,
+            @Value("${security.jwt.private-key-file:}") String privateFile,
+            @Value("${security.jwt.public-key-file:}") String publicFile,
+            @Value("${security.jwt.key-id:}") String kid,
+            @Value("${security.jwt.previous-public-key-file:}") String previousFile,
+            @Value("${security.jwt.previous-key-id:}") String previousKid,
+            org.springframework.core.env.Environment environment) {
+        keys = new com.adventacademy.security.JwtKeys(secret, "", publicFile, kid, previousFile, previousKid);
+        if (environment.acceptsProfiles(org.springframework.core.env.Profiles.of("production")) && !keys.asymmetric()) {
+            throw new IllegalStateException("Production requires asymmetric JWT keys");
+        }
+    }
+
     @Override
     public ValidatedToken validate(String token) throws JwtException {
         try {
-            Claims claims = Jwts.parser()
-                    .verifyWith(secretKey)
-                    .clockSkewSeconds(clockSkewSeconds)
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
+            Claims claims = keys.parse(token, issuer, audience, clockSkewSeconds, java.time.Clock.systemUTC());
 
             validateClaims(claims);
 

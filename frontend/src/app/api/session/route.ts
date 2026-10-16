@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { readBoundedJson } from "@/lib/request-body";
 import {
 	ApiError,
 	authorized,
@@ -37,7 +38,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
 	try {
 		requireOrigin(request);
-		return NextResponse.json(await login(await request.json()), {
+		return NextResponse.json(await login(await readBoundedJson(request)), {
 			headers: { "Cache-Control": "no-store" },
 		});
 	} catch (error) {

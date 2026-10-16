@@ -15,6 +15,8 @@ spring:
       enabled: false
 
 security:
+  refresh-receipts:
+    cleanup-enabled: false
   jwt:
     secret: test-secret-key-for-testing-purposes-only-32-bytes
     issuer: advent-academy-user-service

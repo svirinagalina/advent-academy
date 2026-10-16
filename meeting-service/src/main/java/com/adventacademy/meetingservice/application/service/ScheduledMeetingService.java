@@ -92,16 +92,49 @@ public class ScheduledMeetingService {
         return new Page(entries, store.visibleCount(actor, allowed, teacher, tab, now), page, size);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
     public View detail(UUID id, UUID actor, String authorization, boolean teacher) {
         final ScheduledMeetingStore.Entry entry = store.get(id, "");
         authorize(entry, actor, authorization, teacher);
         return view(entry, actor, teacher);
     }
 
+    private org.springframework.transaction.support.TransactionTemplate transactions;
+    @org.springframework.beans.factory.annotation.Autowired
+    public void transactionManager(org.springframework.transaction.PlatformTransactionManager manager) {
+        transactions = new org.springframework.transaction.support.TransactionTemplate(manager);
+    }
+
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
     public View edit(UUID id, UUID actor, String authorization, Edit request) {
+        final var snapshot = store.get(id, "");
+        authorize(snapshot, actor, authorization, true);
+        validateParticipants(snapshot.hostId(), snapshot.courseId(), authorization, request.participants());
+        return transactions.execute(status -> editLocked(id, actor, request));
+    }
+
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
+    public View transition(UUID id, UUID actor, String authorization, long version, String action) {
+        authorize(store.get(id, ""), actor, authorization, true);
+        return transactions.execute(status -> transitionLocked(id, actor, version, action));
+    }
+
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
+    public Admission issue(UUID id, UUID actor, String authorization) {
+        final var snapshot = store.get(id, "");
+        authorize(snapshot, actor, authorization, snapshot.hostId().equals(actor));
+        return transactions.execute(status -> issueLocked(id, actor, authorization, snapshot.version()));
+    }
+
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
+    public SessionRegistration join(MeetingGrant grant, Supplier<SessionRegistration> register) {
+        final var snapshot = store.get(meetingId(grant.roomId()), "");
+        authorize(snapshot, grant.userId(), grant.authorization(), grant.role() == MeetingRole.HOST);
+        return transactions.execute(status -> joinLocked(grant, register));
+    }
+
+    private View editLocked(UUID id, UUID actor, Edit request) {
         final ScheduledMeetingStore.Entry entry = store.get(id, " FOR UPDATE");
-        authorize(entry, actor, authorization, true);
         if (entry.version() != request.version()) {
             final boolean same = entry.version() == request.version() + 1 && entry.title().equals(request.title().trim())
                     && entry.startsAt().equals(request.startsAt()) && entry.endsAt().equals(request.endsAt())
@@ -115,16 +148,14 @@ public class ScheduledMeetingService {
             throw conflict("Only a planned meeting can be rescheduled");
         }
         validateWindow(request.startsAt(), request.endsAt());
-        validateParticipants(entry.hostId(), entry.courseId(), authorization, request.participants());
         store.reschedule(entry, request.title().trim(), request.startsAt(), request.endsAt());
         store.participants(id, request.participants());
         events.publishEvent(new Changed(roomId(id)));
         return view(store.get(id, ""), actor, true);
     }
 
-    public View transition(UUID id, UUID actor, String authorization, long version, String action) {
+    private View transitionLocked(UUID id, UUID actor, long version, String action) {
         final ScheduledMeetingStore.Entry entry = store.get(id, " FOR UPDATE");
-        authorize(entry, actor, authorization, true);
         final String target = target(action);
         if (entry.version() != version) {
             if (entry.version() == version + 1 && entry.state().equals(target)) {
@@ -139,10 +170,11 @@ public class ScheduledMeetingService {
         return view(store.get(id, ""), actor, true);
     }
 
-    public Admission issue(UUID id, UUID actor, String authorization) {
+    private Admission issueLocked(UUID id, UUID actor, String authorization, long version) {
         final ScheduledMeetingStore.Entry entry = store.get(id, " FOR SHARE");
+        if (entry.version() != version) { throw conflict("Meeting version changed; reconnect"); }
         final boolean host = entry.hostId().equals(actor);
-        authorize(entry, actor, authorization, host);
+        if (!host && !store.participants(id).contains(actor)) { throw new MeetingAccessDeniedException(); }
         requireOpen(entry);
         limits.requireCapabilityAllowed(actor);
         rooms.ensureRoom(roomId(id), store.participants(id).size() + 1);
@@ -156,13 +188,15 @@ public class ScheduledMeetingService {
         return new Admission(roomId(id), issued.token(), issued.expiresAt(), role.name());
     }
 
-    public SessionRegistration join(MeetingGrant grant, Supplier<SessionRegistration> register) {
+    private SessionRegistration joinLocked(MeetingGrant grant, Supplier<SessionRegistration> register) {
         final ScheduledMeetingStore.Entry entry = store.get(meetingId(grant.roomId()), " FOR SHARE");
         requireOpen(entry);
         if (grant.scheduleVersion() == null || entry.version() != grant.scheduleVersion()) {
             throw conflict("Meeting version changed; reconnect");
         }
-        authorize(entry, grant.userId(), grant.authorization(), grant.role() == MeetingRole.HOST);
+        if (!entry.hostId().equals(grant.userId()) && !store.participants(entry.id()).contains(grant.userId())) {
+            throw new MeetingAccessDeniedException();
+        }
         rooms.ensureRoom(grant.roomId(), store.participants(entry.id()).size() + 1);
         return register.get();
     }

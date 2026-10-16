@@ -66,8 +66,8 @@ public class AssetLinkResolver {
         if (!ASSET_ID_PATTERN.matcher(reference).matches()) {
             return false;
         }
-        return assetStorage.findById(UUID.fromString(reference))
-                .map(asset -> asset.getLessonId().equals(lessonId))
+        return assetStorage.findMetadataById(UUID.fromString(reference))
+                .map(asset -> asset.lessonId().equals(lessonId))
                 .orElse(false);
     }
 }

@@ -48,6 +48,11 @@ public class UploadAssetService {
         this.accessGuard = accessGuard;
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbc;
+    @org.springframework.beans.factory.annotation.Value("${asset.upload.max-lesson-bytes:104857600}")
+    private long maxLessonBytes = 104857600;
+
     @Transactional
     public StoredAsset uploadAsset(UploadAssetCommand command) {
         UUID ownerId = accessGuard.requireCurrentUserId();
@@ -58,6 +63,13 @@ public class UploadAssetService {
         }
         requireOwnedLesson(command.lessonId());
 
+        if (jdbc != null) {
+            jdbc.queryForList("SELECT id FROM content.lessons WHERE id=? FOR UPDATE", command.lessonId());
+            Long stored = jdbc.queryForObject("SELECT COALESCE(sum(file_size),0) FROM content.assets WHERE lesson_id=?", Long.class, command.lessonId());
+            if (stored + command.sizeBytes() > maxLessonBytes) {
+                throw new com.adventacademy.contentservice.application.validation.InvalidAssetFileException("lesson asset storage quota exceeded");
+            }
+        }
         StoredAsset asset = StoredAsset.create(
                 command.lessonId(),
                 ownerId,

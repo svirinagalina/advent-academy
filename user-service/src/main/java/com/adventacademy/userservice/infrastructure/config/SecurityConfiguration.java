@@ -26,6 +26,7 @@ public class SecurityConfiguration {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/.well-known/jwks.json",
                                 "/actuator/health",
                                 "/actuator/health/**",
                                 "/actuator/info",

@@ -1,0 +1,45 @@
+spring:
+  config:
+    import: configtree:/run/secrets/
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST}:5432/${POSTGRES_DB}?currentSchema=identity
+    username: academy_user
+    hikari:
+      maximum-pool-size: 16
+      connection-timeout: 3000
+  flyway:
+    locations: classpath:db/migration,classpath:db/production-callbacks
+    url: jdbc:postgresql://${POSTGRES_HOST}:5432/${POSTGRES_DB}?currentSchema=identity
+    user: academy_user_migrate
+    schemas: identity
+    default-schema: identity
+  mail:
+    enabled: true
+    properties:
+      mail.smtp.starttls.required: true
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: identity
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+server:
+  shutdown: graceful
+
+# This deployment uses direct user administration. Camunda is an optional separately operated dependency.
+camunda:
+  client:
+    zeebe:
+      enabled: false

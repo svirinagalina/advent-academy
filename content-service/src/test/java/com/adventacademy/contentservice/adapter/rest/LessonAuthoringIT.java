@@ -36,6 +36,21 @@ class LessonAuthoringIT extends AbstractPostgresIT {
     @Autowired ObjectMapper json;
 
     @Test
+    void assignmentConfigurationIsAtomicVersionedAndOwned() throws Exception {
+        var f=fixture(); String path="/api/lessons/"+f.lesson()+"/assignment/configuration";
+        mvc.perform(get(path).header(HttpHeaders.AUTHORIZATION,f.owner())).andExpect(status().isOk())
+                .andExpect(jsonPath("$.required").value(false)).andExpect(jsonPath("$.version").value(0));
+        body(put(path),f.owner(),Map.of("required",true,"title","Build API","description","Implement a tested API","version",0),200);
+        assertThat(jdbc.queryForObject("SELECT required_assignment FROM content.lessons WHERE id=?",Boolean.class,f.lesson())).isTrue();
+        body(put(path),f.owner(),Map.of("required",false,"version",0),409);
+        body(put(path),token(UUID.randomUUID(),"INSTRUCTOR"),Map.of("required",false,"version",1),403);
+        body(put(path),f.owner(),Map.of("required",true,"title","","description","","version",1),400);
+        assertThat(jdbc.queryForObject("SELECT title FROM content.lesson_assignments WHERE lesson_id=?",String.class,f.lesson())).isEqualTo("Build API");
+        body(put(path),f.owner(),Map.of("required",false,"version",1),200);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM content.lesson_assignments WHERE lesson_id=?",Integer.class,f.lesson())).isZero();
+    }
+
+    @Test
     void createsReopensUpdatesAndPublishesWithoutExposingDraftToLearner() throws Exception {
         var f = fixture();
         mvc.perform(get(f.path()).header(HttpHeaders.AUTHORIZATION, f.owner()))
@@ -110,7 +125,7 @@ class LessonAuthoringIT extends AbstractPostgresIT {
         body(put(f.path()),foreign,Map.of("markdown","# чужой","version",0),403);
         body(post(f.path()+"/preview"),foreign,Map.of("markdown","# чужой"),403);
         body(post(f.path()+"/publish"),foreign,Map.of("version",0),403);
-        mvc.perform(multipart("/api/lessons/{id}/assets",f.lesson()).file(new MockMultipartFile("file","x.png","image/png",new byte[]{1}))
+        mvc.perform(multipart("/api/lessons/{id}/assets",f.lesson()).file(new MockMultipartFile("file","x.png","image/png",java.util.Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=")))
                 .header(HttpHeaders.AUTHORIZATION,foreign)).andExpect(status().isForbidden());
         mvc.perform(get(f.path()).header(HttpHeaders.AUTHORIZATION,token(UUID.randomUUID(),"LEARNER"))).andExpect(status().isForbidden());
         assertThat(snapshotCount(f)).isZero();
@@ -132,7 +147,7 @@ class LessonAuthoringIT extends AbstractPostgresIT {
     @Test
     void validatesAssetsKeepsRawMarkdownAndNewDraftImagePrivateUntilPublication() throws Exception {
         var f=fixture(); save(f,"# Old",0,200); publish(f,1,200);
-        var image=mvc.perform(multipart("/api/lessons/{id}/assets",f.lesson()).file(new MockMultipartFile("file","x.png","image/png",new byte[]{1,2,3}))
+        var image=mvc.perform(multipart("/api/lessons/{id}/assets",f.lesson()).file(new MockMultipartFile("file","x.png","image/png",java.util.Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=")))
                 .header(HttpHeaders.AUTHORIZATION,f.owner())).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         String id=JsonPath.read(image,"$.id"), source="![image](asset:"+id+")";
         mvc.perform(get("/api/assets/"+id)).andExpect(status().isForbidden());
@@ -145,14 +160,14 @@ class LessonAuthoringIT extends AbstractPostgresIT {
         body(post(other.path()+"/preview"),other.owner(),Map.of("markdown",source),422);
         save(other,"![](/api/assets/"+id+")",0,422);
         publish(f,3,200);
-        mvc.perform(get("/api/assets/"+id)).andExpect(status().isOk()).andExpect(content().bytes(new byte[]{1,2,3}));
+        mvc.perform(get("/api/assets/"+id)).andExpect(status().isOk()).andExpect(content().bytes(java.util.Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=")));
     }
 
     @Test
     void componentOwnerCanReadPrivateImageUploadedByDifferentCurator() throws Exception {
         var f=fixture(); save(f,"# Published",0,200); publish(f,1,200);
         String curator=token(UUID.randomUUID(),"CONTENT_EDITOR");
-        byte[] image={1,2,3};
+        byte[] image=java.util.Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=");
         String response=mvc.perform(multipart("/api/lessons/{id}/assets",f.lesson())
                 .file(new MockMultipartFile("file","curator.png","image/png",image))
                 .header(HttpHeaders.AUTHORIZATION,curator)).andExpect(status().isCreated())

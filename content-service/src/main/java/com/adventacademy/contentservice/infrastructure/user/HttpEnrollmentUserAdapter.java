@@ -24,10 +24,16 @@ public class HttpEnrollmentUserAdapter implements EnrollmentUserPort {
         this.base = base;
     }
 
+    @org.springframework.beans.factory.annotation.Value("${enrollment.validation-key:${security.jwt.secret:}}")
+    private String validationKey;
+
     @Override
     public void requireActiveUser(UUID courseId, UUID userId, String authorization) {
         var request = HttpRequest.newBuilder(URI.create(base + "/api/users/teaching/courses/" + courseId + "/candidates/" + userId))
-                .header("Authorization", authorization).timeout(Duration.ofSeconds(8)).GET().build();
+                .header("Authorization", authorization)
+                .header("X-Enrollment-Check", com.adventacademy.security.SignedRequest.sign(validationKey,
+                        "enrollment", courseId + ":" + userId + ":" + authorization))
+                .timeout(Duration.ofSeconds(8)).GET().build();
         try {
             var response = client.send(request, HttpResponse.BodyHandlers.discarding());
             if (response.statusCode() == 200) { return; }

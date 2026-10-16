@@ -17,7 +17,7 @@ const completing = new RegExp(
 );
 const management: Record<string, RegExp> = {
 	GET: new RegExp(
-		`^(courses(?:/${uuid})?|components(?:/${uuid})?|lessons/${uuid}/content(?:/draft)?|users/teaching/courses/${uuid}/candidates)$`,
+		`^(courses(?:/${uuid})?|components(?:/${uuid})?|lessons/${uuid}/(?:content(?:/draft)?|assignment/configuration)|users/teaching/courses/${uuid}/candidates)$`,
 	),
 	POST: new RegExp(
 		`^(courses|components|courses/${uuid}/(?:components|publish|archive)|components/${uuid}/(?:lessons|publish)|lessons/${uuid}/(?:assets|content(?:/publish|/draft/(?:preview|publish))?))$`,
@@ -25,7 +25,7 @@ const management: Record<string, RegExp> = {
 	PATCH: new RegExp(`^courses/${uuid}$`),
 	DELETE: new RegExp(`^courses/${uuid}/components/${uuid}$`),
 	PUT: new RegExp(
-		`^(lessons/${uuid}/content/draft|courses/${uuid}/components/order|learning/courses/${uuid}/students/${uuid})$`,
+		`^(lessons/${uuid}/(?:content/draft|assignment/configuration)|courses/${uuid}/components/order|learning/courses/${uuid}/students/${uuid})$`,
 	),
 };
 const administration: Record<string, RegExp> = {
@@ -86,7 +86,7 @@ async function proxy(
 				: path.startsWith("users/admin/") && path.endsWith("/history")
 					? ["page", "size"]
 					: path === "courses"
-						? ["managed"]
+						? ["managed", "page", "size", "status", "id"]
 						: path.endsWith("/candidates")
 							? ["query", "limit"]
 							: path === "teaching/submissions" ||
@@ -140,7 +140,7 @@ async function proxy(
 			);
 		}
 		const headers = new Headers({ "Cache-Control": "private, no-store" });
-		for (const name of ["content-type", "content-disposition"]) {
+		for (const name of ["content-type", "content-disposition", "content-security-policy", "referrer-policy"]) {
 			const value = response.headers.get(name);
 			if (value) headers.set(name, value);
 		}
@@ -148,7 +148,7 @@ async function proxy(
 		return new NextResponse(
 			[204, 205, 304].includes(response.status)
 				? null
-				: await response.arrayBuffer(),
+				: response.body,
 			{
 				status: response.status,
 				headers,

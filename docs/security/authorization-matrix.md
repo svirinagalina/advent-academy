@@ -1,7 +1,9 @@
 # Authorization matrix contract
 
 [`authorization-matrix.csv`](authorization-matrix.csv) is the canonical endpoint inventory. It
-records both the behavior at the SEC-101 baseline and the required end state. A row describes one
+records the current route contract and the required end state. Production profile restrictions
+and private published assets are specified in `../operations/production.md`; the development
+public-published asset contract is intentionally narrower than production protection. A row describes one
 externally reachable route or one operational/static route family.
 
 ## Columns

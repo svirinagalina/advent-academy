@@ -1,0 +1,115 @@
+{
+  "branch": "fix/architecture-readiness",
+  "base": "9aff3a9",
+  "scope": "Architecture and PM audit remediation; local verification only",
+  "tasks": [
+    {
+      "id": "AR-01",
+      "title": "Reject active uploads and contain legacy assets",
+      "status": "verified_local",
+      "acceptance": "SVG and MIME spoofing rejected; legacy active content cannot execute on application origin"
+    },
+    {
+      "id": "AR-02",
+      "title": "Preserve trusted client identity through BFF and gateway",
+      "status": "verified_local",
+      "acceptance": "Independent clients have independent quotas; forged identity rejected"
+    },
+    {
+      "id": "AR-03",
+      "title": "Asymmetric JWT signing and public-key verification",
+      "status": "verified_local",
+      "acceptance": "Production resource services cannot mint tokens; rotation and invalid claims tested"
+    },
+    {
+      "id": "AR-04",
+      "title": "Coordinate refresh across BFF instances",
+      "status": "verified_local",
+      "acceptance": "Concurrent rotations across processes preserve the same browser session without replaying stale credentials"
+    },
+    {
+      "id": "AR-05",
+      "title": "Remove enrollment callback cycle and network waits inside database transactions",
+      "status": "verified_local",
+      "acceptance": "Assignment validates identity and ownership without callback dependency or held transaction"
+    },
+    {
+      "id": "AR-06",
+      "title": "Bound course, assignment and meeting read amplification",
+      "status": "verified_local",
+      "acceptance": "Authorization uses minimal projections; assignment queries do not grow per lesson"
+    },
+    {
+      "id": "AR-07",
+      "title": "Complete assignment authoring and account recovery UI",
+      "status": "verified_local",
+      "acceptance": "Staff create mandatory work and users recover passwords through BFF/UI"
+    },
+    {
+      "id": "AR-08",
+      "title": "Durable role workflow startup and recovery",
+      "status": "verified_local",
+      "acceptance": "Committed requests survive lost delivery and retry without duplicate grants"
+    },
+    {
+      "id": "AR-09",
+      "title": "Explicit production configuration, bootstrap and recovery operations",
+      "status": "verified_local_operator_rollout_pending",
+      "acceptance": "Fail-closed production startup; isolated backup/restore and initial administrator procedures verified",
+      "remaining": "Target-environment alerting, backup schedule/RPO/RTO and existing-data cutover rehearsal require operator deployment."
+    },
+    {
+      "id": "AR-10",
+      "title": "Bound file delivery and define publication policy",
+      "status": "verified_local",
+      "acceptance": "Safe attachment headers, explicit privacy policy, bounded delivery and storage limits"
+    },
+    {
+      "id": "AR-11",
+      "title": "Meeting placement and capacity verification",
+      "status": "verified_local_external_capacity_pending",
+      "acceptance": "Room placement is explicit; mesh/device/network limits are measured or explicitly unresolved",
+      "remaining": "External TURN and eight physical devices cannot be validated by this local run; singleton transport is enforced and tested."
+    },
+    {
+      "id": "AR-12",
+      "title": "CI regression gates, current risk register and repeat architecture/PM audit",
+      "status": "verified_local_remote_ci_pending",
+      "acceptance": "Fresh backend/browser/security checks; each original finding closed with evidence or retained explicitly"
+    }
+  ],
+  "audit_base": "45d5595",
+  "local_only": true,
+  "repeat_review": "docs/reviews/architecture-pm-readiness-2026-10-16.md",
+  "follow_up_findings": [
+    {
+      "id": "AR-13",
+      "priority": "P1",
+      "title": "Assign instructors to courses without granting global editor authority",
+      "status": "open",
+      "acceptance": "Admin assigns an active instructor; own course work succeeds; foreign/revoked assignment is denied server-side"
+    },
+    {
+      "id": "AR-14",
+      "priority": "P1",
+      "title": "Refresh token family replay revocation",
+      "status": "open",
+      "acceptance": "Stolen-token replay revokes the compromised family while legitimate shared BFF retries stay valid"
+    },
+    {
+      "id": "AR-15",
+      "priority": "P1 before public launch",
+      "title": "Complete security supply-chain gates and remote CI evidence",
+      "status": "open",
+      "acceptance": "Release JAR/image SCA, SBOM, secret and relevant static/config scans block failures on the actual runner"
+    },
+    {
+      "id": "AR-16",
+      "priority": "Release gate",
+      "title": "External TURN/device capacity, deployment operations and existing-data rehearsal",
+      "status": "external_verification_required",
+      "acceptance": "Real network/device tests, staffed alerting, backup schedule/recovery targets and rehearsal on a copy of existing data"
+    }
+  ],
+  "release_verdict": "Supervised admin/editor-led pilot; independent public production is not approved"
+}

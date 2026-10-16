@@ -27,6 +27,7 @@ class HttpEnrollmentUserAdapterTest {
         });
         server.start();
         var adapter = new HttpEnrollmentUserAdapter("http://127.0.0.1:" + server.getAddress().getPort());
+        org.springframework.test.util.ReflectionTestUtils.setField(adapter, "validationKey", "isolated-enrollment-key-at-least-32-characters");
         try {
             adapter.requireActiveUser(course, user, "Bearer caller");
             assertThat(authorization.get()).isEqualTo("Bearer caller");

@@ -1,5 +1,7 @@
 "use client";
+import { SafeHtml } from "@/components/safe-html";
 import Link from "next/link";
+import { AssignmentAuthoring } from "@/components/assignment-authoring";
 import dynamic from "next/dynamic";
 import type { Revision } from "@/components/lesson-editor";
 import { useSearchParams } from "next/navigation";
@@ -325,18 +327,22 @@ export default function Management({
 	const [error, setError] = useState("");
 	const [filter, setFilter] = useState("ALL");
 	const [create, setCreate] = useState(false);
+    const [page, setPage] = useState(0);
+    const [total, setTotal] = useState(0);
 	const load = useCallback(async () => {
 		if (!allowed) return;
 		setLoading(true);
 		setError("");
 		try {
-			setCourses(await request<ManagedCourse[]>("courses?managed=true"));
+            const result = await request<{items: ManagedCourse[]; total: number}>(
+                `courses?managed=true&page=${courseId ? 0 : page}&size=20&status=${courseId ? "ALL" : filter}${courseId ? `&id=${courseId}` : ""}`);
+            setCourses(result.items); setTotal(result.total);
 		} catch (e) {
 			setError(managementError(e));
 		} finally {
 			setLoading(false);
 		}
-	}, [allowed]);
+	}, [allowed, courseId, page, filter]);
 	useEffect(() => {
 		void load();
 	}, [load]);
@@ -463,12 +469,17 @@ export default function Management({
 										type="button"
 										key={value}
 										aria-pressed={filter === value}
-										onClick={() => setFilter(value)}
+										onClick={() => {setFilter(value); setPage(0);}}
 									>
 										{value === "ALL" ? "Все" : statusLabel[value as Status]}
 									</button>
 								))}
 							</fieldset>
+                            <nav className="management-actions" aria-label="Страницы курсов">
+                                <button type="button" className="button secondary" disabled={page === 0 || loading} onClick={() => setPage(page - 1)}>Назад</button>
+                                <span>Страница {page + 1} · Всего курсов: {total}</span>
+                                <button type="button" className="button secondary" disabled={(page + 1) * 20 >= total || loading} onClick={() => setPage(page + 1)}>Далее</button>
+                            </nav>
 							<div className="management-course-list">
 								{courses
 									.filter((c) => filter === "ALL" || c.status === filter)
@@ -890,6 +901,7 @@ function CourseCard({
 								{m.lessons.map((l) => (
 									<div className="management-lesson" key={l.id}>
 										<strong>{l.title}</strong>
+                                        {mayManage(m) && <AssignmentAuthoring lessonId={l.id} editable={m.status === "DRAFT"} />}
 										<span className="badge">
 											{l.contentPresent
 												? `Материал: ${statusLabel[l.contentStatus as Status]}`
@@ -1133,9 +1145,8 @@ function MaterialPanel({ lesson, module, course, canManage, back, changed }: {
                 <button className="button secondary" type="button" disabled={busy} onClick={() => void load()}>Обновить материал</button>
             </div>
             <p>Сохранение черновика не изменяет опубликованный материал. Модуль и курс публикуются отдельно.</p>
-            {material.version > 0 ? <section className="card management-preview"><h2>Предпросмотр HTML</h2><div className="lesson-article lesson-material"
-                // biome-ignore lint/security/noDangerouslySetInnerHtml: authorized HTML sanitized by content-service.
-                dangerouslySetInnerHTML={{ __html: material.html.replaceAll("/api/assets/", "/api/backend/assets/") }} /></section> : canManage && <form className="card management-form" onSubmit={upload}>
+            {material.version > 0 ? <section className="card management-preview"><h2>Предпросмотр HTML</h2><SafeHtml className="lesson-article lesson-material" title="Предпросмотр материала"
+                html={material.html.replaceAll("/api/assets/", "/api/backend/assets/")} /></section> : canManage && <form className="card management-form" onSubmit={upload}>
                 <h2>Импорт материала урока</h2><label htmlFor="lesson-file">Markdown или ZIP с Markdown и вложениями</label>
                 <input id="lesson-file" type="file" accept=".md,.markdown,.zip" disabled={busy} onChange={e => setFile(e.target.files?.[0] || null)} />
                 <p>Файл до 5 MiB. ZIP: один Markdown-файл в корне, вложения в assets/.</p>

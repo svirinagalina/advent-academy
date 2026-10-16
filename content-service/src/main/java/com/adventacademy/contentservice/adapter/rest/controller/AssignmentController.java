@@ -17,6 +17,23 @@ public class AssignmentController {
     private final AssignmentService assignments;
     public AssignmentController(AssignmentService assignments) { this.assignments = assignments; }
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.adventacademy.contentservice.application.service.AssignmentAuthoringService authoring;
+
+    @GetMapping("/api/lessons/{lessonId}/assignment/configuration")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CONTENT_EDITOR', 'INSTRUCTOR')")
+    public com.adventacademy.contentservice.application.service.AssignmentAuthoringService.Configuration configuration(@PathVariable UUID lessonId) {
+        return authoring.get(lessonId);
+    }
+
+    @PutMapping("/api/lessons/{lessonId}/assignment/configuration")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CONTENT_EDITOR', 'INSTRUCTOR')")
+    public com.adventacademy.contentservice.application.service.AssignmentAuthoringService.Configuration configure(
+            @PathVariable UUID lessonId,
+            @Valid @RequestBody com.adventacademy.contentservice.application.service.AssignmentAuthoringService.Edit edit) {
+        return authoring.save(lessonId, edit);
+    }
+
     @PutMapping("/api/lessons/{lessonId}/assignment")
     @PreAuthorize("hasAnyRole('ADMIN', 'CONTENT_EDITOR', 'INSTRUCTOR')")
     public void define(@PathVariable UUID lessonId, @Valid @RequestBody AssignmentService.Definition request) {

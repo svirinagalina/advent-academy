@@ -27,6 +27,7 @@ expect_modules "$all" user-service/src/main/java/com/example/adapter/rest/contro
 expect_modules "$all" user-service/src/main/java/com/example/application/dto/response/AuthResponse.java
 expect_modules "$all" docs/security/authorization-matrix.csv
 expect_modules "$all" platform/build.gradle
+expect_modules "$all" security-common/src/main/java/com/adventacademy/security/JwtKeys.java
 expect_modules "$all" gradle/libs.versions.toml
 expect_modules "$all" user-service/build.gradle
 expect_modules "$all" .gitlab-ci.yml
@@ -42,4 +43,4 @@ expect_modules user-service 'user-service/src/test/java/com/example/Test with sp
 [[ $(CI_COMMIT_TAG=v1.0.0 bash ci/select-modules.sh --paths </dev/null) == "$all" ]]
 [[ $(CI_COMMIT_BEFORE_SHA=0000000000000000000000000000000000000000 bash ci/select-modules.sh) == "$all" ]]
 
-echo "25 module-selection scenarios passed."
+echo "26 module-selection scenarios passed."
