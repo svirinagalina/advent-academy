@@ -13,6 +13,11 @@ public class AccessTokenState {
         this.entities = entities;
     }
 
+    public void lock(UUID userId) {
+        entities.createNativeQuery("SELECT id FROM users WHERE id=?1 FOR UPDATE")
+                .setParameter(1, userId).getResultList();
+    }
+
     public long version(UUID userId) {
         // Native queries through JPA flush pending status/role changes before reading
         // the trigger-maintained version, including login after a temporary lock.

@@ -117,7 +117,7 @@ class UserAdminIT {
         mvc.perform(post("/api/auth/refresh").header("X-Refresh-Request", key)
                 .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(request)))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isUnauthorized());
-        assertThat(jwt.validateRefreshToken(replacement)).isTrue();
+        assertThat(jwt.validateRefreshToken(replacement)).isFalse();
         assertThat(jwt.validateRefreshToken(old)).isFalse();
     }
 

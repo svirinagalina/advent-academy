@@ -218,7 +218,21 @@ class AuthSecurityIT {
                 .andReturn().getResponse().getStatus());
         assertThat(statuses).filteredOn(status -> status == 200).hasSize(1);
         assertThat(statuses).allMatch(status -> status == 200 || status == 401);
-        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM refresh_tokens WHERE user_id = ?", Integer.class, userId)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM refresh_tokens WHERE user_id = ? AND consumed=false", Integer.class, userId)).isZero();
+    }
+
+    @Test
+    void replayRevokesOnlyTheCompromisedFamilyAndCommitsTheRevocation() throws Exception {
+        String email = "family@example.com";
+        registerAndConfirm(email);
+        String first = readJson(login(email, PASSWORD, null).andReturn()).path("refreshToken").asText();
+        String independent = readJson(login(email, PASSWORD, null).andReturn()).path("refreshToken").asText();
+        var rotated = readJson(mvc.perform(postJson("/api/auth/refresh", Map.of("refreshToken", first)))
+                .andExpect(status().isOk()).andReturn());
+        mvc.perform(postJson("/api/auth/refresh", Map.of("refreshToken", first))).andExpect(status().isUnauthorized());
+        mvc.perform(postJson("/api/auth/refresh", Map.of("refreshToken", rotated.path("refreshToken").asText())))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(postJson("/api/auth/refresh", Map.of("refreshToken", independent))).andExpect(status().isOk());
     }
 
     private JjwtProvider replicaProvider() {

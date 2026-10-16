@@ -11,12 +11,16 @@ import java.util.UUID;
 
 public interface RefreshTokenJpaRepository extends JpaRepository<RefreshTokenEntity, String> {
 
-    @Query("select count(t) > 0 from RefreshTokenEntity t where t.jtiDigest = :digest and t.expiresAt > :now")
+    @Query("select count(t) > 0 from RefreshTokenEntity t where t.jtiDigest = :digest and t.expiresAt > :now and t.consumed = false")
     boolean isActive(@Param("digest") String digest, @Param("now") Instant now);
 
     @Modifying(flushAutomatically = true)
-    @Query("delete from RefreshTokenEntity t where t.jtiDigest = :digest and t.expiresAt > :now")
+    @Query("update RefreshTokenEntity t set t.consumed = true where t.jtiDigest = :digest and t.expiresAt > :now and t.consumed = false")
     int consume(@Param("digest") String digest, @Param("now") Instant now);
+
+    @Modifying(flushAutomatically = true)
+    @Query("delete from RefreshTokenEntity t where t.familyId = :family")
+    int revokeFamily(@Param("family") UUID family);
 
     @Modifying(flushAutomatically = true)
     @Query("delete from RefreshTokenEntity t where t.userId = :userId")

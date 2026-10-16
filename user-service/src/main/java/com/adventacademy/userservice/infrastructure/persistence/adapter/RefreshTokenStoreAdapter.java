@@ -24,8 +24,30 @@ public class RefreshTokenStoreAdapter implements RefreshTokenStore {
     @Override
     @Transactional
     public void save(String jtiDigest, UUID userId, Instant expiresAt) {
+        save(jtiDigest, userId, expiresAt, UUID.randomUUID());
+    }
+
+    @Override
+    @Transactional
+    public void save(String jtiDigest, UUID userId, Instant expiresAt, UUID familyId) {
         tokens.deleteExpiredByUserId(userId, clock.instant());
-        tokens.save(new RefreshTokenEntity(jtiDigest, userId, expiresAt));
+        tokens.save(new RefreshTokenEntity(jtiDigest, userId, expiresAt, familyId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UUID family(String digest) {
+        return tokens.findById(digest).map(RefreshTokenEntity::getFamilyId).orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public boolean revokeConsumedFamily(String digest, Instant now) {
+        var token = tokens.findById(digest).orElse(null);
+        if (token == null || !token.isConsumed()) { return false; }
+        // Retain the family lock through the caller's user-row transaction.
+        tokens.revokeFamily(token.getFamilyId());
+        return true;
     }
 
     @Override
