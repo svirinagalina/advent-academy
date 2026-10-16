@@ -1,11 +1,10 @@
 // Real app + real content/user services. Never run against a production deployment.
-import { chromium } from 'playwright';
+import { withSmokeBrowser } from './smoke-browser.mjs';
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 const base = process.env.ADVENT_TEST_ORIGIN || 'http://127.0.0.1:3000';
 assert.ok(['127.0.0.1', 'localhost'].includes(new URL(base).hostname));
-const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || '/usr/bin/google-chrome', headless: true, args: ['--no-sandbox'] });
-try {
+await withSmokeBrowser('editor', async browser => {
     const fixture = JSON.parse(readFileSync(process.env.ADVENT_EDITOR_FIXTURE || '/tmp/management-browser-fixture.json', 'utf8'));
     const contexts = [];
     async function session(who) {
@@ -184,4 +183,4 @@ try {
     assert.deepEqual(errors, []);
     console.log('PASS: real Markdown create/save/reopen/edit, server HTML and learner parity, publication isolation, image upload/reopen, concurrent editors, network recovery, import confirmation, Undo, download, ownership, BFF protection, themes, mobile and ZIP compatibility.');
     for (const context of contexts) await context.close();
-} finally { await browser.close(); }
+});

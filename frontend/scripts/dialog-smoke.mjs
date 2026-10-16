@@ -1,12 +1,12 @@
 // Real local frontend and BFF; only synthetic fixtures may be used.
-import { chromium } from 'playwright';
+import { withSmokeBrowser } from './smoke-browser.mjs';
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 const base = process.env.ADVENT_TEST_ORIGIN || 'http://127.0.0.1:13024';
 assert.ok(['localhost', '127.0.0.1'].includes(new URL(base).hostname));
 const fixture = JSON.parse(readFileSync(process.env.ADVENT_EDITOR_FIXTURE || '/tmp/advent-editor-fixture.json', 'utf8'));
 assert.ok(fixture.users.editor.email.endsWith('@example.test'));
-const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || '/usr/bin/google-chrome', headless: true, args: ['--no-sandbox'] });
+await withSmokeBrowser('dialog', async browser => {
 async function api(context, path, method = 'GET', data) {
     const response = await context.request.fetch(`${base}/api/backend/${path}`, { method, headers: { Origin: base }, data });
     const text = await response.text();
@@ -27,7 +27,6 @@ async function centered(page, label, close = true) {
         await dialog.waitFor({ state: 'hidden' });
     }
 }
-try {
     for (const theme of ['light', 'dark']) for (const width of [1440, 390, 320]) {
         const context = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: theme });
         try {
@@ -76,4 +75,4 @@ try {
             console.log(`PASS: dialogs centered, preview switches, no overflow: ${theme} ${width}px`);
         } finally { await context.close(); }
     }
-} finally { await browser.close(); }
+});

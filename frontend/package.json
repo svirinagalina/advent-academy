@@ -19,6 +19,7 @@
     "test:themes": "node scripts/theme-smoke.mjs",
     "test:management:errors": "node scripts/management-errors-smoke.mjs",
     "test:layout-meetings": "node scripts/layout-and-meetings-smoke.mjs",
+    "test:editor:local": "python3 ../scripts/editor-e2e.py",
     "test:editor": "node scripts/editor-smoke.mjs",
     "test:dialogs": "node scripts/dialog-smoke.mjs"
   },
