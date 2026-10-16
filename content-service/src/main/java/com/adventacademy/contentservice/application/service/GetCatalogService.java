@@ -38,10 +38,12 @@ public class GetCatalogService {
     private final CourseRepository courseRepository;
     private final ComponentRepository componentRepository;
     private final DirectionRepository directionRepository;
+    private final ContentAccessGuard guard;
 
     public GetCatalogService(CourseRepository courseRepository,
                              ComponentRepository componentRepository,
-                             DirectionRepository directionRepository) {
+                             DirectionRepository directionRepository, ContentAccessGuard guard) {
+        this.guard = guard;
         this.courseRepository = courseRepository;
         this.componentRepository = componentRepository;
         this.directionRepository = directionRepository;
@@ -55,6 +57,9 @@ public class GetCatalogService {
                 .toList();
         Map<UUID, Component> componentsById = new HashMap<>();
         for (Component component : componentRepository.findAllById(componentIds)) {
+            if (component.getStatus() == PublicationStatus.DRAFT) {
+                guard.requireCurator("COMPONENT_ACCESS", "Component", component.getId(), component.getOwnerId(), "READ_COURSE_TREE");
+            }
             componentsById.put(component.getId(), component);
         }
         return new CourseTree(course, componentsById);

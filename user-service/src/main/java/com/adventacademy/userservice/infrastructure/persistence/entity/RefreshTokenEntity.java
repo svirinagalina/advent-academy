@@ -22,10 +22,24 @@ public class RefreshTokenEntity {
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
 
+    @Column(name = "family_id", nullable = false)
+    private UUID familyId;
+
+    @Column(nullable = false)
+    private boolean consumed;
+
+    public UUID getFamilyId() { return familyId; }
+    public boolean isConsumed() { return consumed; }
+
     protected RefreshTokenEntity() {
     }
 
     public RefreshTokenEntity(String jtiDigest, UUID userId, Instant expiresAt) {
+        this(jtiDigest, userId, expiresAt, UUID.randomUUID());
+    }
+
+    public RefreshTokenEntity(String jtiDigest, UUID userId, Instant expiresAt, UUID familyId) {
+        this.familyId = familyId;
         this.jtiDigest = jtiDigest;
         this.userId = userId;
         this.expiresAt = expiresAt;

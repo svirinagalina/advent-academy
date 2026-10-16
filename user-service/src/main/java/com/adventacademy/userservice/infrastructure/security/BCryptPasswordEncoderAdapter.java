@@ -11,11 +11,17 @@ public class BCryptPasswordEncoderAdapter implements PasswordEncoder {
 
     @Override
     public String encode(String rawPassword) {
+        if (!supported(rawPassword)) {
+            throw new IllegalArgumentException("Password must not exceed 72 UTF-8 bytes");
+        }
         return bcrypt.encode(rawPassword);
     }
 
     @Override
     public boolean matches(String rawPassword, String encodedPassword) {
-        return bcrypt.matches(rawPassword, encodedPassword);
+        return supported(rawPassword) && bcrypt.matches(rawPassword, encodedPassword);
+    }
+    private boolean supported(String password) {
+        return password != null && password.getBytes(java.nio.charset.StandardCharsets.UTF_8).length <= 72;
     }
 }

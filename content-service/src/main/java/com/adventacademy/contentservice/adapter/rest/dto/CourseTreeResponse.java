@@ -19,7 +19,9 @@ public record CourseTreeResponse(
         String title,
         String description,
         PublicationStatus status,
-        List<ComponentNode> components
+        List<ComponentNode> components,
+        UUID ownerId,
+        Long version
 ) {
     public record ComponentNode(
             UUID componentId,
@@ -48,6 +50,6 @@ public record CourseTreeResponse(
                     component.getId(), component.getOwnerId(), ref.getPosition(), component.getTitle(), component.getStatus(), lessons));
         }
         return new CourseTreeResponse(
-                course.getId(), course.getTitle(), course.getDescription(), course.getStatus(), nodes);
+                course.getId(), course.getTitle(), course.getDescription(), course.getStatus(), nodes, course.getOwnerId(), course.getVersion());
     }
 }

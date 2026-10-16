@@ -35,6 +35,29 @@ class ConstructorApiIT extends AbstractPostgresIT {
     @Autowired
     private LessonContentRepository lessonContentRepository;
 
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    @Test
+    void cloneRetainsMandatoryAssignmentWithoutLearnerHistory() throws Exception {
+        String component = mockMvc.perform(post("/api/components").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"title\":\"Assignment module\"}")).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String id = JsonPath.read(component, "$.id");
+        String lesson = mockMvc.perform(post("/api/components/{id}/lessons", id).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"title\":\"Required lesson\"}")).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        UUID source = UUID.fromString(JsonPath.read(lesson, "$.lessons[0].id"));
+        jdbc.update("UPDATE content.lessons SET required_assignment=true WHERE id=?", source);
+        jdbc.update("INSERT INTO content.lesson_assignments(lesson_id,title,description) VALUES(?,'Task','Review required')", source);
+        String cloned = mockMvc.perform(post("/api/components/{id}/clone", id)).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        UUID target = UUID.fromString(JsonPath.read(cloned, "$.lessons[0].id"));
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/lessons/{id}/assignment/configuration", target))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.required").value(true))
+                .andExpect(jsonPath("$.title").value("Task")).andExpect(jsonPath("$.description").value("Review required"));
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM content.assignment_submissions WHERE lesson_id=?", Integer.class, target)).isZero();
+    }
+
     @Test
     void fullHappyPathFromComponentToDirection() throws Exception {
         // 1. создаём компонент
@@ -89,6 +112,9 @@ class ConstructorApiIT extends AbstractPostgresIT {
         mockMvc.perform(post("/api/courses/{id}/publish", courseId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("PUBLISHED"));
+
+        mockMvc.perform(post("/api/components/{id}/archive", componentId))
+                .andExpect(status().isConflict());
 
         // 8. создаём направление и кладём в него курс
         String direction = mockMvc.perform(post("/api/directions")

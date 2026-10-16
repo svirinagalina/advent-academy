@@ -56,7 +56,7 @@ public class RefreshRotationCoordinator {
         jwt.consumeRefreshToken(request.refreshToken());
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = InvalidCredentialsException.class)
     public AuthResponse rotate(RefreshTokenRequest request, String requestKey) {
         if (requestKey == null || requestKey.isBlank()) { return refresh.refresh(request); }
         if (!requestKey.matches("[0-9a-f]{64}")) { throw new InvalidCredentialsException("Invalid refresh request"); }
@@ -66,10 +66,11 @@ public class RefreshRotationCoordinator {
         var rows = jdbc.queryForList("SELECT * FROM refresh_rotation_receipts WHERE token_digest=?", token);
         if (!rows.isEmpty()) {
             var receipt = rows.getFirst();
-            if (!key.equals(receipt.get("request_digest"))) { throw new InvalidCredentialsException("Refresh replay refused"); }
+            if (!key.equals(receipt.get("request_digest"))) { jwt.revokeReplayedRefreshToken(request.refreshToken()); throw new InvalidCredentialsException("Refresh replay refused"); }
             try {
                 jdbc.queryForList("SELECT id FROM users WHERE id=? FOR UPDATE", receipt.get("user_id"));
                 if (!((java.sql.Timestamp) receipt.get("expires_at")).toInstant().isAfter(clock.instant())) {
+                    jwt.revokeReplayedRefreshToken(request.refreshToken());
                     throw new InvalidCredentialsException("Refresh replay refused");
                 }
                 AuthResponse response = mapper.readValue(cipher.decrypt((String) receipt.get("response_ciphertext")), AuthResponse.class);

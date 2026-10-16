@@ -63,9 +63,13 @@ public class MeetingAccessService implements RoomClosedListener {
     }
 
     public synchronized IssuedCapability issueCapability(String roomId, UUID userId) {
+        return issueCapability(roomId, userId, null);
+    }
+
+    public synchronized IssuedCapability issueCapability(String roomId, UUID userId, String authorization) {
         rateLimiter.requireCapabilityAllowed(userId);
         roomService.getRoom(roomId);
-        return capabilityService.issue(roomId, userId, requireRole(roomId, userId));
+        return capabilityService.issueScheduled(roomId, userId, requireRole(roomId, userId), null, authorization);
     }
 
     public synchronized MeetingRole requireRole(String roomId, UUID userId) {

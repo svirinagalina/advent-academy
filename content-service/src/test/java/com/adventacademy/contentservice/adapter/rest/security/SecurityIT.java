@@ -80,6 +80,24 @@ public class SecurityIT extends AbstractPostgresIT {
     @Value("${security.jwt.audience}")
     private String audience;
 
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
+
+    @Test
+    void foreignDraftCannotBeLinkedOrReadThroughALegacyCourseReference() throws Exception {
+        UUID instructor = UUID.randomUUID(), other = UUID.randomUUID();
+        String auth = bearer(token(instructor, ROLE_INSTRUCTOR));
+        UUID module = UUID.randomUUID(), course = UUID.randomUUID();
+        jdbc.update("INSERT INTO content.components(id,title,status,owner_id,created_at,updated_at,version) VALUES(?,'Private','DRAFT',?,now(),now(),0)", module, other);
+        jdbc.update("INSERT INTO content.courses(id,title,status,owner_id,created_at,updated_at,version) VALUES(?,'Own','DRAFT',?,now(),now(),0)", course, instructor);
+        mvc.perform(post("/api/courses/{id}/components", course).header(HttpHeaders.AUTHORIZATION, auth)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"componentId\":\"" + module + "\"}"))
+                .andExpect(status().isForbidden());
+        jdbc.update("INSERT INTO content.course_components(course_id,component_id,position) VALUES(?,?,0)", course, module);
+        mvc.perform(get("/api/courses/{id}", course).header(HttpHeaders.AUTHORIZATION, auth)).andExpect(status().isForbidden());
+        jdbc.update("UPDATE content.components SET status='PUBLISHED' WHERE id=?", module);
+        mvc.perform(get("/api/courses/{id}", course).header(HttpHeaders.AUTHORIZATION, auth)).andExpect(status().isOk());
+    }
+
     // ---------------------------------------------------------------- authentication
 
     @Test

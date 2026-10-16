@@ -43,13 +43,15 @@ public class CourseAssemblyService {
     private final CurrentUserProvider currentUserProvider;
     private final AuditTrailPort auditTrail;
     private final Clock clock;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     public CourseAssemblyService(CourseRepository courseRepository,
                                  ComponentRepository componentRepository,
                                  DirectionRepository directionRepository,
                                  CoursePublicationPolicy publicationPolicy,
                                  CurrentUserProvider currentUserProvider,
-                                 AuditTrailPort auditTrail) {
+                                 AuditTrailPort auditTrail, org.springframework.jdbc.core.JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
         this.courseRepository = courseRepository;
         this.componentRepository = componentRepository;
         this.directionRepository = directionRepository;
@@ -119,8 +121,12 @@ public class CourseAssemblyService {
     }
 
     public Course addComponent(UUID courseId, UUID componentId) {
-        if (!componentRepository.existsById(componentId)) {
-            throw new IllegalArgumentException("component does not exist: " + componentId);
+        var component = componentRepository.findById(componentId)
+                .orElseThrow(() -> new IllegalArgumentException("component does not exist: " + componentId));
+        if (component.getStatus() == PublicationStatus.DRAFT
+                && !currentUserProvider.hasAnyRole(CURATOR_ROLES)
+                && !currentUserProvider.currentUserId().map(owner -> owner.equals(component.getOwnerId())).orElse(false)) {
+            throw new ContentAccessDeniedException("Component", componentId);
         }
         Course course = load(courseId);
         requireCurator(course, "ADD_COMPONENT");
@@ -145,6 +151,9 @@ public class CourseAssemblyService {
     public Course publish(UUID id) {
         Course course = load(id);
         requireCurator(course, "PUBLISH_COURSE");
+        for (UUID component : course.getComponents().stream().map(value -> value.getComponentId()).sorted().toList()) {
+            jdbc.queryForList("SELECT id FROM content.components WHERE id=? FOR UPDATE", component);
+        }
         course.publish(publicationPolicy, clock);
         Course published = courseRepository.save(course);
         recordSuccess("PUBLISH_COURSE", published.getId());

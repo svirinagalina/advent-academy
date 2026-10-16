@@ -34,6 +34,17 @@ public class HttpEnrollmentUserAdapter implements EnrollmentUserPort {
                 .header("X-Enrollment-Check", com.adventacademy.security.SignedRequest.sign(validationKey,
                         "enrollment", courseId + ":" + userId + ":" + authorization))
                 .timeout(Duration.ofSeconds(8)).GET().build();
+        validate(request);
+    }
+
+    @Override
+    public void requireActiveInstructor(UUID userId, String authorization) {
+        var request = HttpRequest.newBuilder(URI.create(base + "/api/users/teaching/instructors/" + userId))
+                .header("Authorization", authorization).timeout(Duration.ofSeconds(8)).GET().build();
+        validate(request);
+    }
+
+    private void validate(HttpRequest request) {
         try {
             var response = client.send(request, HttpResponse.BodyHandlers.discarding());
             if (response.statusCode() == 200) { return; }

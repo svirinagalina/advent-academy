@@ -139,7 +139,7 @@ COMMIT;
         address = self.capture(self.compose + ["port", "api-gateway", "8090"])
         gateway = "http://" + address
         self.provision(gateway)
-        self.env.update(API_GATEWAY_URL=gateway, FRONTEND_ORIGIN=origin,
+        self.env.update(ADVENT_TEST_PROJECT=self.project, API_GATEWAY_URL=gateway, FRONTEND_ORIGIN=origin,
                         SESSION_ENCRYPTION_KEY=base64.b64encode(secrets.token_bytes(32)).decode(),
                         MEETING_SIGNALING_URL=gateway.replace("http:", "ws:") + "/ws/meetings",
                         ADVENT_TEST_ORIGIN=origin,
@@ -162,6 +162,7 @@ COMMIT;
         else:
             raise RuntimeError("Frontend readiness timed out; see frontend.log")
         self.command(["npm", "run", "test:editor"], "editor", FRONTEND, timeout=600)
+        self.command(["npm", "run", "test:instructor"], "instructor", FRONTEND, timeout=300)
         self.command(["npm", "run", "test:dialogs"], "dialogs", FRONTEND, timeout=600)
 
     def cleanup(self):

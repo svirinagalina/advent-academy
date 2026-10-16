@@ -3,11 +3,11 @@ import { existsSync, mkdirSync, appendFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 // The orchestrator sets an absolute run directory. Standalone scripts also keep diagnostics.
-export async function withSmokeBrowser(name, scenario) {
+export async function withSmokeBrowser(name, scenario, args = []) {
     const directory = resolve(process.env.ADVENT_TEST_ARTIFACTS || '../reports/editor-e2e/standalone', name);
     mkdirSync(directory, { recursive: true, mode: 0o700 });
     const executablePath = process.env.CHROME_PATH || (existsSync('/usr/bin/google-chrome') ? '/usr/bin/google-chrome' : undefined);
-    const browser = await chromium.launch({ executablePath, headless: true, args: ['--no-sandbox'] });
+    const browser = await chromium.launch({ executablePath, headless: true, args: ['--no-sandbox', ...args] });
     const newContext = browser.newContext.bind(browser);
     let sequence = 0;
     browser.newContext = async options => {

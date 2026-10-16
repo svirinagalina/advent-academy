@@ -81,6 +81,7 @@ services:
       POSTGRES_USER: sprint
       POSTGRES_PASSWORD: sprint-isolated
       JWT_SECRET: course-api-isolated-signing-secret-at-least-32-bytes
+      MEETING_ALLOWED_ORIGINS: ${ADVENT_TEST_ORIGIN:?Use scripts/user-admin-e2e.py}
       CONTENT_SERVICE_URL: http://content-service:8081
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8084/actuator/health/readiness"]

@@ -86,6 +86,32 @@ public class JjwtProvider implements JwtProvider {
     }
 
     @Override
+    public String rotateRefreshToken(String previousToken) {
+        Claims previous = parseClaims(previousToken);
+        UUID family = refreshTokens.family(OpaqueTokens.digest(previous.getId()));
+        if (family == null) { throw new IllegalArgumentException("Refresh family no longer exists"); }
+        String token = generateToken(UUID.fromString(previous.getSubject()), REFRESH_TOKEN, refreshTokenLifetime, null, Set.of());
+        Claims claims = parseClaims(token);
+        refreshTokens.save(OpaqueTokens.digest(claims.getId()), UUID.fromString(claims.getSubject()),
+                claims.getExpiration().toInstant(), family);
+        return token;
+    }
+
+    @Override
+    public void revokeReplayedRefreshToken(String token) {
+        try {
+            Claims claims = parseClaims(token);
+            if (REFRESH_TOKEN.equals(claims.get(TOKEN_TYPE_CLAIM, String.class))) {
+                // Serialize with rotation so a replay cannot race a new descendant into existence.
+                accessState.lock(UUID.fromString(claims.getSubject()));
+                refreshTokens.revokeConsumedFamily(OpaqueTokens.digest(claims.getId()), clock.instant());
+            }
+        } catch (JwtException | IllegalArgumentException exception) {
+            // Unknown, forged and expired tokens cannot revoke another session.
+        }
+    }
+
+    @Override
     public boolean validateAccessToken(String token) {
         try {
             Claims claims = parseClaims(token);

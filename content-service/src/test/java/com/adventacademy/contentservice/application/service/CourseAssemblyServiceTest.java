@@ -56,13 +56,13 @@ public class CourseAssemblyServiceTest {
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-17T12:00:00Z"), ZoneOffset.UTC);
     private final CourseAssemblyService service = new CourseAssemblyService(
             courseRepository, componentRepository, directionRepository, coursePublicationPolicy,
-            currentUserProvider, auditTrail);
+            currentUserProvider, auditTrail, mock(org.springframework.jdbc.core.JdbcTemplate.class));
 
     @Test
     void addComponentShouldThrowWhenComponentDoesNotExist() {
         UUID courseId = UUID.randomUUID();
         UUID componentId = UUID.randomUUID();
-        when(componentRepository.existsById(componentId)).thenReturn(false);
+        when(componentRepository.findById(componentId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.addComponent(courseId, componentId))
                 .isInstanceOf(IllegalArgumentException.class);

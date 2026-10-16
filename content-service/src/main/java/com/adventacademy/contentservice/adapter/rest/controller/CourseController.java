@@ -55,6 +55,20 @@ public class CourseController {
         this.contentRead = contentRead;
     }
 
+    public record InstructorRequest(UUID instructorId, @jakarta.validation.constraints.NotNull @jakarta.validation.constraints.Min(0) Long version) { }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.adventacademy.contentservice.application.service.LearningService learning;
+
+    @PutMapping("/{id}/instructor")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'ADMIN')")
+    @Operation(summary = "Delegate a published course to an active instructor; null reclaims it for the curator")
+    public CourseResponse assignInstructor(@PathVariable UUID id, @Valid @RequestBody InstructorRequest request,
+            @org.springframework.web.bind.annotation.RequestHeader("Authorization") String authorization) {
+        learning.assignInstructor(id, request.instructorId(), request.version(), authorization);
+        return CourseResponse.from(assemblyService.get(id));
+    }
+
     @PostMapping
     @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'ADMIN')")
     @Operation(summary = "Create a course in DRAFT status")

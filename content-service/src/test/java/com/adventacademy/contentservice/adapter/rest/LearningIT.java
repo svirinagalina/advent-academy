@@ -205,6 +205,35 @@ class LearningIT extends AbstractPostgresIT {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void curatorDelegatesAndReclaimsCourseWithVersionAndIdentityChecks() throws Exception {
+        Fixture f = fixture(false);
+        UUID teacher = UUID.randomUUID(), foreign = UUID.randomUUID(), invalid = UUID.randomUUID();
+        String instructor = token(teacher, "INSTRUCTOR"), stranger = token(foreign, "INSTRUCTOR");
+        long version = jdbc.queryForObject("SELECT version FROM content.courses WHERE id=?", Long.class, f.course());
+        String body = "{\"instructorId\":\"" + teacher + "\",\"version\":" + version + "}";
+        String endpoint = "/api/courses/" + f.course() + "/instructor";
+        mvc.perform(put(endpoint).header(HttpHeaders.AUTHORIZATION, instructor).contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isForbidden());
+        org.mockito.Mockito.doThrow(new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY))
+                .when(enrollmentUsers).requireActiveInstructor(invalid, f.editorToken());
+        mvc.perform(put(endpoint).header(HttpHeaders.AUTHORIZATION, f.editorToken()).contentType(MediaType.APPLICATION_JSON)
+                .content(body.replace(teacher.toString(), invalid.toString()))).andExpect(status().isUnprocessableEntity());
+        mvc.perform(put(endpoint).header(HttpHeaders.AUTHORIZATION, f.editorToken()).contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk());
+        mvc.perform(get("/api/teaching/courses/{id}", f.course()).header(HttpHeaders.AUTHORIZATION, instructor)).andExpect(status().isOk());
+        mvc.perform(get("/api/teaching/courses/{id}", f.course()).header(HttpHeaders.AUTHORIZATION, stranger)).andExpect(status().isForbidden());
+        mvc.perform(get("/api/teaching/courses/{id}/students", f.course()).header(HttpHeaders.AUTHORIZATION, instructor))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0]").value(f.student().toString()));
+        mvc.perform(put(endpoint).header(HttpHeaders.AUTHORIZATION, f.editorToken()).contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isConflict());
+        mvc.perform(put(endpoint).header(HttpHeaders.AUTHORIZATION, f.editorToken()).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"instructorId\":null,\"version\":" + (version+1) + "}")).andExpect(status().isOk());
+        mvc.perform(get("/api/teaching/courses/{id}", f.course()).header(HttpHeaders.AUTHORIZATION, instructor)).andExpect(status().isForbidden());
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM content.content_audit_events WHERE target=? AND operation LIKE 'ASSIGN_INSTRUCTOR:%'",
+                Integer.class, "course:"+f.course())).isEqualTo(2);
+    }
+
     private Fixture fixture(boolean assignment) throws Exception {
         UUID student = UUID.randomUUID();
         String editor = token(UUID.randomUUID(), "CONTENT_EDITOR");

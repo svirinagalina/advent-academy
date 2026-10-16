@@ -22,6 +22,7 @@
     "test:user-admin:local": "python3 ../scripts/user-admin-e2e.py",
     "test:user-admin": "node scripts/user-admin-smoke.mjs",
     "test:editor:local": "python3 ../scripts/editor-e2e.py",
+    "test:instructor": "node scripts/instructor-smoke.mjs",
     "test:editor": "node scripts/editor-smoke.mjs",
     "test:dialogs": "node scripts/dialog-smoke.mjs"
   },

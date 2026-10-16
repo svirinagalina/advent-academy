@@ -21,7 +21,7 @@ export type ModuleNode = {
 	position: number;
 	lessons: LessonNode[];
 };
-export type CourseTree = ManagedCourse & { components: ModuleNode[] };
+export type CourseTree = ManagedCourse & { components: ModuleNode[]; ownerId: string; version: number };
 export type Component = {
 	id: string;
 	ownerId: string | null;
@@ -61,6 +61,8 @@ export function request<T>(path: string, method = "GET", body?: unknown) {
 }
 export function managementError(error: unknown) {
 	if (error instanceof ClientError) {
+        if (error.message.includes("Course version changed")) return "Курс изменился. Обновите его и повторите назначение.";
+        if (error.status === 422 && error.message.includes("User does not exist")) return "Выбранный пользователь недоступен для назначения.";
 		if (error.message.includes("invalid or foreign assets"))
             return "В тексте есть некорректные ссылки на вложения или вложения другого урока. Проверьте ссылки asset: и /api/assets/.";
         if (error.message.includes("archive must contain a Markdown"))

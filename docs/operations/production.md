@@ -76,6 +76,24 @@ bound to a token and BFF-derived request key, and valid for 30 seconds. Concurre
 result. Logout, password reset, and account blocking refuse receipt replay. A retry after this bounded
 window can require reauthentication. Never put multiple BFF keys behind one browser origin.
 
+Migration V17 adds refresh family IDs and retained consumed-token records. Reusing a consumed
+refresh token revokes every remaining refresh token in its family; independent logins stay active.
+A valid BFF receipt within its 30-second window still returns the original rotation result.
+Expired receipts or a different request key trigger family revocation. Existing access tokens in
+that family keep their normal lifetime unless an account authorization change invalidates them.
+Consumed records are retained until token expiry for replay detection and removed by cleanup.
+
+Deploy V17 and the new identity application together with refresh traffic paused. Do not run old
+and new identity instances concurrently: the old consume operation deletes replay evidence.
+The migration initializes each existing token as a separate family. Downgrading the application
+loses the replay guarantee even if the additive schema remains. Prefer rolling forward.
+
+Passwords are limited to 72 UTF-8 bytes at the shared BCrypt boundary, including registration,
+change and recovery. Oversized values are rejected instead of silently truncated; login with
+an oversized password fails. Accounts previously created with a longer password must reset it.
+The crypto dependency is pinned to Spring Security 6.4.4, which fixes
+[CVE-2025-22228](https://spring.io/security/cve-2025-22228/).
+
 Access tokens carry the user's database-maintained `authorization_version`. Account status,
 verification, password and role membership changes invalidate old access tokens, including when
 permissions are changed through legacy APIs or workflows. Regranting a role or unblocking a user
@@ -85,6 +103,13 @@ failure, timeout or unexpected identity response fails closed with 503. Configur
 for both services, restrict it to the internal identity endpoint, and allow this dependency in
 network policy. There is no successful-result cache, so each authenticated resource request adds
 one internal HTTP request and depends on identity availability.
+
+Meeting signaling checks current identity before JOIN and subsequent messages, including private
+room grants. A sweep every 15 seconds also revokes idle sockets; identity failures fail closed.
+Scheduled grants recheck course management/enrollment and meeting state. The browser renews its
+capability every 60 seconds using REAUTHORIZE without replacing its room participant; this allows
+the BFF to refresh expiring access tokens. Already established peer media is closed by the normal
+application client after removal; a custom WebRTC client can retain an existing peer channel.
 
 For the first deployment of versioned access tokens, deploy user-service and migration V16 before
 the updated resource services. Existing access tokens without the version are rejected; the BFF can
