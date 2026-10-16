@@ -947,8 +947,17 @@ export default function Academy({
 							</details>
 						)}
 						<ThemeToggle />
-                        {live?.canReview && <Link className="text-link" href="/?view=manage">Управление курсами</Link>}
-                        <div className="profile">
+						{live?.canReview && (
+							<Link className="text-link" href="/?view=manage">
+								Управление курсами
+							</Link>
+						)}
+						{live?.profile.roles.includes("ADMIN") && (
+							<Link className="text-link" href="/?view=users">
+								Пользователи
+							</Link>
+						)}
+						<div className="profile">
 							<button
 								type="button"
 								className="profile-button"

@@ -49,6 +49,14 @@ public class SmtpEmailServiceAdapter implements EmailService {
     }
 
     @Override
+    public void sendInvitation(String email, String token) {
+        sendEmail(email, "Приглашение в Advent Academy",
+                "Вам создана учётная запись Advent Academy. Установите пароль и подтвердите email по ссылке:\n\n"
+                + baseUrl + "/auth/accept-invitation#token=" + token
+                + "\n\nСсылка действует 24 часа. Если приглашение отправлено по ошибке, проигнорируйте письмо.");
+    }
+
+    @Override
     public void sendPasswordReset(String email, String resetToken) {
         try {
             String resetLink = baseUrl + "/auth/reset-password?token=" + resetToken;

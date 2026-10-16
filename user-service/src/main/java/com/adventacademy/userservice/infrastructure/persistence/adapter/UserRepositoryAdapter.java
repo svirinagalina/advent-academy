@@ -102,7 +102,7 @@ public class UserRepositoryAdapter implements UserRepository {
 
     @Override
     public Optional<User> findByEmail(String email) {
-        return jpaRepository.findByEmail(email)
+        return jpaRepository.findByEmailIgnoreCase(email)
                 .map(mapper::toDomain);
     }
 

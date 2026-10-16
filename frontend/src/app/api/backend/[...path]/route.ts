@@ -28,6 +28,13 @@ const management: Record<string, RegExp> = {
 		`^(lessons/${uuid}/content/draft|courses/${uuid}/components/order|learning/courses/${uuid}/students/${uuid})$`,
 	),
 };
+const administration: Record<string, RegExp> = {
+	GET: new RegExp(`^users/admin(?:/${uuid}(?:/history)?)?$`),
+	POST: new RegExp(
+		`^users/admin(?:/${uuid}/(?:invitation|block|unblock|unlock))?$`,
+	),
+	PUT: new RegExp(`^users/admin/${uuid}/roles$`),
+};
 async function boundedBody(request: NextRequest, limit = 32768) {
 	if (Number(request.headers.get("content-length")) > limit)
 		throw new ApiError(413, "Слишком большой запрос");
@@ -65,19 +72,27 @@ async function proxy(
 					: request.method === "POST"
 						? completing
 						: null;
-		if (!existing?.test(path) && !management[request.method]?.test(path))
+		if (
+			!existing?.test(path) &&
+			!management[request.method]?.test(path) &&
+			!administration[request.method]?.test(path)
+		)
 			throw new ApiError(404, "Запрос не поддерживается");
 		if (request.method !== "GET") requireOrigin(request);
 		const values = new URLSearchParams();
 		const names =
-			path === "courses"
-				? ["managed"]
-				: path.endsWith("/candidates")
-					? ["query", "limit"]
-					: path === "teaching/submissions" ||
-							path.startsWith("meetings/scheduled")
-						? ["status", "tab", "page", "size"]
-						: [];
+			path === "users/admin"
+				? ["query", "role", "status", "page", "size"]
+				: path.startsWith("users/admin/") && path.endsWith("/history")
+					? ["page", "size"]
+					: path === "courses"
+						? ["managed"]
+						: path.endsWith("/candidates")
+							? ["query", "limit"]
+							: path === "teaching/submissions" ||
+									path.startsWith("meetings/scheduled")
+								? ["status", "tab", "page", "size"]
+								: [];
 		for (const name of names) {
 			const value = request.nextUrl.searchParams.get(name);
 			if (value !== null) values.set(name, value);
@@ -92,11 +107,17 @@ async function proxy(
 				const type = request.headers.get("content-type") || "";
 				if (!/^multipart\/form-data;.*boundary=/i.test(type))
 					throw new ApiError(400, "Выберите файл материала");
-				const body = await boundedBody(request, path.endsWith("/assets") ? 11 * 1024 * 1024 : 6 * 1024 * 1024);
+				const body = await boundedBody(
+					request,
+					path.endsWith("/assets") ? 11 * 1024 * 1024 : 6 * 1024 * 1024,
+				);
 				init.body = new Uint8Array(body);
 				init.headers = { "Content-Type": type };
 			} else {
-				const body = await boundedBody(request, path.includes("/content/draft") ? 32 * 1024 * 1024 : 32768);
+				const body = await boundedBody(
+					request,
+					path.includes("/content/draft") ? 32 * 1024 * 1024 : 32768,
+				);
 				if (body.length) {
 					init.body = body.toString("utf8");
 					init.headers = { "Content-Type": "application/json" };

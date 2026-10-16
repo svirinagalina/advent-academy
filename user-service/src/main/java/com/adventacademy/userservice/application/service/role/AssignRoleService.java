@@ -27,16 +27,18 @@ public class AssignRoleService {
     private final RoleRepository roleRepository;
     private final AuditTrailPort auditTrailPort;
     private final Clock clock;
+    private final com.adventacademy.userservice.application.service.admin.UserAdminPolicy adminPolicy;
 
     public AssignRoleService(
             UserRepository userRepository,
             RoleRepository roleRepository,
             AuditTrailPort auditTrailPort,
-            Clock clock) {
+            Clock clock, com.adventacademy.userservice.application.service.admin.UserAdminPolicy adminPolicy) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.auditTrailPort = auditTrailPort;
         this.clock = clock;
+        this.adminPolicy = adminPolicy;
     }
 
     /**
@@ -48,6 +50,8 @@ public class AssignRoleService {
      */
     @Transactional
     public UserResponse assignRoleToUser(UUID userId, UUID roleId, String ipAddress, String userAgent) {
+        adminPolicy.lock();
+        adminPolicy.authorizeRequestIfPresent();
         User user = userRepository.findByIdWithRoles(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
         Role role = roleRepository.findById(roleId)
@@ -57,13 +61,15 @@ public class AssignRoleService {
             return mapToUserResponse(user);
         }
 
+        var before=user.getRoles().stream().map(Role::getName).toList();
         user.addRole(role);
         User savedUser = userRepository.save(user);
+        adminPolicy.recordRoleChange(userId,before,savedUser.getRoles().stream().map(Role::getName).toList());
 
         auditTrailPort.record(new AuditEvent(
                 UUID.randomUUID(),
                 AuditEventType.ROLE_ASSIGNED,
-                userId,
+                adminPolicy.actorOr(userId),
                 userId,
                 LocalDateTime.now(clock),
                 ipAddress,
@@ -78,18 +84,23 @@ public class AssignRoleService {
 
     @Transactional
     public UserResponse removeRoleFromUser(UUID userId, UUID roleId, String ipAddress, String userAgent) {
+        adminPolicy.lock();
+        adminPolicy.authorizeRequestIfPresent();
         User user = userRepository.findByIdWithRoles(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new RoleNotFoundException(roleId));
 
+        if ("ADMIN".equals(role.getName())) adminPolicy.protect(userId);
+        var before=user.getRoles().stream().map(Role::getName).toList();
         user.removeRole(role);
         User savedUser = userRepository.save(user);
+        adminPolicy.recordRoleChange(userId,before,savedUser.getRoles().stream().map(Role::getName).toList());
 
         auditTrailPort.record(new AuditEvent(
                 UUID.randomUUID(),
                 AuditEventType.ROLE_REVOKED,
-                userId,
+                adminPolicy.actorOr(userId),
                 userId,
                 LocalDateTime.now(clock),
                 ipAddress,

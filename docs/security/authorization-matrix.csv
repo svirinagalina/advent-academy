@@ -160,3 +160,13 @@ content-service;GET;/api/lessons/{lessonId}/content/draft;content-owner-editor-o
 content-service;PUT;/api/lessons/{lessonId}/content/draft;content-owner-editor-or-admin;content-owner-editor-or-admin;Content team;content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/controller/LessonAuthoringController.java;SEC-102
 content-service;POST;/api/lessons/{lessonId}/content/draft/preview;content-owner-editor-or-admin;content-owner-editor-or-admin;Content team;content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/controller/LessonAuthoringController.java;SEC-102
 content-service;POST;/api/lessons/{lessonId}/content/draft/publish;content-owner-editor-or-admin;content-owner-editor-or-admin;Content team;content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/controller/LessonAuthoringController.java;SEC-102
+user-service;GET;/api/users/admin;admin;admin;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/UserAdminController.java;SEC-109
+user-service;POST;/api/users/admin;admin;admin;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/UserAdminController.java;SEC-109
+user-service;GET;/api/users/admin/{id};admin;admin;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/UserAdminController.java;SEC-109
+user-service;PUT;/api/users/admin/{id}/roles;admin;admin;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/UserAdminController.java;SEC-109
+user-service;POST;/api/users/admin/{id}/block;admin;admin;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/UserAdminController.java;SEC-109
+user-service;POST;/api/users/admin/{id}/unblock;admin;admin;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/UserAdminController.java;SEC-109
+user-service;POST;/api/users/admin/{id}/unlock;admin;admin;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/UserAdminController.java;SEC-109
+user-service;POST;/api/users/admin/{id}/invitation;admin;admin;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/UserAdminController.java;SEC-109
+user-service;GET;/api/users/admin/{id}/history;admin;admin;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/UserAdminController.java;SEC-109
+user-service;POST;/api/auth/invitations/accept;public;public;Identity team;user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/InvitationController.java;SEC-103
