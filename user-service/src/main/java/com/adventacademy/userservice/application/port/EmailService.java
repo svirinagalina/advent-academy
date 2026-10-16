@@ -7,6 +7,10 @@ package com.adventacademy.userservice.application.port;
  */
 public interface EmailService {
 
+    default void sendInvitation(String email, String token) {
+        throw new SendEmailException("Invitations are not supported by this delivery adapter");
+    }
+
     /**
      * Send email verification link.
      * Email should contain a link with the verification token.

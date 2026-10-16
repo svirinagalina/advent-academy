@@ -141,6 +141,10 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
             int ipLimit(AuthRateLimitProperties p) { return p.passwordResetPerIp(); }
             int accountLimit(AuthRateLimitProperties p) { return 0; }
         },
+        INVITATION_ACCEPT("/api/auth/invitations/accept") {
+            int ipLimit(AuthRateLimitProperties p) { return p.passwordResetPerIp(); }
+            int accountLimit(AuthRateLimitProperties p) { return 0; }
+        },
         RESEND_VERIFICATION("/api/auth/resend-verification") {
             int ipLimit(AuthRateLimitProperties p) { return p.resendVerificationPerIp(); }
             int accountLimit(AuthRateLimitProperties p) { return p.resendVerificationPerAccount(); }

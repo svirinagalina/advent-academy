@@ -10,6 +10,7 @@ import {
 } from "react";
 import Academy from "@/components/academy";
 import Management from "@/components/management";
+import UserAdmin from "@/components/user-admin";
 import {
 	AssignmentList,
 	AssignmentPanel,
@@ -185,7 +186,12 @@ export default function LiveAcademy() {
 				</section>
 			</main>
 		);
-	if (view === "manage") return <Management profile={profile} logout={logout} />;
+	if (view === "users")
+		return (
+			<UserAdmin profile={profile} logout={logout} profileChanged={load} />
+		);
+	if (view === "manage")
+		return <Management profile={profile} logout={logout} />;
 	const adapted = toDemo(courses);
 	// An empty structure keeps hooks stable without putting demonstration courses in the real UI.
 	if (!adapted.courses.length)

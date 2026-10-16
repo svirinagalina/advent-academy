@@ -128,16 +128,17 @@ COMMIT;
         self.env["NEXT_TELEMETRY_DISABLED"] = "1"
         self.command(["npm", "run", "check"], "frontend-check", FRONTEND)
         self.command(["npm", "run", "build"], "frontend-build", FRONTEND)
+        with socket.socket() as listener:
+            listener.bind(("127.0.0.1", 0))
+            port = listener.getsockname()[1]
+        origin = f"http://127.0.0.1:{port}"
+        self.env["ADVENT_TEST_ORIGIN"] = origin
         self.started = True
         self.command(self.compose + ["up", "-d", "--build", "--wait", "--wait-timeout", "180"],
                      "compose-up", timeout=900)
         address = self.capture(self.compose + ["port", "api-gateway", "8090"])
         gateway = "http://" + address
         self.provision(gateway)
-        with socket.socket() as listener:
-            listener.bind(("127.0.0.1", 0))
-            port = listener.getsockname()[1]
-        origin = f"http://127.0.0.1:{port}"
         self.env.update(API_GATEWAY_URL=gateway, FRONTEND_ORIGIN=origin,
                         SESSION_ENCRYPTION_KEY=base64.b64encode(secrets.token_bytes(32)).decode(),
                         MEETING_SIGNALING_URL=gateway.replace("http:", "ws:") + "/ws/meetings",

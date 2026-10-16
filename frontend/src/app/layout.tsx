@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Golos_Text, JetBrains_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import "./globals.css";
+import "./user-admin.css";
 import { ThemeProvider } from "@/components/theme";
 
 const sans = Golos_Text({

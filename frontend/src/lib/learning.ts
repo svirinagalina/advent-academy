@@ -6,6 +6,7 @@ export type Profile = {
 	lastName: string;
 	email: string;
 	roles: string[];
+	status?: string;
 };
 export type CourseView = {
 	id: string;

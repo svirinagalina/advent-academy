@@ -15,6 +15,15 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(com.adventacademy.userservice.application.service.admin.AdminProblem.class)
+    public ResponseEntity<java.util.Map<String,Object>> handleAdminProblem(
+            com.adventacademy.userservice.application.service.admin.AdminProblem e) {
+        java.util.Map<String,Object> body=new java.util.LinkedHashMap<>();
+        body.put("code",e.code()); body.put("message",e.code());
+        if(e.existingUserId()!=null) body.put("existingUserId",e.existingUserId());
+        return ResponseEntity.status(e.status()).body(body);
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(UserNotFoundException.class)

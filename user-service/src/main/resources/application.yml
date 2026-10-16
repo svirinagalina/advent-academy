@@ -20,6 +20,9 @@ spring:
     protocol: smtp
     properties:
       mail.smtp.auth: true
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
       mail.smtp.starttls.enable: true
       mail.smtp.starttls.required: false
 

@@ -35,6 +35,7 @@ public class SecurityConfiguration {
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST,
                                 "/api/auth/register",
+                                "/api/auth/invitations/accept",
                                 "/api/auth/login",
                                 "/api/auth/refresh",
                                 "/api/auth/logout",

@@ -19,6 +19,8 @@
     "test:themes": "node scripts/theme-smoke.mjs",
     "test:management:errors": "node scripts/management-errors-smoke.mjs",
     "test:layout-meetings": "node scripts/layout-and-meetings-smoke.mjs",
+    "test:user-admin:local": "python3 ../scripts/user-admin-e2e.py",
+    "test:user-admin": "node scripts/user-admin-smoke.mjs",
     "test:editor:local": "python3 ../scripts/editor-e2e.py",
     "test:editor": "node scripts/editor-smoke.mjs",
     "test:dialogs": "node scripts/dialog-smoke.mjs"
@@ -30,10 +32,11 @@
     "@codemirror/language": "6.12.3",
     "@codemirror/state": "6.6.0",
     "@codemirror/view": "6.41.0",
+    "@lezer/highlight": "1.2.3",
+    "lucide-react": "1.58.0",
     "next": "16.4.0",
     "react": "19.3.0",
-    "react-dom": "19.3.0",
-    "@lezer/highlight": "1.2.3"
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

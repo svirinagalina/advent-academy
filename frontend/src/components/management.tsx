@@ -353,6 +353,11 @@ export default function Management({
 					<Link className="nav-link active" href="/?view=manage">
 						▤ Управление курсами
 					</Link>
+					{profile.roles.includes("ADMIN") && (
+						<Link className="nav-link" href="/?view=users">
+							Пользователи
+						</Link>
+					)}
 					<Link className="nav-link" href="/">
 						Кабинет ученика
 					</Link>
@@ -365,6 +370,11 @@ export default function Management({
 					</Link>
 					<div className="header-actions">
 						<ThemeToggle />
+						{profile.roles.includes("ADMIN") && (
+							<Link className="text-link" href="/?view=users">
+								Пользователи
+							</Link>
+						)}
 						<div className="management-profile">
 							<strong>{profile.firstName}</strong>
 							<small>
