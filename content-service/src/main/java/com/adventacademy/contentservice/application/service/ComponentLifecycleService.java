@@ -35,12 +35,14 @@ public class ComponentLifecycleService {
     private final ContentAccessGuard accessGuard;
     private final Clock clock;
     private final org.springframework.jdbc.core.JdbcTemplate jdbc;
+    private final jakarta.persistence.EntityManager entities;
 
     public ComponentLifecycleService(ComponentRepository componentRepository,
                                      CourseRepository courseRepository,
                                      LessonContentRepository lessonContentRepository,
                                      ComponentPublicationPolicy publicationPolicy,
-                                     ContentAccessGuard accessGuard, org.springframework.jdbc.core.JdbcTemplate jdbc) {
+                                     ContentAccessGuard accessGuard, org.springframework.jdbc.core.JdbcTemplate jdbc, jakarta.persistence.EntityManager entities) {
+        this.entities = entities;
         this.jdbc = jdbc;
         this.componentRepository = componentRepository;
         this.courseRepository = courseRepository;
@@ -75,11 +77,20 @@ public class ComponentLifecycleService {
      * Lesson content of the original lessons is copied as DRAFT for the new lessons.
      */
     public Component clone(UUID id) {
+        jdbc.queryForList("SELECT id FROM content.components WHERE id=? FOR UPDATE", id);
         Component original = requireCurator(id, "CLONE_COMPONENT");
         Component copy = Component.create(original.getTitle(), original.getDescription(),
                 accessGuard.requireCurrentUserId(), clock);
-        for (Lesson lesson : original.getLessons()) {
-            Lesson newLesson = copy.addLesson(lesson.getTitle(), clock);
+        for (Lesson lesson : original.getLessons()) { copy.addLesson(lesson.getTitle(), clock); }
+        Component saved = componentRepository.save(copy);
+        entities.flush();
+        for (int index = 0; index < original.getLessons().size(); index++) {
+            Lesson lesson = original.getLessons().get(index);
+            Lesson newLesson = saved.getLessons().get(index);
+            jdbc.update("UPDATE content.lessons target SET required_assignment=source.required_assignment "
+                    + "FROM content.lessons source WHERE target.id=? AND source.id=?", newLesson.getId(), lesson.getId());
+            jdbc.update("INSERT INTO content.lesson_assignments(lesson_id,title,description) "
+                    + "SELECT ?,title,description FROM content.lesson_assignments WHERE lesson_id=?", newLesson.getId(), lesson.getId());
             lessonContentRepository.findByLessonId(lesson.getId())
                     .ifPresent(content -> {
                         LessonContent contentCopy = LessonContent.create(newLesson.getId(), content.getMarkdown(), clock);
@@ -87,7 +98,7 @@ public class ComponentLifecycleService {
                         lessonContentRepository.save(contentCopy);
                     });
         }
-        return componentRepository.save(copy);
+        return saved;
     }
 
     /**
