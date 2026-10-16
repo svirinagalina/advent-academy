@@ -39,7 +39,9 @@ async function centered(page, label, close = true) {
             await page.getByLabel('Название курса', { exact: true }).fill('Несохранённое название');
             await centered(page, 'create course', false);
             assert.equal(await page.getByLabel('Название курса', { exact: true }).inputValue(), 'Несохранённое название');
+            page.once('dialog', dialog => dialog.accept());
             await page.keyboard.press('Escape');
+            await page.getByRole('dialog').waitFor({ state: 'hidden' });
             const course = await api(context, 'courses', 'POST', { title: `Dialog check ${theme} ${width}` });
             const module = await api(context, 'components', 'POST', { title: 'Dialog module' });
             await api(context, `components/${module.id}/lessons`, 'POST', { title: 'Dialog lesson' });

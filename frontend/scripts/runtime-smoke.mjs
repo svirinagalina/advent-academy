@@ -11,7 +11,7 @@ const context=await browser.newContext({viewport:{width:1440,height:1000}});
 const page=await context.newPage();
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
 const login=async(email=fixture.email)=>{
- await page.goto(base);await page.getByLabel('Email',{exact:true}).fill(email);await page.getByLabel('Пароль',{exact:true}).fill(fixture.password);await page.getByRole('button',{name:'Войти',exact:true}).click();
+ await page.goto(base + "/cabinet");await page.getByLabel('Email',{exact:true}).fill(email);await page.getByLabel('Пароль',{exact:true}).fill(fixture.password);await page.getByRole('button',{name:'Войти',exact:true}).click();
 };
 try{
  await login();await page.getByRole('heading',{name:'Привет, Мария!'}).waitFor();

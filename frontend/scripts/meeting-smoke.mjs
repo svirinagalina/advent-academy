@@ -31,7 +31,7 @@ const errors=[]; pages.forEach(p=>p.on('pageerror',e=>errors.push(e.message)));
 const route='/api/backend/meetings/scheduled';
 const title='Групповой разбор Java '+Date.now();
 async function login(p,email,name) {
- await p.goto(base); await p.getByLabel('Email',{exact:true}).fill(email); await p.getByLabel('Пароль',{exact:true}).fill(fixture.password);
+ await p.goto(base + "/cabinet"); await p.getByLabel('Email',{exact:true}).fill(email); await p.getByLabel('Пароль',{exact:true}).fill(fixture.password);
  await p.getByRole('button',{name:'Войти',exact:true}).click(); await p.getByRole('button',{name:`Меню пользователя ${name}`,exact:true}).waitFor();
 }
 async function request(p,method,path,data,status=200) {

@@ -24,7 +24,9 @@
     "test:editor:local": "python3 ../scripts/editor-e2e.py",
     "test:instructor": "node scripts/instructor-smoke.mjs",
     "test:editor": "node scripts/editor-smoke.mjs",
-    "test:dialogs": "node scripts/dialog-smoke.mjs"
+    "test:dialogs": "node scripts/dialog-smoke.mjs",
+    "test:ui-ux": "node scripts/ui-ux-smoke.mjs",
+    "test:public": "node scripts/public-site-smoke.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "6.8.1",

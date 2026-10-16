@@ -8,7 +8,7 @@ const fixture=JSON.parse(readFileSync(process.env.ADVENT_READINESS_FIXTURE,'utf8
 await withSmokeBrowser('production-readiness',async browser=>{
  const context=await browser.newContext({ignoreHTTPSErrors:true});
  const page=await context.newPage();
- await page.goto(fixture.origin);
+ await page.goto(fixture.origin + "/login");
  await page.getByLabel('Email',{exact:true}).fill(fixture.email);
  await page.getByLabel('Пароль',{exact:true}).fill(fixture.password);
  await page.getByRole('button',{name:'Войти',exact:true}).click();

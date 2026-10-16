@@ -235,6 +235,9 @@ h2:focus {
 	align-items: center;
 	gap: 20px;
 }
+.management-shell .management-home-link {
+	display: none;
+}
 .profile {
 	position: relative;
 }
@@ -1443,6 +1446,18 @@ textarea {
 	}
 	.topbar {
 		min-height: 80px;
+		flex-wrap: wrap;
+		padding-block: 12px;
+	}
+	.header-actions {
+		max-width: 100%;
+		flex-wrap: wrap;
+		margin-left: auto;
+	}
+	.management-shell .management-home-link {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
 	}
 	.desktop-title {
 		display: none;

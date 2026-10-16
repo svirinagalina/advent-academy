@@ -81,7 +81,7 @@ export default function AcceptInvitation() {
 				{success ? (
 					<>
 						<p>Email подтверждён. Войдите с установленным паролем.</p>
-						<Link className="button primary" href="/">
+						<Link className="button primary" href="/login">
 							Перейти ко входу
 						</Link>
 					</>
@@ -132,7 +132,7 @@ export default function AcceptInvitation() {
 						{error && (
 							<p>
 								Если учётная запись уже активирована,{" "}
-								<Link href="/">перейдите ко входу</Link>.
+								<Link href="/login">перейдите ко входу</Link>.
 							</p>
 						)}
 					</form>

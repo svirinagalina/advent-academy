@@ -443,7 +443,7 @@ export default function UserAdmin({
 						<section className="card empty-state">
 							<h1>Нет доступа к управлению пользователями</h1>
 							<p>Этот раздел доступен только администратору.</p>
-							<Link className="button secondary" href="/">
+							<Link className="button secondary" href="/cabinet">
 								К кабинету
 							</Link>
 						</section>

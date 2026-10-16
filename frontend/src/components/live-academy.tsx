@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
 	type FormEvent,
 	useCallback,
@@ -29,8 +29,15 @@ import {
 
 export default function LiveAcademy() {
 	const search = useSearchParams();
+	const pathname = usePathname();
+	const router = useRouter();
+	const view = search.get("view");
+	const administrative = view === "users" || view === "manage";
 	const sessionEpoch = useRef(0);
 	const [profile, setProfile] = useState<Profile | null>(null);
+	useEffect(() => {
+		if (pathname === "/login" && profile) router.replace("/cabinet");
+	}, [pathname, profile, router]);
 	const [courses, setCourses] = useState<CourseView[]>([]);
 	const [assignments, setAssignments] = useState<AssignmentSummary[]>([]);
 	const [assignmentsLoading, setAssignmentsLoading] = useState(false);
@@ -79,16 +86,20 @@ export default function LiveAcademy() {
 		setError("");
 		try {
 			const user = await api<Profile>("/api/session");
-			const [list, summary] = await Promise.all([
-				api<CourseView[]>("/api/backend/learning/courses"),
-				api<AssignmentSummary[]>("/api/backend/learning/assignments"),
-			]);
+			if (!administrative) {
+				const [list, summary] = await Promise.all([
+					api<CourseView[]>("/api/backend/learning/courses"),
+					api<AssignmentSummary[]>("/api/backend/learning/assignments"),
+				]);
+				if (sessionEpoch.current !== epoch) return;
+				setAssignments(summary);
+				setCourses(list);
+			}
 			if (sessionEpoch.current !== epoch) return;
-			setAssignments(summary);
 			setProfile(user);
-			setCourses(list);
 			setLoginRequired(false);
 		} catch (e) {
+			if (sessionEpoch.current !== epoch) return;
 			if (e instanceof ClientError && e.status === 401) {
 				setProfile(null);
 				setLoginRequired(true);
@@ -97,13 +108,12 @@ export default function LiveAcademy() {
 					e instanceof Error ? e.message : "Не удалось загрузить кабинет",
 				);
 		} finally {
-			setLoading(false);
+			if (sessionEpoch.current === epoch) setLoading(false);
 		}
-	}, []);
+	}, [administrative]);
 	useEffect(() => {
 		void load();
 	}, [load]);
-	const view = search.get("view");
 	const requestedCourse = search.get("course");
 	const selected = requestedCourse
 		? courses.find((c) => c.id === requestedCourse)
@@ -376,6 +386,7 @@ function Login({ onSuccess }: { onSuccess: () => Promise<void> }) {
 				<Link className="text-link" href="/demo">
 					Посмотреть демоверсию
 				</Link>
+				<Link className="text-link" href="/">На главную сайта</Link>
 			</section>
 		</main>
 	);
