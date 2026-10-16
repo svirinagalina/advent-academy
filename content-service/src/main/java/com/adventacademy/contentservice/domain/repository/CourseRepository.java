@@ -15,6 +15,10 @@ public interface CourseRepository {
 
     List<Course> findAll();
 
+    default List<Course> findManagedByOwnerId(UUID ownerId) {
+        return findAll().stream().filter(course -> ownerId.equals(course.getOwnerId())).toList();
+    }
+
     boolean existsById(UUID id);
 
     /**

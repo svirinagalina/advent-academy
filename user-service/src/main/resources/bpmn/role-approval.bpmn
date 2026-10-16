@@ -13,8 +13,20 @@
                   modeler:executionPlatformVersion="8.7.0">
   <bpmn:process id="role-approval" name="Role approval" isExecutable="true">
     <bpmn:startEvent id="StartEvent_role_request" name="Role requested">
-      <bpmn:outgoing>Flow_to_review</bpmn:outgoing>
+      <bpmn:outgoing>Flow_to_bind</bpmn:outgoing>
     </bpmn:startEvent>
+    <bpmn:serviceTask id="ServiceTask_bind_request" name="Bind canonical request">
+      <bpmn:extensionElements><zeebe:taskDefinition type="role-request-bind" retries="10"/></bpmn:extensionElements>
+      <bpmn:incoming>Flow_to_bind</bpmn:incoming><bpmn:outgoing>Flow_to_canonical</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_canonical" name="Canonical instance?" default="Flow_duplicate">
+      <bpmn:incoming>Flow_to_canonical</bpmn:incoming>
+      <bpmn:outgoing>Flow_to_review</bpmn:outgoing><bpmn:outgoing>Flow_duplicate</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="EndEvent_duplicate" name="Duplicate delivery"><bpmn:incoming>Flow_duplicate</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_to_bind" sourceRef="StartEvent_role_request" targetRef="ServiceTask_bind_request"/>
+    <bpmn:sequenceFlow id="Flow_to_canonical" sourceRef="ServiceTask_bind_request" targetRef="Gateway_canonical"/>
+    <bpmn:sequenceFlow id="Flow_duplicate" sourceRef="Gateway_canonical" targetRef="EndEvent_duplicate"/>
     <bpmn:userTask id="UserTask_review_role" name="Review role request">
       <bpmn:extensionElements>
         <zeebe:userTask/>
@@ -47,7 +59,9 @@
     <bpmn:endEvent id="EndEvent_role_rejected" name="Role rejected">
       <bpmn:incoming>Flow_to_rejected</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_to_review" sourceRef="StartEvent_role_request" targetRef="UserTask_review_role"/>
+    <bpmn:sequenceFlow id="Flow_to_review" sourceRef="Gateway_canonical" targetRef="UserTask_review_role">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=workflowCanonical = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_to_decision" sourceRef="UserTask_review_role" targetRef="Gateway_decision"/>
     <bpmn:sequenceFlow id="Flow_to_approve" name="APPROVE" sourceRef="Gateway_decision" targetRef="ServiceTask_assign_role">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">=decision = "APPROVE"</bpmn:conditionExpression>

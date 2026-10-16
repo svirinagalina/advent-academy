@@ -19,13 +19,15 @@ import java.util.UUID;
 public class DeleteUserService {
 
     private final UserRepository userRepository;
+    private final com.adventacademy.userservice.application.service.admin.UserAdminPolicy adminPolicy;
 
-    public DeleteUserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public DeleteUserService(UserRepository userRepository, com.adventacademy.userservice.application.service.admin.UserAdminPolicy adminPolicy) {
+        this.userRepository = userRepository; this.adminPolicy=adminPolicy;
     }
 
     @Transactional
     public void deleteUser(UUID userId) {
+        adminPolicy.lock(); adminPolicy.authorizeRequestIfPresent(); adminPolicy.protect(userId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
         user.delete();

@@ -30,6 +30,7 @@ configurations.checkstyle {
 }
 
 dependencies {
+    implementation project(':security-common')
     implementation platform(project(':platform'))
     // annotationProcessor doesn't extend implementation, so it needs the
     // platform too, or spring-boot-configuration-processor below resolves
@@ -39,6 +40,12 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+    runtimeOnly 'org.postgresql:postgresql'
+    testImplementation 'org.testcontainers:testcontainers-postgresql'
+    testRuntimeOnly 'com.h2database:h2'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'io.jsonwebtoken:jjwt-api'
 

@@ -1,0 +1,54 @@
+{
+  "name": "advent-academy-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1",
+    "lint": "biome lint . --error-on-warnings",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run lint && npm run typecheck",
+    "test:runtime": "node scripts/runtime-smoke.mjs",
+    "test:assignments": "node scripts/assignment-smoke.mjs",
+    "test:meetings": "node scripts/meeting-smoke.mjs",
+    "test:management": "node scripts/management-smoke.mjs",
+    "test:themes": "node scripts/theme-smoke.mjs",
+    "test:management:errors": "node scripts/management-errors-smoke.mjs",
+    "test:layout-meetings": "node scripts/layout-and-meetings-smoke.mjs",
+    "test:user-admin:local": "python3 ../scripts/user-admin-e2e.py",
+    "test:user-admin": "node scripts/user-admin-smoke.mjs",
+    "test:editor:local": "python3 ../scripts/editor-e2e.py",
+    "test:instructor": "node scripts/instructor-smoke.mjs",
+    "test:editor": "node scripts/editor-smoke.mjs",
+    "test:dialogs": "node scripts/dialog-smoke.mjs",
+    "test:ui-ux": "node scripts/ui-ux-smoke.mjs",
+    "test:public": "node scripts/public-site-smoke.mjs"
+  },
+  "dependencies": {
+    "@codemirror/commands": "6.8.1",
+    "@codemirror/lang-html": "6.4.11",
+    "@codemirror/lang-markdown": "6.5.0",
+    "@codemirror/language": "6.12.3",
+    "@codemirror/state": "6.6.0",
+    "@codemirror/view": "6.41.0",
+    "@lezer/highlight": "1.2.3",
+    "lucide-react": "1.58.0",
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "playwright": "1.64.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "6.0.3"
+  }
+}

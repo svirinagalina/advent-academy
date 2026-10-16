@@ -13,17 +13,18 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.UUID;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
     private final AccessTokenVerifier accessTokenVerifier;
+    private final com.adventacademy.security.AccessTokenStatusClient accessTokenStatusClient;
 
-    public JwtAuthenticationFilter(AccessTokenVerifier accessTokenVerifier) {
+    public JwtAuthenticationFilter(AccessTokenVerifier accessTokenVerifier,
+            com.adventacademy.security.AccessTokenStatusClient accessTokenStatusClient) {
         this.accessTokenVerifier = accessTokenVerifier;
+        this.accessTokenStatusClient = accessTokenStatusClient;
     }
 
     @Override
@@ -38,11 +39,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         try {
             final String token = authorization.substring(BEARER_PREFIX.length());
-            final UUID userId = accessTokenVerifier.verify(token);
+            final AccessTokenVerifier.Identity identity = accessTokenVerifier.verifyIdentity(token);
+            accessTokenStatusClient.requireActive(token);
+            final var authorities = identity.roles().stream()
+                    .map(role -> new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + role)).toList();
             final var authentication = new UsernamePasswordAuthenticationToken(
-                    userId.toString(), null, List.of());
+                    identity.userId().toString(), null, authorities);
             SecurityContextHolder.getContext().setAuthentication(authentication);
             filterChain.doFilter(request, response);
+        } catch (com.adventacademy.security.AccessTokenStatusClient.InactiveTokenException exception) {
+            unauthorized(response, "Invalid access token");
+        } catch (com.adventacademy.security.AccessTokenStatusClient.IdentityUnavailableException exception) {
+            response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.getWriter().write("{\"code\":\"IDENTITY_UNAVAILABLE\",\"message\":\"Identity service unavailable\"}");
         } catch (JwtException | IllegalArgumentException exception) {
             unauthorized(response, "Invalid access token");
         }

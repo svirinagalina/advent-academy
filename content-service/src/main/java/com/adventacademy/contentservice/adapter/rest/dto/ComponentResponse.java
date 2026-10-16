@@ -10,6 +10,7 @@ import java.util.UUID;
 
 public record ComponentResponse(
         UUID id,
+        UUID ownerId,
         @Schema(description = "Plain text. Render with a text-only sink (e.g. textContent), never innerHTML.")
         String title,
         @Schema(description = "Plain text. Render with a text-only sink (e.g. textContent), never innerHTML.")
@@ -32,6 +33,7 @@ public record ComponentResponse(
                 .toList();
         return new ComponentResponse(
                 component.getId(),
+                component.getOwnerId(),
                 component.getTitle(),
                 component.getDescription(),
                 component.getStatus(),

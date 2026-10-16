@@ -51,6 +51,8 @@ import static org.mockito.Mockito.when;
 // every fixture below is seeded directly through the JPA repositories anyway.
 @TestPropertySource(properties = "spring.flyway.enabled=false")
 class RoleApprovalWorkerIntegrationIT {
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private com.adventacademy.userservice.application.service.admin.UserAdminPolicy adminPolicy;
 
     @Autowired private RoleRequestService roleRequestService;
     @Autowired private ApproveRoleRequestWorker approveWorker;

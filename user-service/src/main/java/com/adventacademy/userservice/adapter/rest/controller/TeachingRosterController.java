@@ -1,0 +1,51 @@
+package com.adventacademy.userservice.adapter.rest.controller;
+
+import com.adventacademy.userservice.application.service.user.TeachingRosterService;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+import java.util.UUID;
+
+@Validated
+@RestController
+@RequestMapping("/api/users/teaching")
+public class TeachingRosterController {
+    private final TeachingRosterService roster;
+    public TeachingRosterController(TeachingRosterService roster) { this.roster = roster; }
+    @GetMapping("/instructors")
+    @PreAuthorize("hasAnyRole('ADMIN','CONTENT_EDITOR')")
+    public List<TeachingRosterService.Student> instructors(@RequestParam @Size(min = 2, max = 100) String query) {
+        return roster.instructors(query);
+    }
+
+    @GetMapping("/instructors/{userId}")
+    @PreAuthorize("hasAnyRole('ADMIN','CONTENT_EDITOR')")
+    public TeachingRosterService.Student instructor(@PathVariable UUID userId) { return roster.instructor(userId); }
+
+    @GetMapping("/courses/{courseId}/students")
+    @PreAuthorize("hasAnyRole('ADMIN','CONTENT_EDITOR','INSTRUCTOR')")
+    public List<TeachingRosterService.Student> students(@PathVariable UUID courseId,
+                                                       @RequestHeader("Authorization") String authorization) {
+        return roster.students(courseId, authorization);
+    }
+    @GetMapping("/courses/{courseId}/candidates")
+    @PreAuthorize("hasAnyRole('ADMIN','CONTENT_EDITOR','INSTRUCTOR')")
+    public List<TeachingRosterService.Student> candidates(@PathVariable UUID courseId,
+            @RequestHeader("Authorization") String authorization,
+            @RequestParam @Size(min = 2, max = 100) String query,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(50) int limit) {
+        return roster.candidates(courseId, authorization, query, limit);
+    }
+
+    @GetMapping("/courses/{courseId}/candidates/{userId}")
+    @PreAuthorize("hasAnyRole('ADMIN','CONTENT_EDITOR','INSTRUCTOR')")
+    public TeachingRosterService.Student candidate(@PathVariable UUID courseId, @PathVariable UUID userId,
+            @RequestHeader("Authorization") String authorization,
+            @RequestHeader(value = "X-Enrollment-Check", defaultValue = "") String assertion) {
+        return roster.candidate(courseId, userId, authorization, assertion);
+    }
+}

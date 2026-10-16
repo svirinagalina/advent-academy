@@ -100,8 +100,15 @@ public class RoleRequestService {
      * {@link #onRoleRequestSubmitted}, which only runs once this transaction has
      * committed — see {@link TransactionalEventListener}.
      */
+    @org.springframework.beans.factory.annotation.Autowired
+    private org.springframework.core.env.Environment environment;
+
     @Transactional
     public RoleRequestResponse submit(UUID userId, UUID requestedRoleId, String ipAddress, String userAgent) {
+        if (environment != null && environment.acceptsProfiles(org.springframework.core.env.Profiles.of("production")) && !workflowEnabled) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
+                    "Role approval workflow is disabled; use direct administrator-managed role assignment");
+        }
         if (userRepository.findById(userId).isEmpty()) {
             throw new UserNotFoundException(userId);
         }
@@ -146,12 +153,18 @@ public class RoleRequestService {
      * up from; the API response the caller already received never claimed a
      * process had started.
      */
+    @org.springframework.beans.factory.annotation.Autowired
+    private WorkflowStartLease startLease;
+
+    @org.springframework.beans.factory.annotation.Value("${camunda.client.zeebe.enabled:false}")
+    private boolean workflowEnabled;
+
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onRoleRequestSubmitted(RoleRequestSubmittedEvent event) {
         boolean alreadyStarted = roleRequestRepository.findById(event.roleRequestId())
                 .map(request -> request.getProcessInstanceKey() != null)
                 .orElse(true);
-        if (alreadyStarted) {
+        if (alreadyStarted || (workflowEnabled && startLease != null && !startLease.claim(event.roleRequestId()))) {
             return;
         }
         try {
@@ -184,6 +197,10 @@ public class RoleRequestService {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void attachProcessInstance(UUID roleRequestId, long processInstanceKey) {
+        if (workflowEnabled && startLease != null) {
+            startLease.bind(roleRequestId, processInstanceKey);
+            return;
+        }
         roleRequestRepository.findById(roleRequestId).ifPresent(roleRequest -> {
             if (roleRequest.getProcessInstanceKey() == null) {
                 roleRequest.attachProcessInstance(processInstanceKey);

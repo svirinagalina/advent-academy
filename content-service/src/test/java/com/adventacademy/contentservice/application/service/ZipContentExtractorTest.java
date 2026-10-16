@@ -127,7 +127,7 @@ class ZipContentExtractorTest {
         UUID lessonId = UUID.randomUUID();
         byte[] zip = buildZip(Map.of(
                 "lesson.md", "# Title\n\n![diagram](assets/diagram.png)".getBytes(StandardCharsets.UTF_8),
-                "assets/diagram.png", "fake-png-bytes".getBytes(StandardCharsets.UTF_8)
+                "assets/diagram.png", java.util.Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=")
         ));
 
         String markdown = extractor.extract(zip, lessonId);

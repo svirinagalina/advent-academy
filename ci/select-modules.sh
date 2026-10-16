@@ -50,7 +50,7 @@ fi
 
 while IFS= read -r -d '' changed_path; do
   case "$changed_path" in
-    .gitlab-ci.yml|ci/*|build.gradle|settings.gradle|gradle.properties|gradlew|gradlew.bat|gradle/*|platform/*|config/*|src/*|*/build.gradle|docker-compose*.yml|.dockerignore|docs/security/*|docs/adr/*)
+    .gitlab-ci.yml|ci/*|build.gradle|settings.gradle|gradle.properties|gradlew|gradlew.bat|gradle/*|platform/*|security-common/*|config/*|src/*|*/build.gradle|docker-compose*.yml|.dockerignore|docs/security/*|docs/adr/*)
       select_all
       exit 0
       ;;

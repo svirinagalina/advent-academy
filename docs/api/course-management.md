@@ -1,0 +1,179 @@
+# API кабинета управления курсами
+
+API доступен через gateway. Запросы требуют `Authorization: Bearer <accessToken>`.
+Создание курса разрешено `ADMIN` и `CONTENT_EDITOR`. Преподаватель (`INSTRUCTOR`)
+управляет существующими курсами, где его UUID указан в `ownerId`.
+`ADMIN` и `CONTENT_EDITOR` управляют всеми курсами.
+
+## Список и программа курса
+
+| Запрос | Назначение |
+| --- | --- |
+| `GET /api/courses?managed=true` | Только управляемые курсы, включая `DRAFT`, `PUBLISHED`, `ARCHIVED` |
+| `POST /api/courses` | Создать черновик: `{"title":"Java","description":"Основы"}` |
+| `GET /api/courses/{id}` | Дерево курса с модулями, уроками и статусами материалов |
+| `PATCH /api/courses/{id}` | Изменить название и описание |
+| `POST /api/components` | Создать модуль |
+| `POST /api/components/{id}/lessons` | Добавить урок |
+| `POST /api/courses/{id}/components` | Добавить существующий модуль: `{"componentId":"UUID"}` |
+| `DELETE /api/courses/{id}/components/{componentId}` | Удалить модуль из программы |
+| `PUT /api/courses/{id}/components/order` | Порядок всех модулей: `{"orderedIds":["UUID", "UUID"]}` |
+| `POST /api/components/{id}/publish` | Опубликовать модуль |
+| `POST /api/courses/{id}/publish` | Опубликовать курс с опубликованными модулями |
+| `POST /api/courses/{id}/archive` | Архивировать курс |
+
+Без `managed=true` сохраняется прежняя выборка видимых курсов; она может включать
+чужие опубликованные и архивные курсы. Для кабинета нужна выборка `managed=true`.
+`GET /api/teaching/courses` по-прежнему возвращает только управляемые опубликованные
+курсы для сценариев преподавания.
+
+Изменение структуры ограничено существующими правилами жизненного цикла:
+опубликованный курс нельзя редактировать как черновик. Полный контракт и ограничения
+операций доступны в Swagger gateway (`/swagger-ui.html`).
+
+Каждый урок в дереве курса сохраняет поля `id`, `title`, `position` и дополнительно
+возвращает `contentPresent` (boolean) и `contentStatus` (`DRAFT`, `REVIEW`, `PUBLISHED`,
+`ARCHIVED` или `null`, если материала нет). HTML и Markdown в дерево не включаются. Узел модуля дополнительно возвращает
+`ownerId` (также в `GET /api/components`), чтобы интерфейс корректно скрывал
+действия с чужими общими модулями; серверная проверка прав сохраняется.
+
+Создание модуля через `POST /api/components` разрешено только `ADMIN` и
+`CONTENT_EDITOR`. У преподавателя кнопку «Создать модуль» следует скрывать даже
+при владении курсом. Права на уроки и материалы определяются отдельно по владельцу
+модуля: включение общего модуля в свой курс не передаёт права его изменения.
+
+## Markdown уроков
+
+`GET /api/lessons/{lessonId}/content` возвращает сохранённый материал с полями
+`id`, `lessonId`, `markdown`, `html`, `status`, `createdAt`, `updatedAt` и заголовком
+`Cache-Control: no-store`. Доступ: `ADMIN`, `CONTENT_EDITOR` или `INSTRUCTOR`,
+владеющий модулем урока. Публикация курса и назначение ученика не требуются.
+Чужой модуль возвращает `403`; отсутствующий урок или материал — `404` после
+проверки права доступа. Ученик использует прежний learning API.
+
+Этот запрос позволяет восстановить предпросмотр после перезагрузки и проверить
+исход загрузки при потере ответа. `404` для существующего доступного урока означает,
+что сохранённый материал отсутствует. Сетевой сбой или `403` не означают отсутствие
+материала и не являются основанием для автоматического повтора загрузки.
+
+`POST /api/lessons/{lessonId}/content` принимает `multipart/form-data`, поле `file`:
+`.md` или ZIP с одним Markdown-файлом в корне и необязательной папкой `assets/`.
+Сервер проверяет загрузку, преобразует Markdown в очищенный HTML, сохраняет Markdown
+и HTML в статусе `DRAFT` и возвращает `201`.
+
+Ограничения: файл до 5 MiB; распакованный ZIP до 20 MiB и 50 записей.
+Ссылки `assets/...` в ZIP и `asset:<UUID>` на ранее загруженные вложения
+преобразуются в адреса `/api/assets/{id}`. Вложение должно принадлежать уроку.
+Повторная загрузка контента того же урока возвращает `409`; обновление Markdown
+этим endpoint не реализовано.
+
+`POST /api/lessons/{lessonId}/content/publish` публикует контент (`204`). Затем можно
+публиковать модуль и курс. Проверка роли и владельца применяется к загрузке и публикации.
+
+## Ученики и поиск кандидатов
+
+| Запрос | Ответ / назначение |
+| --- | --- |
+| `GET /api/users/teaching/courses/{courseId}/students` | Назначенные активные пользователи с подтверждённой почтой: имя, email, UUID; опубликованный или архивный курс |
+| `GET /api/users/teaching/courses/{courseId}/candidates?query=мария&limit=20` | Ограниченный поиск по email или сочетанию имени и фамилии |
+| `GET /api/users/teaching/courses/{courseId}/candidates/{userId}` | Проверка и минимальный профиль конкретного кандидата |
+| `PUT /api/learning/courses/{courseId}/students/{studentId}` | Идемпотентное назначение на опубликованный курс (`200`) |
+
+Просмотр списка назначенных в архиве сохраняет проверку права управления курсом.
+Архивирование не удаляет записи назначений. Поиск, проверка кандидата и назначение
+в архиве запрещены; курс также недоступен через learning API. Для черновика список
+назначенных по этому маршруту недоступен (`403`); интерфейс показывает пояснение.
+
+Поиск возвращает массив объектов только с полями `id`, `firstName`, `lastName`, `email`.
+`query` после удаления пробелов по краям должен содержать 2–100 символов;
+`limit` — 1–50 (по умолчанию 20). Регистр не учитывается, `%` и `_` рассматриваются
+как обычные символы. Порядок: фамилия, имя, UUID. Это ограниченная выборка без
+общего количества и пагинации. Уже назначенные пользователи могут присутствовать
+в поиске; повторное назначение не создаёт дубликат.
+
+Проверка права управления опубликованным курсом выполняется в content-service
+перед поиском или получением профиля в user-service. Общий `GET /api/users`
+остаётся доступен только администратору. Отсутствующий/чужой/неопубликованный курс
+на маршрутах поиска не раскрывает пользователей и возвращает `403`.
+
+Назначение сначала проверяет курс и права, затем через user-service подтверждает,
+что пользователь существует, имеет `status=ACTIVE` и `emailVerified=true`.
+Эти условия применяются к пользователям любых ролей. Проверка выполняется перед
+каждым назначением, включая повторное; это проверка текущего состояния, а не
+распределённая транзакция, блокирующая последующую деактивацию пользователя.
+
+Ошибки назначения: `403` — нет права управления; `404` — курс не найден;
+`409` — курс не опубликован; `422` — пользователь отсутствует, неактивен или
+не подтвердил почту; `502` — user-service не смог подтвердить пользователя.
+При ошибке новая запись назначения не создаётся. Некорректные параметры поиска
+возвращают `400`.
+
+Для межсервисной проверки content-service использует `USER_SERVICE_URL`,
+user-service — `CONTENT_SERVICE_URL`. В локальном Compose адреса настроены.
+Вызовы сохраняют токен исходного пользователя и имеют ограниченное время ожидания.
+
+После входа ученик читает назначенные опубликованные курсы через
+`GET /api/learning/courses`, дерево — через `GET /api/learning/courses/{id}`,
+HTML доступного урока — через `GET /api/learning/courses/{courseId}/lessons/{lessonId}`.
+
+## Локальная проверка
+
+Из корня репозитория:
+
+```bash
+./gradlew :content-service:check :user-service:check :content-service:bootJar :user-service:bootJar :api-gateway:bootJar :securityContract :checkstyleMain :checkstyleTest --no-daemon
+docker compose -p advent-course-api -f docs/backend/runtime-course-management.yml up -d --build --wait --wait-timeout 120
+python3 scripts/course-management-smoke.py
+docker compose -p advent-course-api -f docs/backend/runtime-course-management.yml down
+```
+
+Стенд использует отдельный Compose-проект, gateway на `127.0.0.1:18094`, синтетические
+ключи и PostgreSQL в tmpfs. После удаления стенда его тестовые данные исчезнут.
+Smoke-скрипт проверяет принадлежность контейнера и tmpfs перед SQL-подготовкой
+тестовых пользователей. Роли/подтверждение почты создаются только в этой фикстуре;
+создание курсов, программа, Markdown, публикация и назначения выполняются через API.
+
+Сценарий проверяет создание и изменение курса, порядок модулей, преобразование и
+очистку Markdown, публикацию, поиск, отказ для некорректных пользователей,
+идемпотентное назначение, вход и чтение учеником, запреты по роли и владельцу,
+архивирование. Для проверки `502` скрипт временно останавливает только тестовый
+user-service, проверяет отсутствие записи назначения и запускает его обратно.
+
+Frontend кабинета и BFF реализованы; запуск и браузерные проверки описаны в
+`frontend/README.md`.
+
+## Pagination and assignment configuration
+
+`GET /api/courses?managed=true&page=0&size=20&status=ALL` returns
+`{items,total,page,size}` using a metadata-only SQL projection. `size` is 1..100;
+`status` is ALL/DRAFT/PUBLISHED/ARCHIVED. Optional `id` filters an exact managed course.
+The legacy array response without `page` remains compatible; new clients use pagination.
+Meeting authorization uses `GET /api/learning/courses?summary=true` and its course-specific
+variant; these return only id/title after enrollment/publication checks.
+
+`GET` and `PUT /api/lessons/{lessonId}/assignment/configuration` provide owned authoring.
+The PUT body is `{required,title,description,version}`. Saving a mandatory flag and its
+condition is atomic; stale versions return 409 and invalid conditions leave the previous
+configuration untouched. Structure freezes at component publication. The course-management
+UI exposes this under each lesson's “Домашнее задание”. Existing submission/review APIs remain.
+
+## Назначение преподавателя
+
+ADMIN и CONTENT_EDITOR назначают активного пользователя с подтверждённой почтой
+и ролью INSTRUCTOR через `PUT /api/courses/{id}/instructor`:
+`{"instructorId":"<UUID>","version":<версия курса>}`. Назначение доступно только
+для опубликованного курса. `instructorId: null` передаёт управление вызывающему
+куратору. Это смена владельца курса: предыдущий преподаватель теряет управление,
+кураторы сохраняют доступ. Дерево курса содержит `ownerId` и `version`.
+
+Поиск кандидатов: `GET /api/users/teaching/instructors?query=...` (2–100 символов,
+не более 20 результатов); проверка кандидата:
+`GET /api/users/teaching/instructors/{id}`. Обе операции доступны только кураторам.
+Смена владельца проверяет кандидата через identity до записи и сериализуется
+блокировкой курса. Устаревшая версия или неопубликованный курс возвращают 409,
+неподходящий кандидат — 422, отсутствие прав — 403, недоступная identity — 502.
+Изменение фиксируется в аудите. API не назначает глобальную роль пользователю.
+
+Новый преподаватель получает список учеников, проверку работ и управление встречами.
+Отзыв назначения запрещает последующие REST-запросы и отключает уже подключённого
+преподавателя от запланированной встречи при очередной проверке доступа.

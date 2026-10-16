@@ -56,13 +56,13 @@ public class CourseAssemblyServiceTest {
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-17T12:00:00Z"), ZoneOffset.UTC);
     private final CourseAssemblyService service = new CourseAssemblyService(
             courseRepository, componentRepository, directionRepository, coursePublicationPolicy,
-            currentUserProvider, auditTrail);
+            currentUserProvider, auditTrail, mock(org.springframework.jdbc.core.JdbcTemplate.class));
 
     @Test
     void addComponentShouldThrowWhenComponentDoesNotExist() {
         UUID courseId = UUID.randomUUID();
         UUID componentId = UUID.randomUUID();
-        when(componentRepository.existsById(componentId)).thenReturn(false);
+        when(componentRepository.findById(componentId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.addComponent(courseId, componentId))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -153,6 +153,7 @@ public class CourseAssemblyServiceTest {
         Course own = Course.create("Mine", "Draft of the caller", OWNER_ID, CLOCK);
         Course foreign = Course.create("Theirs", "Draft of somebody else", OTHER_USER_ID, CLOCK);
         when(courseRepository.findAll()).thenReturn(List.of(own, foreign));
+        when(courseRepository.findManagedByOwnerId(OWNER_ID)).thenReturn(List.of(own));
 
         List<Course> visible = service.findAll();
 
@@ -166,5 +167,21 @@ public class CourseAssemblyServiceTest {
 
         assertThatThrownBy(() -> service.get(foreign.getId()))
                 .isInstanceOf(CourseAccessDeniedException.class);
+    }
+    @Test
+    void managedCoursesExcludeForeignPublishedAndArchivedCourses() {
+        Course own = Course.create("Own", "", OWNER_ID, CLOCK);
+        Course foreign = Course.create("Foreign", "", UUID.randomUUID(), CLOCK);
+        UUID componentId = UUID.randomUUID();
+        foreign.addComponent(componentId, CLOCK);
+        when(coursePublicationPolicy.findUnpublishedComponents(List.of(componentId))).thenReturn(Set.of());
+        foreign.publish(coursePublicationPolicy, CLOCK);
+        when(courseRepository.findAll()).thenReturn(List.of(own, foreign));
+        when(courseRepository.findManagedByOwnerId(OWNER_ID)).thenReturn(List.of(own));
+        assertThat(service.findManaged()).containsExactly(own);
+        foreign.archive(CLOCK);
+        assertThat(service.findManaged()).containsExactly(own);
+        currentUserProvider.roles = Set.of("ADMIN");
+        assertThat(service.findManaged()).containsExactly(own, foreign);
     }
 }

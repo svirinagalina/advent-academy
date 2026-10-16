@@ -16,12 +16,21 @@ public final class MeetingRoom {
 
     private final RoomId roomId;
     private final Instant createdAt;
+    private final int maxParticipants;
     private final Set<ParticipantId> participants = new LinkedHashSet<>();
     private RoomStatus status = RoomStatus.WAITING;
 
     public MeetingRoom(RoomId roomId, Instant createdAt) {
+        this(roomId, createdAt, MAX_PARTICIPANTS);
+    }
+
+    public MeetingRoom(RoomId roomId, Instant createdAt, int maxParticipants) {
+        if (maxParticipants < 2 || maxParticipants > 8) {
+            throw new IllegalArgumentException("Room capacity must be between two and eight");
+        }
         this.roomId = roomId;
         this.createdAt = createdAt;
+        this.maxParticipants = maxParticipants;
     }
 
     public synchronized RoomJoinResult join(ParticipantId participantId) {
@@ -29,13 +38,13 @@ public final class MeetingRoom {
         if (participants.contains(participantId)) {
             throw new DuplicateParticipantException(participantId.value());
         }
-        if (participants.size() >= MAX_PARTICIPANTS) {
+        if (participants.size() >= maxParticipants) {
             throw new RoomFullException(roomId.value());
         }
 
         final Optional<ParticipantId> peerId = participants.stream().findFirst();
         participants.add(participantId);
-        if (participants.size() == MAX_PARTICIPANTS) {
+        if (participants.size() >= 2 && status == RoomStatus.WAITING) {
             transitionTo(RoomStatus.ACTIVE);
         }
         return new RoomJoinResult(snapshot(), peerId);
@@ -48,7 +57,7 @@ public final class MeetingRoom {
         }
         if (participants.isEmpty()) {
             transitionTo(RoomStatus.CLOSED);
-        } else if (status == RoomStatus.ACTIVE) {
+        } else if (status == RoomStatus.ACTIVE && participants.size() == 1) {
             transitionTo(RoomStatus.WAITING);
         }
         return true;
@@ -62,7 +71,7 @@ public final class MeetingRoom {
     }
 
     public synchronized RoomSnapshot snapshot() {
-        return new RoomSnapshot(roomId, status, createdAt, new ArrayList<>(participants), MAX_PARTICIPANTS);
+        return new RoomSnapshot(roomId, status, createdAt, new ArrayList<>(participants), maxParticipants);
     }
 
     private void ensureOpen() {

@@ -28,6 +28,7 @@ public class SignalMessageValidator {
 
     private static final Set<SignalType> CLIENT_TYPES = EnumSet.of(
             SignalType.JOIN,
+            SignalType.REAUTHORIZE,
             SignalType.OFFER,
             SignalType.ANSWER,
             SignalType.ICE_CANDIDATE,
@@ -56,7 +57,7 @@ public class SignalMessageValidator {
         }
         new RoomId(message.roomId());
 
-        if (message.type() == SignalType.JOIN) {
+        if (message.type() == SignalType.JOIN || message.type() == SignalType.REAUTHORIZE) {
             requireExactFields(tree, JOIN_FIELDS, "JOIN message");
             if (message.capability() == null || message.capability().isBlank()
                     || message.capability().length() > 128) {

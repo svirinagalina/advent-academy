@@ -1,0 +1,13 @@
+**
+!frontend/
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/next.config.ts
+!frontend/next-env.d.ts
+!frontend/tsconfig.json
+!frontend/postcss.config.mjs
+!frontend/biome.json
+!frontend/src/
+!frontend/src/**
+!frontend/public/
+!frontend/public/**

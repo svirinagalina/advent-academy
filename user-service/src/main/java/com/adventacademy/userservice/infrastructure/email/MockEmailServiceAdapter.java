@@ -23,6 +23,11 @@ public class MockEmailServiceAdapter implements EmailService {
     public record MockEmail(String to, String subject, String body, long timestamp) {}
 
     @Override
+    public void sendInvitation(String email, String token) {
+        logMockEmail(email, "Приглашение в Advent Academy", "Invitation token: " + token);
+    }
+
+    @Override
     public void sendEmailVerification(String email, String verificationToken) {
         String subject = "Verify your email - Advent Academy";
         String body = "Verification token: " + verificationToken;

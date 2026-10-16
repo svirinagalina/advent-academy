@@ -35,6 +35,19 @@ class AssetLinkResolverTest {
     private final AssetLinkResolver resolver = new AssetLinkResolver(fakeStorage);
 
     @Test
+    void validatesCanonicalLinksFromPreviouslyImportedMarkdown() {
+        UUID lesson = UUID.randomUUID();
+        StoredAsset asset = StoredAsset.create(lesson, "x.png", "image/png", new byte[]{1});
+        assets.put(asset.getId(), asset);
+        String canonical = "![image](/api/assets/" + asset.getId() + ")";
+        assertThat(resolver.resolve(canonical, lesson)).isEqualTo(canonical);
+        assertThatThrownBy(() -> resolver.resolve(canonical, UUID.randomUUID()))
+                .isInstanceOf(InvalidAssetLinkException.class);
+        assertThat(resolver.resolve("![image](/api/backend/assets/" + asset.getId() + ")", lesson))
+                .isEqualTo(canonical);
+    }
+
+    @Test
     void rewritesValidAssetLinkToDownloadUrl() {
         UUID lessonId = UUID.randomUUID();
         StoredAsset asset = StoredAsset.create(lessonId, "diagram.png", "image/png", new byte[]{1});

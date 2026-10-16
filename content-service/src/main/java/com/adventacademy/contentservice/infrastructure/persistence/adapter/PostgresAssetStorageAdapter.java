@@ -30,6 +30,11 @@ public class PostgresAssetStorageAdapter implements AssetStorage {
     }
 
     @Override
+    public Optional<com.adventacademy.contentservice.domain.AssetMetadata> findMetadataById(UUID id) {
+        return jpaRepository.findMetadataById(id);
+    }
+
+    @Override
     public Optional<StoredAsset> findById(UUID id) {
         return jpaRepository.findById(id).map(mapper::toDomain);
     }

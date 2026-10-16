@@ -1,0 +1,9 @@
+{
+	"files": {
+		"includes": ["src/**", "next.config.ts", "postcss.config.mjs"]
+	},
+	"linter": {
+		"enabled": true,
+		"rules": { "preset": "recommended" }
+	}
+}

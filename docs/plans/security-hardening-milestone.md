@@ -2,7 +2,7 @@
 
 ## Milestone control
 
-- **Status:** active; SEC-101 complete, SEC-102..SEC-110 planned
+- **Status:** historical planning baseline; current controls and residual risks are in `docs/security/risk-register.md` and `docs/plans/architecture-readiness.json`
 - **Assessment date:** 2026-08-31 (Europe/Moscow)
 - **Assessed branch/commit:** `dev` / `131a624`
 - **Locally available base:** `origin/dev` / `131a624`
@@ -11,7 +11,7 @@
 - **Owner:** platform/backend team; every service owner participates
 - **Priority:** P0 before exposing the platform outside a trusted development environment
 - **Source of truth:** the GitLab milestone; this file is its detailed execution plan
-- **Delivery status:** SEC-101 implemented on `feature/43-threat-model`; SEC-102..SEC-110 not started
+- **Delivery status at assessment date:** SEC-101 implemented on `feature/43-threat-model`; the later implementation supersedes this snapshot.
 
 ## Goal
 

@@ -7,12 +7,14 @@ import com.adventacademy.contentservice.application.command.UploadLessonContentC
 import com.adventacademy.contentservice.application.service.UploadLessonContentService;
 import com.adventacademy.contentservice.application.validation.InvalidMarkdownFileException;
 import com.adventacademy.contentservice.domain.LessonContent;
+import com.adventacademy.contentservice.application.service.LessonContentReadService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -29,9 +31,15 @@ import java.util.UUID;
 public class LessonContentController {
 
     private final UploadLessonContentService uploadService;
+    private final LessonContentReadService readService;
+    private final com.adventacademy.contentservice.application.service.LearningService learning;
 
-    public LessonContentController(UploadLessonContentService uploadService) {
+    public LessonContentController(UploadLessonContentService uploadService,
+                                   com.adventacademy.contentservice.application.service.LearningService learning,
+                                   LessonContentReadService readService) {
         this.uploadService = uploadService;
+        this.learning = learning;
+        this.readService = readService;
     }
 
     @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
@@ -65,6 +73,31 @@ public class LessonContentController {
             @RequestParam("file") MultipartFile file) {
         LessonContent content = uploadService.saveLessonContent(toCommand(lessonId, file));
         return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(content));
+    }
+
+    @GetMapping("/{lessonId}/content")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
+    @Operation(summary = "Read saved lesson Markdown, sanitized HTML and publication status",
+            description = "Requires management rights on the lesson's component. Returns 404 when the lesson or its content is absent.")
+    public ResponseEntity<LessonContentResponse> getContent(@PathVariable UUID lessonId) {
+        return ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore())
+                .body(toResponse(readService.get(lessonId)));
+    }
+
+    @PostMapping("/{lessonId}/content/publish")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
+    public ResponseEntity<Void> publish(@PathVariable UUID lessonId) {
+        learning.publishContent(lessonId);
+        return ResponseEntity.noContent().build();
+    }
+
+    public record Requirements(@jakarta.validation.constraints.NotNull Boolean requiredAssignment) { }
+
+    @PutMapping("/{lessonId}/requirements")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
+    public ResponseEntity<Void> requirements(@PathVariable UUID lessonId, @Valid @RequestBody Requirements request) {
+        learning.requirements(lessonId, request.requiredAssignment());
+        return ResponseEntity.noContent().build();
     }
 
     private UploadLessonContentCommand toCommand(UUID lessonId, MultipartFile file) {

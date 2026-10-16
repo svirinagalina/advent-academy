@@ -71,10 +71,11 @@ public class MeetingController {
 
     @PostMapping("/rooms/{roomId}/capabilities")
     public CapabilityResponse issueCapability(
+            @org.springframework.web.bind.annotation.RequestHeader("Authorization") String authorization,
             @PathVariable String roomId,
             Authentication authentication) {
         return CapabilityResponse.from(
-                meetingAccessService.issueCapability(roomId, userId(authentication)));
+                meetingAccessService.issueCapability(roomId, userId(authentication), authorization));
     }
 
     @GetMapping("/config")

@@ -112,7 +112,7 @@ class LessonContentApiIT {
      */
     private UUID uploadAsset(UUID lessonId) throws Exception {
         MockMultipartFile file = new MockMultipartFile(
-                "file", "diagram.png", "image/png", "fake-png-bytes".getBytes(StandardCharsets.UTF_8));
+                "file", "diagram.png", "image/png", java.util.Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII="));
 
         String response = mockMvc.perform(multipart("/api/lessons/{lessonId}/assets", lessonId).file(file))
                 .andExpect(status().isCreated())
@@ -154,7 +154,7 @@ class LessonContentApiIT {
         UUID lessonId = createLesson();
         byte[] zip = buildZip(Map.of(
                 "lesson.md", "# Title\n\n![diagram](assets/diagram.png)".getBytes(StandardCharsets.UTF_8),
-                "assets/diagram.png", "fake-png-bytes".getBytes(StandardCharsets.UTF_8)
+                "assets/diagram.png", java.util.Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=")
         ));
         MockMultipartFile file = new MockMultipartFile("file", "bundle.zip", "application/zip", zip);
 

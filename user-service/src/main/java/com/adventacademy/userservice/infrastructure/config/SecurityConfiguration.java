@@ -26,6 +26,7 @@ public class SecurityConfiguration {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/.well-known/jwks.json",
                                 "/actuator/health",
                                 "/actuator/health/**",
                                 "/actuator/info",
@@ -35,8 +36,10 @@ public class SecurityConfiguration {
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST,
                                 "/api/auth/register",
+                                "/api/auth/invitations/accept",
                                 "/api/auth/login",
                                 "/api/auth/refresh",
+                                "/api/auth/logout",
                                 "/api/auth/confirm-email",
                                 "/api/auth/resend-verification",
                                 "/api/auth/password-reset",

@@ -42,9 +42,10 @@ public class RefreshTokenService {
         this.accessTokenExpirationMinutes = accessTokenExpirationMinutes;
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = InvalidCredentialsException.class)
     public AuthResponse refresh(RefreshTokenRequest request) {
         if (!jwtProvider.validateRefreshToken(request.refreshToken())) {
+            jwtProvider.revokeReplayedRefreshToken(request.refreshToken());
             throw new InvalidCredentialsException("Invalid refresh token");
         }
 
@@ -58,6 +59,7 @@ public class RefreshTokenService {
 
         // Serialize with login and password reset/change before consuming and rotating tokens.
         if (!jwtProvider.consumeRefreshToken(request.refreshToken())) {
+            jwtProvider.revokeReplayedRefreshToken(request.refreshToken());
             throw new InvalidCredentialsException("Invalid refresh token");
         }
 
@@ -65,7 +67,7 @@ public class RefreshTokenService {
                 user.getId(),
                 user.getEmail(),
                 user.getRoles().stream().map(role -> role.getName()).collect(java.util.stream.Collectors.toSet()));
-        String refreshToken = jwtProvider.generateRefreshToken(user.getId());
+        String refreshToken = jwtProvider.rotateRefreshToken(request.refreshToken());
 
         auditTrailPort.record(new AuditEvent(
                 UUID.randomUUID(),

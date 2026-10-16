@@ -49,6 +49,7 @@ class RoleRequestApprovalAtomicityIT {
     @Autowired private RoleJpaRepository roleJpaRepository;
     @Autowired private RoleRequestJpaRepository roleRequestJpaRepository;
     @MockitoBean private AuditTrailPort auditTrailPort;
+    @MockitoBean private com.adventacademy.userservice.application.service.admin.UserAdminPolicy adminPolicy;
 
     @Test
     void approveRollsBackTheRoleGrantWhenTheAuditWriteFails() {

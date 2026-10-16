@@ -144,18 +144,12 @@ public class MeetingSessionRegistry {
             return;
         }
         final RoomSnapshot room = roomService.getRoom(sender.roomId());
-        if (room.participants().size() != 2) {
-            throw new InvalidSignalException(
-                    "INVALID_NEGOTIATION_STATE",
-                    "Offer and answer require two active participants");
-        }
-        final String offererId = room.participants().getFirst().value();
-        final String answererId = room.participants().getLast().value();
-        boolean valid = sender.participantId().equals(answererId)
-                && target.participantId().equals(offererId);
+        final java.util.List<String> order = room.participants().stream().map(ParticipantId::value).toList();
+        final int senderIndex = order.indexOf(sender.participantId());
+        final int targetIndex = order.indexOf(target.participantId());
+        boolean valid = senderIndex > targetIndex;
         if (type == SessionSignalType.OFFER) {
-            valid = sender.participantId().equals(offererId)
-                    && target.participantId().equals(answererId);
+            valid = senderIndex < targetIndex;
         }
         if (!valid) {
             throw new InvalidSignalException(

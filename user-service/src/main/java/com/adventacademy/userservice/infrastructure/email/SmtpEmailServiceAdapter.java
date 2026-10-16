@@ -32,7 +32,7 @@ public class SmtpEmailServiceAdapter implements EmailService {
     @Override
     public void sendEmailVerification(String email, String verificationToken) {
         try {
-            String verifyLink = baseUrl + "/auth/confirm-email?token=" + verificationToken;
+            String verifyLink = baseUrl + "/auth/confirm-email#token=" + verificationToken;
             String subject = "Verify your email - Advent Academy";
             String body = "Welcome to Advent Academy!\n\n" +
                     "Please verify your email by clicking the link below:\n" +
@@ -49,9 +49,17 @@ public class SmtpEmailServiceAdapter implements EmailService {
     }
 
     @Override
+    public void sendInvitation(String email, String token) {
+        sendEmail(email, "Приглашение в Advent Academy",
+                "Вам создана учётная запись Advent Academy. Установите пароль и подтвердите email по ссылке:\n\n"
+                + baseUrl + "/auth/accept-invitation#token=" + token
+                + "\n\nСсылка действует 24 часа. Если приглашение отправлено по ошибке, проигнорируйте письмо.");
+    }
+
+    @Override
     public void sendPasswordReset(String email, String resetToken) {
         try {
-            String resetLink = baseUrl + "/auth/reset-password?token=" + resetToken;
+            String resetLink = baseUrl + "/auth/reset-password#token=" + resetToken;
             String subject = "Reset your password - Advent Academy";
             String body = "We received a request to reset your password.\n\n" +
                     "Click the link below to reset your password:\n" +

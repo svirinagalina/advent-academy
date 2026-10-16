@@ -40,7 +40,9 @@ public class AccountLockService {
     @Transactional
     public void handleFailedLogin(User user) {
         user.incrementFailedAttempts();
-        if (user.getFailedLoginAttempts() >= maxAttempts) {
+        if (user.getFailedLoginAttempts() >= maxAttempts
+                && (user.getStatus() == com.adventacademy.userservice.domain.model.UserStatus.ACTIVE
+                || user.getStatus() == com.adventacademy.userservice.domain.model.UserStatus.LOCKED)) {
             user.lock(LocalDateTime.now(clock).plusMinutes(lockDurationMinutes));
             auditTrailPort.record(new AuditEvent(
                     UUID.randomUUID(),

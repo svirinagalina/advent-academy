@@ -57,7 +57,7 @@ class RefreshTokenServiceTest {
         when(jwtProvider.getUserIdFromToken("rt")).thenReturn(userId);
         when(userRepository.findByIdForUpdate(userId)).thenReturn(Optional.of(user));
         when(jwtProvider.generateAccessToken(any(UUID.class), anyString(), any())).thenReturn("at-new");
-        when(jwtProvider.generateRefreshToken(userId)).thenReturn("rt-new");
+        when(jwtProvider.rotateRefreshToken("rt")).thenReturn("rt-new");
 
         service.refresh(new RefreshTokenRequest("rt", "10.0.0.4", "okhttp"));
 

@@ -3,6 +3,10 @@ spring:
     name: content-service
   profiles:
     active: docker
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 11MB
   jpa:
     hibernate:
       ddl-auto: validate
@@ -56,7 +60,12 @@ logging:
 
 security:
   jwt:
-    secret: ${JWT_SECRET}
+    secret: ${JWT_SECRET:}
+    private-key-file: ${JWT_PRIVATE_KEY_FILE:}
+    public-key-file: ${JWT_PUBLIC_KEY_FILE:}
+    key-id: ${JWT_KEY_ID:}
+    previous-public-key-file: ${JWT_PREVIOUS_PUBLIC_KEY_FILE:}
+    previous-key-id: ${JWT_PREVIOUS_KEY_ID:}
     issuer: ${JWT_ISSUER:advent-academy-user-service}
     audience: ${JWT_AUDIENCE:advent-academy-services}
     clock-skew-seconds: 30
@@ -78,7 +87,6 @@ asset:
       - image/jpeg
       - image/jpg
       - image/gif
-      - image/svg+xml
       - image/webp
       - application/pdf
       - application/msword
@@ -94,3 +102,6 @@ asset:
       - video/mpeg
       - audio/mpeg
       - audio/mp3
+
+teaching:
+  user-service-url: ${USER_SERVICE_URL:http://localhost:8080}

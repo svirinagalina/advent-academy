@@ -2,6 +2,7 @@ package com.adventacademy.meetingservice.adapter.websocket;
 
 public enum SignalType {
     JOIN,
+    REAUTHORIZE,
     JOINED,
     PARTICIPANT_JOINED,
     OFFER,

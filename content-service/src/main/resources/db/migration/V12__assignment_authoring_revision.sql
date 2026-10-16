@@ -1,0 +1,1 @@
+ALTER TABLE lessons ADD COLUMN assignment_revision BIGINT NOT NULL DEFAULT 0;

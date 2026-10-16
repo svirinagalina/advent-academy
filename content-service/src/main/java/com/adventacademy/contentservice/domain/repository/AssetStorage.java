@@ -12,5 +12,9 @@ public interface AssetStorage {
 
     Optional<StoredAsset> findById(UUID id);
 
+    default Optional<com.adventacademy.contentservice.domain.AssetMetadata> findMetadataById(UUID id) {
+        return findById(id).map(com.adventacademy.contentservice.domain.AssetMetadata::from);
+    }
+
     List<StoredAsset> findAllByLessonId(UUID lessonId);
 }

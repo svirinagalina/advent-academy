@@ -24,6 +24,7 @@ repositories {
 }
 
 dependencies {
+    implementation project(':security-common')
     implementation platform(project(':platform'))
     // annotationProcessor doesn't extend implementation, so it needs the
     // platform too, or lombok/spring-boot-configuration-processor below

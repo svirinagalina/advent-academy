@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "files": [
+          "meeting-service/src/main/resources/static/styles.css"
+        ],
+        "createdAt": "2026-10-16T19:18:50.034Z",
+        "reason": "Agent: existing standalone development meeting UI is explicitly labeled Local development only in index.html; preserve its existing font during scoped audit fixes"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "inter",
+        "files": [
+          "meeting-service/src/main/resources/static/styles.css"
+        ],
+        "createdAt": "2026-10-16T19:43:06.935Z",
+        "reason": "Agent: standalone meeting test page is explicitly labeled Local development only in index.html:69; DESIGN.md covers public site and cabinets, while this existing dev-only font already has a scoped overused-font exception"
+      }
+    ]
+  }
+}

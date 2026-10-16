@@ -43,7 +43,7 @@ class AssignRoleServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AssignRoleService(userRepository, roleRepository, auditTrailPort, clock);
+        service = new AssignRoleService(userRepository, roleRepository, auditTrailPort, clock, org.mockito.Mockito.mock(com.adventacademy.userservice.application.service.admin.UserAdminPolicy.class, invocation -> invocation.getMethod().getName().equals("actorOr") ? invocation.getArgument(0) : org.mockito.Mockito.RETURNS_DEFAULTS.answer(invocation)));
         userId = UUID.randomUUID();
         roleId = UUID.randomUUID();
         user = new User();

@@ -13,7 +13,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 public class SecurityConfiguration {
+
+    @Bean
+    public com.adventacademy.security.AccessTokenStatusClient accessTokenStatusClient(
+            @org.springframework.beans.factory.annotation.Value("${USER_SERVICE_URL:http://localhost:8080}") String identityUrl) {
+        return new com.adventacademy.security.AccessTokenStatusClient(identityUrl);
+    }
 
     @Bean
     public SecurityFilterChain filterChain(

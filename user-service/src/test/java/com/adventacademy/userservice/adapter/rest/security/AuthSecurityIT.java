@@ -59,6 +59,7 @@ import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -110,6 +111,7 @@ class AuthSecurityIT {
     @Autowired private TotpProvider totp;
     @Autowired private RateLimiter rateLimiter;
     @Autowired private RefreshTokenStore refreshTokenStore;
+    @Autowired private com.adventacademy.userservice.infrastructure.security.AccessTokenState accessState;
 
     private final List<String> secretsSeen = new ArrayList<>();
     private ListAppender<ILoggingEvent> logs;
@@ -216,13 +218,27 @@ class AuthSecurityIT {
                 .andReturn().getResponse().getStatus());
         assertThat(statuses).filteredOn(status -> status == 200).hasSize(1);
         assertThat(statuses).allMatch(status -> status == 200 || status == 401);
-        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM refresh_tokens WHERE user_id = ?", Integer.class, userId)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM refresh_tokens WHERE user_id = ? AND consumed=false", Integer.class, userId)).isZero();
+    }
+
+    @Test
+    void replayRevokesOnlyTheCompromisedFamilyAndCommitsTheRevocation() throws Exception {
+        String email = "family@example.com";
+        registerAndConfirm(email);
+        String first = readJson(login(email, PASSWORD, null).andReturn()).path("refreshToken").asText();
+        String independent = readJson(login(email, PASSWORD, null).andReturn()).path("refreshToken").asText();
+        var rotated = readJson(mvc.perform(postJson("/api/auth/refresh", Map.of("refreshToken", first)))
+                .andExpect(status().isOk()).andReturn());
+        mvc.perform(postJson("/api/auth/refresh", Map.of("refreshToken", first))).andExpect(status().isUnauthorized());
+        mvc.perform(postJson("/api/auth/refresh", Map.of("refreshToken", rotated.path("refreshToken").asText())))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(postJson("/api/auth/refresh", Map.of("refreshToken", independent))).andExpect(status().isOk());
     }
 
     private JjwtProvider replicaProvider() {
         return new JjwtProvider("test-secret-key-for-testing-purposes-only-32-bytes",
                 "advent-academy-user-service", "advent-academy-services", 15, 7, 30,
-                java.time.Clock.systemUTC(), refreshTokenStore);
+                java.time.Clock.systemUTC(), refreshTokenStore, accessState);
     }
 
     private <T> List<T> concurrently(int count, Callable<T> operation) throws Exception {
@@ -590,6 +606,29 @@ class AuthSecurityIT {
     }
 
     // ---------------------------------------------------------------- helpers
+
+    @Test
+    void logoutRevokesOnlyItsRefreshSessionAndMeReturnsAuthenticatedProfile() throws Exception {
+        String email = "cabinet@example.com";
+        registerAndConfirm(email);
+        JsonNode first = readJson(login(email, PASSWORD, null).andReturn());
+        JsonNode second = readJson(login(email, PASSWORD, null).andReturn());
+        String refresh = first.get("refreshToken").asText();
+        mvc.perform(get("/api/users/me").header(HttpHeaders.AUTHORIZATION,
+                        "Bearer " + first.get("accessToken").asText()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.email").value(email));
+        mvc.perform(get("/api/users/me")).andExpect(status().isUnauthorized());
+        for (int i = 0; i < 2; i++) {
+            mvc.perform(postJson("/api/auth/logout", Map.of("refreshToken", refresh)))
+                    .andExpect(status().isNoContent());
+        }
+        mvc.perform(postJson("/api/auth/refresh", Map.of("refreshToken", refresh)))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(postJson("/api/auth/refresh", Map.of("refreshToken", second.get("refreshToken").asText())))
+                .andExpect(status().isOk());
+        mvc.perform(postJson("/api/auth/logout", Map.of("refreshToken", first.get("accessToken").asText())))
+                .andExpect(status().isNoContent());
+    }
 
     private String register(String email) throws Exception {
         mvc.perform(postJson("/api/auth/register", Map.of(

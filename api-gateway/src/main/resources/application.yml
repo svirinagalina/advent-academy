@@ -4,6 +4,10 @@ spring:
   cloud:
     gateway:
       routes:
+        - id: identity-public-keys
+          uri: ${USER_SERVICE_URL}
+          predicates:
+            - Path=/.well-known/jwks.json
         # user-service — its own /api/** resource paths, forwarded unchanged.
         - id: user-service-api
           uri: ${USER_SERVICE_URL}
@@ -14,7 +18,7 @@ spring:
         - id: content-service-api
           uri: ${CONTENT_SERVICE_URL}
           predicates:
-            - Path=/api/courses/**,/api/directions/**,/api/components/**,/api/catalog/**,/api/lessons/**,/api/assets/**,/api/markdown/**
+            - Path=/api/courses/**,/api/directions/**,/api/components/**,/api/catalog/**,/api/lessons/**,/api/assets/**,/api/markdown/**,/api/learning/**,/api/teaching/**
 
         # Static Markdown preview page, served directly by content-service.
         - id: content-service-markdown-preview-ui

@@ -1,0 +1,110 @@
+# Used only by scripts/editor-e2e.py: disposable identities and tmpfs PostgreSQL.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: sprint
+      POSTGRES_USER: sprint
+      POSTGRES_PASSWORD: sprint-isolated
+    tmpfs: ["/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sprint -d sprint"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  user-service:
+    build:
+      context: ../..
+      dockerfile: docs/backend/Dockerfile.runtime
+      args:
+        SERVICE: user-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      JWT_SECRET: course-api-isolated-signing-secret-at-least-32-bytes
+      MFA_ENCRYPTION_KEY_V1: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      POSTGRES_DB: sprint
+      POSTGRES_USER: sprint
+      POSTGRES_PASSWORD: sprint-isolated
+      CONTENT_SERVICE_URL: http://content-service:8081
+      SECURITY_RATE_LIMIT_ENABLED: "false"
+      CAMUNDA_CLIENT_ZEEBE_ENABLED: "false"
+      MANAGEMENT_HEALTH_ZEEBE_ENABLED: "false"
+      MANAGEMENT_ENDPOINT_HEALTH_GROUP_READINESS_INCLUDE: db,diskSpace
+      JAVA_TOOL_OPTIONS: ""
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8080/actuator/health/readiness"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  content-service:
+    build:
+      context: ../..
+      dockerfile: docs/backend/Dockerfile.runtime
+      args:
+        SERVICE: content-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      JWT_SECRET: course-api-isolated-signing-secret-at-least-32-bytes
+      POSTGRES_DB: sprint
+      POSTGRES_USER: sprint
+      POSTGRES_PASSWORD: sprint-isolated
+      USER_SERVICE_URL: http://user-service:8080
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8081/actuator/health/readiness"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  meeting-service:
+    build:
+      context: ../..
+      dockerfile: docs/backend/Dockerfile.runtime
+      args:
+        SERVICE: meeting-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      USER_SERVICE_URL: http://user-service:8080
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: sprint
+      POSTGRES_USER: sprint
+      POSTGRES_PASSWORD: sprint-isolated
+      JWT_SECRET: course-api-isolated-signing-secret-at-least-32-bytes
+      MEETING_ALLOWED_ORIGINS: ${ADVENT_TEST_ORIGIN:?Use scripts/editor-e2e.py}
+      CONTENT_SERVICE_URL: http://content-service:8081
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8084/actuator/health/readiness"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  api-gateway:
+    build:
+      context: ../..
+      dockerfile: docs/backend/Dockerfile.runtime
+      args:
+        SERVICE: api-gateway
+    depends_on:
+      user-service:
+        condition: service_healthy
+      content-service:
+        condition: service_healthy
+      meeting-service:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      USER_SERVICE_URL: http://user-service:8080
+      CONTENT_SERVICE_URL: http://content-service:8081
+      MEETING_SERVICE_URL: http://meeting-service:8084
+      MEETING_SERVICE_WS_URL: ws://meeting-service:8084
+    ports: ["127.0.0.1::8090"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8090/actuator/health/readiness"]
+      interval: 3s
+      timeout: 3s
+      retries: 30

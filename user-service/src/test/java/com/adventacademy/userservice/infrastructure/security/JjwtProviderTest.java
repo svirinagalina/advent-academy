@@ -59,7 +59,7 @@ class JjwtProviderTest {
                 7,
                 30,
                 Clock.fixed(NOW, ZoneOffset.UTC),
-                new TestRefreshTokenStore());
+                new TestRefreshTokenStore(), state());
 
         assertThat(other.validateAccessToken(token)).isFalse();
         assertThatThrownBy(() -> new JjwtProvider(
@@ -70,24 +70,38 @@ class JjwtProviderTest {
                 7,
                 30,
                 Clock.systemUTC(),
-                new TestRefreshTokenStore()))
+                new TestRefreshTokenStore(), state()))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     private static class TestRefreshTokenStore implements RefreshTokenStore {
         private final java.util.Map<String, Entry> tokens = new java.util.HashMap<>();
-        private record Entry(UUID userId, Instant expiresAt) {}
+        private record Entry(UUID userId, Instant expiresAt, UUID family, boolean consumed) {}
 
         public void save(String digest, UUID userId, Instant expiresAt) {
-            tokens.put(digest, new Entry(userId, expiresAt));
+            save(digest, userId, expiresAt, UUID.randomUUID());
+        }
+
+        public void save(String digest, UUID userId, Instant expiresAt, UUID family) {
+            tokens.put(digest, new Entry(userId, expiresAt, family, false));
+        }
+        public UUID family(String digest) { return tokens.containsKey(digest) ? tokens.get(digest).family() : null; }
+        public boolean revokeConsumedFamily(String digest, Instant now) {
+            Entry entry = tokens.get(digest);
+            if (entry == null || !entry.consumed()) { return false; }
+            tokens.values().removeIf(value -> value.family().equals(entry.family()));
+            return true;
         }
 
         public boolean isActive(String digest, Instant now) {
-            return tokens.containsKey(digest) && tokens.get(digest).expiresAt().isAfter(now);
+            return tokens.containsKey(digest) && !tokens.get(digest).consumed() && tokens.get(digest).expiresAt().isAfter(now);
         }
 
         public boolean consume(String digest, Instant now) {
-            return isActive(digest, now) && tokens.remove(digest) != null;
+            if (!isActive(digest, now)) { return false; }
+            Entry entry = tokens.get(digest);
+            tokens.put(digest, new Entry(entry.userId(), entry.expiresAt(), entry.family(), true));
+            return true;
         }
 
         public void revokeByUserId(UUID userId) {
@@ -104,6 +118,12 @@ class JjwtProviderTest {
                 7,
                 30,
                 clock,
-                new TestRefreshTokenStore());
+                new TestRefreshTokenStore(), state());
+    }
+    private static AccessTokenState state() {
+        AccessTokenState state = org.mockito.Mockito.mock(AccessTokenState.class);
+        org.mockito.Mockito.when(state.isActive(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyLong()))
+                .thenReturn(true);
+        return state;
     }
 }

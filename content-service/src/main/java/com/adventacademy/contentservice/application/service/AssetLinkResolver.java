@@ -27,7 +27,7 @@ public class AssetLinkResolver {
      * Markdown. Restricting the character class to UUID characters keeps
      * trailing prose punctuation (e.g. {@code asset:<uuid>.}) out of the match.
      */
-    private static final Pattern ASSET_LINK_PATTERN = Pattern.compile("asset:([A-Za-z0-9-]*)");
+    private static final Pattern ASSET_LINK_PATTERN = Pattern.compile("(?:asset:|/api/(?:backend/)?assets/)([A-Za-z0-9-]*)");
 
     private static final Pattern ASSET_ID_PATTERN = Pattern.compile(
             "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
@@ -66,8 +66,8 @@ public class AssetLinkResolver {
         if (!ASSET_ID_PATTERN.matcher(reference).matches()) {
             return false;
         }
-        return assetStorage.findById(UUID.fromString(reference))
-                .map(asset -> asset.getLessonId().equals(lessonId))
+        return assetStorage.findMetadataById(UUID.fromString(reference))
+                .map(asset -> asset.lessonId().equals(lessonId))
                 .orElse(false);
     }
 }

@@ -38,11 +38,18 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
     static final int MAX_BODY_BYTES = 16 * 1024;
     private static final String RESPONSE_BODY = "{\"error\":\"Too many requests\",\"message\":\"Too many attempts. Please try again later.\"}";
 
+    private String bffRequestKey;
+
     private final RateLimiter rateLimiter;
     private final AuthRateLimitProperties properties;
     private final ObjectMapper objectMapper;
 
     public AuthRateLimitFilter(RateLimiter rateLimiter, AuthRateLimitProperties properties, ObjectMapper objectMapper) {
+        this(rateLimiter, properties, objectMapper, "");
+    }
+
+    public AuthRateLimitFilter(RateLimiter rateLimiter, AuthRateLimitProperties properties, ObjectMapper objectMapper, String bffRequestKey) {
+        this.bffRequestKey = bffRequestKey.strip();
         this.rateLimiter = rateLimiter;
         this.properties = properties;
         this.objectMapper = objectMapper;
@@ -75,6 +82,15 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
         HttpServletRequest replayable = new CachedBodyHttpServletRequest(request, body);
 
         String clientIp = request.getRemoteAddr();
+        String bucket = request.getHeader("X-Advent-Client");
+        if (bucket != null) {
+            if (!bucket.matches("[0-9a-f]{64}") || !com.adventacademy.security.SignedRequest.verify(
+                    bffRequestKey, "client", path(request) + ":" + bucket, request.getHeader("X-Advent-Client-Proof"))) {
+                response.setStatus(401);
+                return;
+            }
+            clientIp = "bff:" + bucket;
+        }
         if (!rateLimiter.tryAcquire(scope.name() + ":ip", clientIp, scope.ipLimit(properties), properties.window())) {
             reject(response, scope, "ip");
             return;
@@ -138,6 +154,10 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
             int accountLimit(AuthRateLimitProperties p) { return p.passwordResetPerAccount(); }
         },
         PASSWORD_RESET_CONFIRM("/api/auth/password-reset/confirm") {
+            int ipLimit(AuthRateLimitProperties p) { return p.passwordResetPerIp(); }
+            int accountLimit(AuthRateLimitProperties p) { return 0; }
+        },
+        INVITATION_ACCEPT("/api/auth/invitations/accept") {
             int ipLimit(AuthRateLimitProperties p) { return p.passwordResetPerIp(); }
             int accountLimit(AuthRateLimitProperties p) { return 0; }
         },

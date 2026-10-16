@@ -1,7 +1,9 @@
 # Authorization matrix contract
 
 [`authorization-matrix.csv`](authorization-matrix.csv) is the canonical endpoint inventory. It
-records both the behavior at the SEC-101 baseline and the required end state. A row describes one
+records the current route contract and the required end state. Production profile restrictions
+and private published assets are specified in `../operations/production.md`; the development
+public-published asset contract is intentionally narrower than production protection. A row describes one
 externally reachable route or one operational/static route family.
 
 ## Columns
@@ -26,7 +28,7 @@ externally reachable route or one operational/static route family.
 - `admin`: administrator only.
 - `content-editor-or-admin`: an instructor/content-editor or administrator.
 - `content-owner-editor-or-admin`: resource owner, granted editor, or administrator.
-- `published-or-content-authorized`: public for published content; otherwise owner/editor/admin.
+- `published-or-content-authorized`: assets in the published snapshot are public; newer/private assets require the uploader, the owner of the lesson component, a content editor, or an administrator. An unrelated instructor role is insufficient.
 - `host`: meeting host only.
 - `host-or-member`: meeting host or admitted member.
 - `one-time-capability`: valid origin plus an unexpired, subject/room-bound, single-use capability.
@@ -62,3 +64,22 @@ Run:
 The check fails on undocumented annotated controller routes, undocumented gateway path predicates,
 duplicate matrix keys, unknown access levels, missing security documents, and forbidden settings in
 production-specific configuration files.
+
+## Learner cabinet (sprint 1)
+
+`/api/learning/**` uses authenticated identity plus enrollment and publication checks
+in LearningService. An authenticated subject cannot read/complete another student's
+course. Assignment is limited to the course owner or a curator and its controller
+role gate; publishing and requirements retain the content ownership gate.
+The Next.js BFF forwards only its explicit learner/catalog/asset allowlist; it never
+exposes management routes. Mutations require the configured frontend Origin.
+
+## Assignment review (sprint 2)
+
+Student submissions and history are bound to the current JWT subject and enrollment.
+Only the course owner with a teaching role, ADMIN or CONTENT_EDITOR can review;
+self-review is always refused. Definition edits use component ownership and are
+frozen after the first submission. Enrollment row locks serialize submissions,
+reviews and progress; conflicting decisions return 409. HTTPS solution URLs are
+validated and never fetched by the server. New BFF POST routes check Origin and
+read at most 32 KiB, including chunked requests.

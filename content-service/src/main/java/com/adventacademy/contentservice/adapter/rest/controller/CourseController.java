@@ -7,6 +7,7 @@ import com.adventacademy.contentservice.adapter.rest.dto.CourseTreeResponse;
 import com.adventacademy.contentservice.adapter.rest.dto.ReorderRequest;
 import com.adventacademy.contentservice.application.service.CourseAssemblyService;
 import com.adventacademy.contentservice.application.service.GetCatalogService;
+import com.adventacademy.contentservice.application.service.LessonContentReadService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -43,11 +45,28 @@ public class CourseController {
 
     private final CourseAssemblyService assemblyService;
     private final GetCatalogService catalogService;
+    private final LessonContentReadService contentRead;
 
     public CourseController(CourseAssemblyService assemblyService,
-                            GetCatalogService catalogService) {
+                            GetCatalogService catalogService,
+                            LessonContentReadService contentRead) {
         this.assemblyService = assemblyService;
         this.catalogService = catalogService;
+        this.contentRead = contentRead;
+    }
+
+    public record InstructorRequest(UUID instructorId, @jakarta.validation.constraints.NotNull @jakarta.validation.constraints.Min(0) Long version) { }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.adventacademy.contentservice.application.service.LearningService learning;
+
+    @PutMapping("/{id}/instructor")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'ADMIN')")
+    @Operation(summary = "Delegate a published course to an active instructor; null reclaims it for the curator")
+    public CourseResponse assignInstructor(@PathVariable UUID id, @Valid @RequestBody InstructorRequest request,
+            @org.springframework.web.bind.annotation.RequestHeader("Authorization") String authorization) {
+        learning.assignInstructor(id, request.instructorId(), request.version(), authorization);
+        return CourseResponse.from(assemblyService.get(id));
     }
 
     @PostMapping
@@ -58,11 +77,25 @@ public class CourseController {
         return ResponseEntity.status(HttpStatus.CREATED).body(CourseResponse.from(course));
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.adventacademy.contentservice.application.service.CourseDirectory directory;
+
+    @GetMapping(params = "page")
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
+    public com.adventacademy.contentservice.application.service.CourseDirectory.Page page(
+            @RequestParam(defaultValue = "false") boolean managed,
+            @RequestParam(defaultValue = "ALL") String status,
+            @RequestParam(required = false) UUID id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return directory.page(managed,status,id,page,size);
+    }
+
     @GetMapping
     @PreAuthorize("hasAnyRole('CONTENT_EDITOR', 'INSTRUCTOR', 'ADMIN')")
-    @Operation(summary = "List all courses visible to the caller")
-    public List<CourseResponse> findAll() {
-        return assemblyService.findAll().stream().map(CourseResponse::from).toList();
+    @Operation(summary = "List visible courses; managed=true returns only courses the caller can manage")
+    public List<CourseResponse> findAll(@RequestParam(defaultValue = "false") boolean managed) {
+        return (managed ? assemblyService.findManaged() : assemblyService.findAll()).stream().map(CourseResponse::from).toList();
     }
 
     @GetMapping("/{id}")
@@ -72,7 +105,9 @@ public class CourseController {
         // Refuses drafts that belong to somebody else before the tree is assembled.
         assemblyService.get(id);
         GetCatalogService.CourseTree tree = catalogService.getCourseTree(id);
-        return CourseTreeResponse.from(tree.course(), tree.componentsById());
+        var lessonIds = tree.componentsById().values().stream()
+                .flatMap(component -> component.getLessons().stream()).map(lesson -> lesson.getId()).toList();
+        return CourseTreeResponse.from(tree.course(), tree.componentsById(), contentRead.statuses(lessonIds));
     }
 
     @PatchMapping("/{id}")

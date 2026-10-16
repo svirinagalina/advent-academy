@@ -1,0 +1,13 @@
+FROM node:24-bookworm-slim AS node
+FROM docker:27-cli AS docker
+FROM eclipse-temurin:21-jdk-jammy
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+ && apt-get update && apt-get install -y --no-install-recommends python3 openssl curl ca-certificates \
+ && curl -fsSLo /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+ && apt-get install -y --no-install-recommends /tmp/chrome.deb \
+ && rm -rf /tmp/chrome.deb /var/lib/apt/lists/*
+COPY --from=docker /usr/local/bin/docker /usr/local/bin/docker
+COPY --from=docker /usr/local/libexec/docker/cli-plugins/docker-compose /usr/local/libexec/docker/cli-plugins/docker-compose
+ENV CHROME_PATH=/usr/bin/google-chrome

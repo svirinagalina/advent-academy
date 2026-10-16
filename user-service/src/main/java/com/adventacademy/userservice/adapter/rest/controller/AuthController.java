@@ -44,6 +44,7 @@ import java.util.UUID;
 @Tag(name = "Authentication", description = "Authentication and registration endpoints")
 public class AuthController {
 
+    private final com.adventacademy.userservice.application.port.JwtProvider jwtProvider;
     private final RegisterUserService registerUserService;
     private final LoginService loginService;
     private final RefreshTokenService refreshTokenService;
@@ -53,6 +54,7 @@ public class AuthController {
     private final MfaService mfaService;
 
     public AuthController(
+            com.adventacademy.userservice.application.port.JwtProvider jwtProvider,
             RegisterUserService registerUserService,
             LoginService loginService,
             RefreshTokenService refreshTokenService,
@@ -60,6 +62,7 @@ public class AuthController {
             ChangePasswordService changePasswordService,
             PasswordResetService passwordResetService,
             MfaService mfaService) {
+        this.jwtProvider = jwtProvider;
         this.registerUserService = registerUserService;
         this.loginService = loginService;
         this.refreshTokenService = refreshTokenService;
@@ -67,6 +70,12 @@ public class AuthController {
         this.changePasswordService = changePasswordService;
         this.passwordResetService = passwordResetService;
         this.mfaService = mfaService;
+    }
+
+    /** Authentication filter checks the signature, account status and authorization version. */
+    @GetMapping("/access-check")
+    public ResponseEntity<Void> accessCheck() {
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/register")
@@ -102,13 +111,26 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private RefreshRotationCoordinator rotations;
+
     @PostMapping("/refresh")
     @Operation(summary = "Refresh access token", description = "Get new access token using refresh token")
     @ApiResponse(responseCode = "200", description = "Token refreshed successfully")
     @ApiResponse(responseCode = "401", description = "Invalid refresh token")
-    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
-        AuthResponse response = refreshTokenService.refresh(request);
+    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request,
+            @RequestHeader(value = "X-Refresh-Request", defaultValue = "") String requestKey) {
+        AuthResponse response = rotations.rotate(request, requestKey);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request,
+            @RequestHeader(value = "X-Refresh-Request", defaultValue = "") String requestKey) {
+        // consumeRefreshToken verifies signature/type/expiry and revokes only this session.
+        // Already revoked/expired tokens still yield a successful, idempotent logout.
+        rotations.logout(request, requestKey);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/confirm-email")

@@ -1,0 +1,86 @@
+import { chromium } from 'playwright';
+import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
+const fixture=JSON.parse(readFileSync(process.env.ADVENT_TEST_FIXTURE || '/tmp/advent-sprint2-fixture.json','utf8'));
+const base=process.env.ADVENT_TEST_ORIGIN || 'http://localhost:13009';
+assert.ok(['localhost','127.0.0.1'].includes(new URL(base).hostname));
+assert.ok(fixture.email.endsWith('@example.test'));
+const browser=await chromium.launch({executablePath:process.env.CHROME_PATH || '/usr/bin/google-chrome',headless:true,args:['--no-sandbox']});
+const learner=await browser.newContext({viewport:{width:1440,height:1000}});
+const teacher=await browser.newContext({viewport:{width:1440,height:1000}});
+const foreign=await browser.newContext();
+const page=await learner.newPage(), reviewPage=await teacher.newPage(), foreignPage=await foreign.newPage();
+const errors=[];for(const p of [page,reviewPage,foreignPage]) p.on('pageerror',e=>errors.push(e.message));
+const lesson=fixture.lessons[2];
+const path=`/api/backend/learning/courses/${fixture.course}/lessons/${lesson}`;
+const href=`${base}/?view=lesson&course=${fixture.course}&lesson=${lesson}`;
+async function login(p,email,name) { await p.goto(base + "/cabinet");await p.getByLabel('Email',{exact:true}).fill(email);await p.getByLabel('Пароль',{exact:true}).fill(fixture.password);await p.getByRole('button',{name:'Войти',exact:true}).click();await p.getByRole('button',{name:`Меню пользователя ${name}`,exact:true}).waitFor(); }
+async function logout(p,name) {await p.getByRole('button',{name:`Меню пользователя ${name}`,exact:true}).click();await p.getByRole('link',{name:'Выйти',exact:true}).click();await p.getByRole('heading',{name:'Войти в кабинет'}).waitFor();}
+async function unlock(context) {for(const id of fixture.lessons.slice(0,2)){const r=await context.request.post(`${base}/api/backend/learning/courses/${fixture.course}/lessons/${id}/complete`,{headers:{Origin:base}});assert.equal(r.status(),200);}}
+try {
+ await login(page,fixture.email,'Мария');await unlock(learner);
+ await page.goto(href);await page.getByRole('heading',{name:fixture.assignmentTitle}).waitFor();
+ await page.getByLabel('Ссылка на решение',{exact:true}).fill('https://github.com/student/first');
+ await page.getByLabel('Комментарий к решению',{exact:true}).fill('Первая попытка');
+ await page.reload();await page.getByRole('heading',{name:fixture.assignmentTitle}).waitFor();
+ assert.equal(await page.getByLabel('Ссылка на решение',{exact:true}).inputValue(),'https://github.com/student/first');
+ await logout(page,'Мария');await login(page,fixture.peerEmail,'Второй ученик');await unlock(learner);await page.goto(href);await page.getByRole('heading',{name:fixture.assignmentTitle}).waitFor();
+ assert.equal(await page.getByLabel('Ссылка на решение',{exact:true}).inputValue(),'');
+ assert.equal((await (await learner.request.get(base+path+'/assignment')).json()).attempts.length,0);
+ await logout(page,'Второй ученик');await login(page,fixture.email,'Мария');await page.goto(href);await page.getByRole('heading',{name:fixture.assignmentTitle}).waitFor();
+ assert.equal(await page.getByLabel('Ссылка на решение',{exact:true}).inputValue(),'https://github.com/student/first');
+ const csrf=await learner.request.post(base+path+'/submissions',{headers:{Origin:'https://foreign.example'},data:{requestId:crypto.randomUUID(),url:'https://github.com/repo',comment:''}});assert.equal(csrf.status(),403);
+ const oversize=await learner.request.post(base+path+'/submissions',{headers:{Origin:base},data:{comment:'x'.repeat(33000)}});assert.equal(oversize.status(),413);
+ // The request commits on Java/PostgreSQL, but its response is lost in the browser.
+ let committed=false;
+ await page.route(base+path+'/submissions',async route=>{const r=await route.fetch();assert.equal(r.status(),200);committed=true;await route.abort('failed');},{times:1});
+ await page.getByRole('button',{name:'Отправить на проверку',exact:true}).click();
+ await page.getByRole('alert').filter({hasText:'Проверьте соединение'}).waitFor();assert.ok(committed);
+ assert.equal(await page.getByLabel('Ссылка на решение',{exact:true}).inputValue(),'https://github.com/student/first');
+ await page.getByRole('button',{name:'Отправить на проверку',exact:true}).click();
+ await page.getByText('Решение отправлено. Ожидайте результата проверки.',{exact:true}).waitFor();
+ let state=await (await learner.request.get(base+path+'/assignment')).json();assert.equal(state.attempts.length,1);const first=state.attempts[0];
+ assert.equal(await page.getByRole('button',{name:'Завершить урок'}).count(),0);
+ await login(reviewPage,fixture.teacherEmail,'Редактор');await reviewPage.getByRole('link',{name:'Проверка заданий',exact:true}).click();
+ await reviewPage.locator('.review-card').waitFor();
+ const profile=await (await teacher.request.get(base+'/api/session')).json();assert.deepEqual(profile.roles,['INSTRUCTOR']);
+ const queue=await (await teacher.request.get(base+'/api/backend/teaching/submissions?status=review&page=0&size=20')).json();assert.equal(queue.total,1);
+ await login(foreignPage,fixture.foreignTeacherEmail,'Другой преподаватель');
+ assert.equal((await foreign.request.get(`${base}/api/backend/teaching/submissions/${first.id}`)).status(),403);
+ assert.equal((await foreign.request.post(`${base}/api/backend/teaching/submissions/${first.id}/review`,{headers:{Origin:base},data:{status:'accepted',feedback:'',version:0}})).status(),403);
+ assert.equal((await learner.request.get(base+'/api/backend/teaching/submissions')).status(),403);
+ await reviewPage.getByRole('button',{name:'Вернуть на доработку',exact:true}).click();await reviewPage.getByRole('alert').filter({hasText:'Опишите, что нужно исправить.'}).waitFor();
+ await reviewPage.getByLabel('Комментарий преподавателя',{exact:true}).fill('Учтите делимость на 100 и 400.');
+ await reviewPage.getByRole('button',{name:'Вернуть на доработку',exact:true}).click();await reviewPage.getByText('Заданий с этим статусом нет.',{exact:true}).waitFor();
+ await reviewPage.getByRole('button',{name:'Нужны исправления',exact:true}).click();await reviewPage.locator('.review-card').waitFor();
+ assert.equal((await (await teacher.request.get(base+'/api/backend/teaching/submissions?status=changes&page=0&size=20')).json()).items[0].submission.status,'changes');
+ const conflict=await teacher.request.post(`${base}/api/backend/teaching/submissions/${first.id}/review`,{headers:{Origin:base},data:{status:'accepted',feedback:'',version:0}});assert.equal(conflict.status(),409);
+ await page.getByRole('button',{name:'Обновить статус',exact:true}).click();await page.locator('.feedback.warning').getByText('Учтите делимость на 100 и 400.',{exact:true}).waitFor();
+ await page.getByLabel('Ссылка на решение',{exact:true}).fill('https://github.com/student/fixed');await page.getByLabel('Комментарий к решению',{exact:true}).fill('Исправлены граничные случаи.');
+ await page.getByRole('button',{name:'Отправить повторно',exact:true}).click();await page.getByText('Решение отправлено. Ожидайте результата проверки.',{exact:true}).waitFor();
+ state=await (await learner.request.get(base+path+'/assignment')).json();assert.equal(state.attempts.length,2);assert.equal(state.attempts[0].status,'changes');
+ await reviewPage.getByRole('button',{name:'На проверке',exact:true}).click();await reviewPage.locator('.review-card').waitFor();await reviewPage.getByLabel('Комментарий преподавателя',{exact:true}).fill('Теперь верно.');
+ await reviewPage.getByRole('button',{name:'Принять задание',exact:true}).click();await reviewPage.getByText('Заданий с этим статусом нет.',{exact:true}).waitFor();
+ await page.getByRole('button',{name:'Обновить статус',exact:true}).click();await page.getByText('Задание принято. Урок завершён.',{exact:true}).waitFor();
+ const progress=await (await learner.request.get(`${base}/api/backend/learning/courses/${fixture.course}`)).json();assert.equal(progress.completed,3);assert.equal(progress.modules[0].lessons[3].available,true);
+ await page.getByText('История попыток (2)',{exact:true}).click();await page.getByText('https://github.com/student/first',{exact:true}).waitFor();await page.getByText('https://github.com/student/fixed',{exact:true}).waitFor();
+ await page.screenshot({path:'/tmp/advent-sprint2-assignment.png',fullPage:true});
+ await page.getByRole('link',{name:'Следующий урок: Массивы',exact:true}).click();await page.getByRole('heading',{name:'Реальный материал',exact:true}).waitFor();
+ await page.goto(base+'/?view=assignments');await page.getByRole('button',{name:'Принято',exact:true}).click();await page.locator('.assignment-row').waitFor();assert.equal(await page.locator('.assignment-row').count(),1);
+ await page.setViewportSize({width:390,height:844});await page.screenshot({path:'/tmp/advent-sprint2-assignments-mobile.png',fullPage:true});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ await reviewPage.getByRole('button',{name:'Принято',exact:true}).click();await reviewPage.locator('.review-card').waitFor();await reviewPage.setViewportSize({width:390,height:844});await reviewPage.screenshot({path:'/tmp/advent-sprint2-review-mobile.png',fullPage:true});assert.equal(await reviewPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ await page.setViewportSize({width:1440,height:1000});await logout(page,'Мария');await login(page,fixture.email,'Мария');await page.goto(href);await page.getByText('Задание принято. Урок завершён.',{exact:true}).waitFor();
+ assert.equal((await (await learner.request.get(base+path+'/assignment')).json()).attempts.length,2);
+ // Regression: lost response + reload + changes + the SAME repository URL must create attempt 2.
+ await logout(page,'Мария');await login(page,fixture.peerEmail,'Второй ученик');await page.goto(href);await page.getByRole('heading',{name:fixture.assignmentTitle}).waitFor();
+ await page.getByLabel('Ссылка на решение',{exact:true}).fill('https://github.com/peer/task');await page.getByLabel('Комментарий к решению',{exact:true}).fill('Решение в том же репозитории');
+ await page.route(base+path+'/submissions',async route=>{const r=await route.fetch();assert.equal(r.status(),200);await route.abort('failed');},{times:1});
+ await page.getByRole('button',{name:'Отправить на проверку',exact:true}).click();await page.getByRole('alert').filter({hasText:'Проверьте соединение'}).waitFor();
+ const peer=await (await learner.request.get(base+path+'/assignment')).json();assert.equal(peer.attempts.length,1);
+ const returned=await teacher.request.post(`${base}/api/backend/teaching/submissions/${peer.attempts[0].id}/review`,{headers:{Origin:base},data:{status:'changes',feedback:'Дополните решение в том же репозитории.',version:0}});assert.equal(returned.status(),200);
+ await page.reload();await page.getByRole('button',{name:'Отправить повторно',exact:true}).waitFor();assert.equal(await page.getByLabel('Ссылка на решение',{exact:true}).inputValue(),'https://github.com/peer/task');
+ await page.getByRole('button',{name:'Отправить повторно',exact:true}).click();await page.getByText('Решение отправлено. Ожидайте результата проверки.',{exact:true}).waitFor();
+ const resubmitted=await (await learner.request.get(base+path+'/assignment')).json();assert.equal(resubmitted.attempts.length,2);assert.equal(resubmitted.attempts[1].url,resubmitted.attempts[0].url);assert.equal(resubmitted.attempts[1].status,'review');
+ assert.deepEqual(errors,[]);
+ console.log('PASS: instructor ownership, foreign/learner role denial, saved and isolated drafts, lost response retry without duplicate and same-URL resubmission after reload, changes/resubmission/acceptance, immutable history, next lesson, assignment filters, mobile layout and relogin.');
+} finally {await browser.close();}

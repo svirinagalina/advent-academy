@@ -6,6 +6,7 @@ build/
 !**/src/test/**/build/
 reports/
 node_modules/
+__pycache__/
 
 ### STS ###
 .apt_generated
@@ -49,3 +50,11 @@ out/
 .claude/
 konspekt-course-constructor.md
 planTask*.md
+
+# Disposable architecture verification and operator secrets
+.ci-tmp/
+/secrets/
+/tls/
+
+# Generated Graphify graph and cache
+/graphify-out/

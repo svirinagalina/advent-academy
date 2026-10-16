@@ -36,6 +36,9 @@ dependencies {
         api 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
         api 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.7.0'
 
+        // BCrypt rejects inputs beyond its supported password length (CVE-2025-22228).
+        api('org.springframework.security:spring-security-crypto') { version { strictly '6.4.4' } }
+
         // JWT
         api 'io.jsonwebtoken:jjwt-api:0.12.3'
         api 'io.jsonwebtoken:jjwt-impl:0.12.3'
