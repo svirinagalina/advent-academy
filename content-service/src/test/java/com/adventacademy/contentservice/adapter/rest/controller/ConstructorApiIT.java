@@ -90,6 +90,9 @@ class ConstructorApiIT extends AbstractPostgresIT {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("PUBLISHED"));
 
+        mockMvc.perform(post("/api/components/{id}/archive", componentId))
+                .andExpect(status().isConflict());
+
         // 8. создаём направление и кладём в него курс
         String direction = mockMvc.perform(post("/api/directions")
                         .contentType(MediaType.APPLICATION_JSON)

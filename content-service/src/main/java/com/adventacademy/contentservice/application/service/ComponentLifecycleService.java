@@ -34,12 +34,14 @@ public class ComponentLifecycleService {
     private final ComponentPublicationPolicy publicationPolicy;
     private final ContentAccessGuard accessGuard;
     private final Clock clock;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     public ComponentLifecycleService(ComponentRepository componentRepository,
                                      CourseRepository courseRepository,
                                      LessonContentRepository lessonContentRepository,
                                      ComponentPublicationPolicy publicationPolicy,
-                                     ContentAccessGuard accessGuard) {
+                                     ContentAccessGuard accessGuard, org.springframework.jdbc.core.JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
         this.componentRepository = componentRepository;
         this.courseRepository = courseRepository;
         this.lessonContentRepository = lessonContentRepository;
@@ -57,7 +59,11 @@ public class ComponentLifecycleService {
     }
 
     public Component archive(UUID id) {
+        jdbc.queryForList("SELECT id FROM content.components WHERE id=? FOR UPDATE", id);
         Component component = requireCurator(id, "ARCHIVE_COMPONENT");
+        if (Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM content.course_components cc "
+                + "JOIN content.courses c ON c.id=cc.course_id WHERE cc.component_id=? AND c.status='PUBLISHED')",
+                Boolean.class, id))) { throw new ComponentInUseException(id); }
         component.archive(clock);
         Component archived = componentRepository.save(component);
         accessGuard.recordSuccess(AUDIT_EVENT_TYPE, RESOURCE_TYPE, archived.getId(), "ARCHIVE_COMPONENT");
