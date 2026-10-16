@@ -44,7 +44,10 @@ public class LessonContentReadService {
     public Map<UUID, ContentStatus> statuses(Collection<UUID> lessonIds) {
         if (lessonIds.isEmpty()) { return Map.of(); }
         String placeholders = String.join(",", Collections.nCopies(lessonIds.size(), "?"));
-        return jdbc.query("SELECT lesson_id,status FROM content.lesson_contents WHERE lesson_id IN (" + placeholders + ")",
+        return jdbc.query("SELECT l.id AS lesson_id,COALESCE(c.status, 'DRAFT') AS status FROM content.lessons l "
+                        + "LEFT JOIN content.lesson_contents c ON c.lesson_id=l.id "
+                        + "LEFT JOIN content.lesson_drafts d ON d.lesson_id=l.id "
+                        + "WHERE (c.id IS NOT NULL OR d.lesson_id IS NOT NULL) AND l.id IN (" + placeholders + ")",
                 (rs, row) -> Map.entry(rs.getObject("lesson_id", UUID.class), ContentStatus.valueOf(rs.getString("status"))),
                 lessonIds.toArray()).stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }

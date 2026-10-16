@@ -41,6 +41,7 @@ public class UploadLessonContentService {
     private final LessonRepository lessonRepository;
     private final ComponentRepository componentRepository;
     private final ContentAccessGuard accessGuard;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     public UploadLessonContentService(MarkdownFileValidator markdownFileValidator,
                                       ZipContentExtractor zipContentExtractor,
@@ -49,7 +50,8 @@ public class UploadLessonContentService {
                                       LessonContentRepository repository,
                                       LessonRepository lessonRepository,
                                       ComponentRepository componentRepository,
-                                      ContentAccessGuard accessGuard) {
+                                      ContentAccessGuard accessGuard, org.springframework.jdbc.core.JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
         this.markdownFileValidator = markdownFileValidator;
         this.zipContentExtractor = zipContentExtractor;
         this.assetLinkResolver = assetLinkResolver;
@@ -67,6 +69,11 @@ public class UploadLessonContentService {
             throw new NotFoundException("Lesson not found: " + command.lessonId());
         }
         requireOwnedLesson(command.lessonId());
+        jdbc.queryForObject("SELECT id FROM content.lessons WHERE id=? FOR UPDATE", UUID.class, command.lessonId());
+        if (Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM content.lesson_drafts WHERE lesson_id=?)",
+                Boolean.class, command.lessonId()))) {
+            throw new LessonContentAlreadyExistsException("A draft already exists; import Markdown in the editor");
+        }
         repository.findByLessonId(command.lessonId()).ifPresent(existing -> {
             throw new LessonContentAlreadyExistsException(
                     "Lesson content already exists for " + existing.getLessonId());

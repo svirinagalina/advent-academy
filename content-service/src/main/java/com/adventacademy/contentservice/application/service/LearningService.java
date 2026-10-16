@@ -149,9 +149,9 @@ public class LearningService {
                 .filter(value -> value.getStatus() == ContentStatus.PUBLISHED)
                 .orElseThrow(() -> new IllegalStateException("Lesson content is not published"));
         List<AssetView> assets = jdbc.query("SELECT id, filename, content_type, file_size FROM content.assets "
-                        + "WHERE lesson_id=? ORDER BY filename, id",
+                        + "WHERE lesson_id=? AND created_at<=? ORDER BY filename, id",
                 (rs, n) -> new AssetView(rs.getObject("id", UUID.class), rs.getString("filename"),
-                        rs.getString("content_type"), rs.getLong("file_size"), "/api/assets/" + rs.getObject("id")), lessonId);
+                        rs.getString("content_type"), rs.getLong("file_size"), "/api/assets/" + rs.getObject("id")), lessonId, java.sql.Timestamp.from(content.getUpdatedAt()));
         jdbc.update("UPDATE content.learning_enrollments SET started_at=COALESCE(started_at, CURRENT_TIMESTAMP) "
                 + "WHERE user_id=? AND course_id=?", currentUser.requireCurrentUserId(), courseId);
         return new LessonView(lessonId, node.title(), content.getHtml(), node.assignment(), assets);
@@ -176,6 +176,11 @@ public class LearningService {
     public void publishContent(UUID lessonId) {
         var component = components.findByLessonId(lessonId).orElseThrow(() -> new NotFoundException("Lesson not found"));
         guard.requireCurator("LESSON_CONTENT_ACCESS", "Component", component.getId(), component.getOwnerId(), "PUBLISH_LESSON_CONTENT");
+        jdbc.queryForObject("SELECT id FROM content.lessons WHERE id=? FOR UPDATE", UUID.class, lessonId);
+        if (Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM content.lesson_drafts WHERE lesson_id=?)",
+                Boolean.class, lessonId))) {
+            throw new IllegalStateException("Use the versioned draft publication API");
+        }
         var content = contents.findByLessonId(lessonId).orElseThrow(() -> new NotFoundException("Content not found"));
         if (content.getStatus() == ContentStatus.PUBLISHED) { return; }
         if (content.getStatus() == ContentStatus.DRAFT) { content.changeStatus(ContentStatus.REVIEW); }

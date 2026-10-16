@@ -26,7 +26,7 @@ externally reachable route or one operational/static route family.
 - `admin`: administrator only.
 - `content-editor-or-admin`: an instructor/content-editor or administrator.
 - `content-owner-editor-or-admin`: resource owner, granted editor, or administrator.
-- `published-or-content-authorized`: public for published content; otherwise owner/editor/admin.
+- `published-or-content-authorized`: assets in the published snapshot are public; newer/private assets require the uploader, the owner of the lesson component, a content editor, or an administrator. An unrelated instructor role is insufficient.
 - `host`: meeting host only.
 - `host-or-member`: meeting host or admitted member.
 - `one-time-capability`: valid origin plus an unexpired, subject/room-bound, single-use capability.

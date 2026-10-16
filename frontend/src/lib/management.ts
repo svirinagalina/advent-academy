@@ -61,7 +61,9 @@ export function request<T>(path: string, method = "GET", body?: unknown) {
 }
 export function managementError(error: unknown) {
 	if (error instanceof ClientError) {
-		if (error.message.includes("archive must contain a Markdown"))
+		if (error.message.includes("invalid or foreign assets"))
+            return "В тексте есть некорректные ссылки на вложения или вложения другого урока. Проверьте ссылки asset: и /api/assets/.";
+        if (error.message.includes("archive must contain a Markdown"))
 			return "В архиве не найден Markdown-файл в корне.";
 		if (error.message.includes("cannot read zip"))
 			return "Не удалось прочитать архив. Проверьте ZIP-файл.";
@@ -69,7 +71,9 @@ export function managementError(error: unknown) {
 			return "Сохраните Markdown в кодировке UTF-8.";
 		if (error.message.includes("more than one Markdown"))
 			return "В корне ZIP должен быть ровно один Markdown-файл.";
-		if (error.message.includes("file must not be empty"))
+		if (error.message.includes("exceeds limit"))
+            return "Превышен допустимый размер файла или Markdown. Текст: до 5 MiB, изображения: до 10 MiB.";
+        if (error.message.includes("file must not be empty"))
 			return "Выберите непустой файл материала.";
 
 		if (error.status === 401) return "Сессия истекла. Войдите в кабинет снова.";

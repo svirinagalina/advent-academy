@@ -17,15 +17,15 @@ const completing = new RegExp(
 );
 const management: Record<string, RegExp> = {
 	GET: new RegExp(
-		`^(courses(?:/${uuid})?|components(?:/${uuid})?|lessons/${uuid}/content|users/teaching/courses/${uuid}/candidates)$`,
+		`^(courses(?:/${uuid})?|components(?:/${uuid})?|lessons/${uuid}/content(?:/draft)?|users/teaching/courses/${uuid}/candidates)$`,
 	),
 	POST: new RegExp(
-		`^(courses|components|courses/${uuid}/(?:components|publish|archive)|components/${uuid}/(?:lessons|publish)|lessons/${uuid}/content(?:/publish)?)$`,
+		`^(courses|components|courses/${uuid}/(?:components|publish|archive)|components/${uuid}/(?:lessons|publish)|lessons/${uuid}/(?:assets|content(?:/publish|/draft/(?:preview|publish))?))$`,
 	),
 	PATCH: new RegExp(`^courses/${uuid}$`),
 	DELETE: new RegExp(`^courses/${uuid}/components/${uuid}$`),
 	PUT: new RegExp(
-		`^(courses/${uuid}/components/order|learning/courses/${uuid}/students/${uuid})$`,
+		`^(lessons/${uuid}/content/draft|courses/${uuid}/components/order|learning/courses/${uuid}/students/${uuid})$`,
 	),
 };
 async function boundedBody(request: NextRequest, limit = 32768) {
@@ -87,16 +87,16 @@ async function proxy(
 		if (request.method !== "GET" && request.method !== "DELETE") {
 			const upload =
 				request.method === "POST" &&
-				new RegExp(`^lessons/${uuid}/content$`).test(path);
+				new RegExp(`^lessons/${uuid}/(?:content|assets)$`).test(path);
 			if (upload) {
 				const type = request.headers.get("content-type") || "";
 				if (!/^multipart\/form-data;.*boundary=/i.test(type))
 					throw new ApiError(400, "Выберите файл материала");
-				const body = await boundedBody(request, 6 * 1024 * 1024);
+				const body = await boundedBody(request, path.endsWith("/assets") ? 11 * 1024 * 1024 : 6 * 1024 * 1024);
 				init.body = new Uint8Array(body);
 				init.headers = { "Content-Type": type };
 			} else {
-				const body = await boundedBody(request);
+				const body = await boundedBody(request, path.includes("/content/draft") ? 32 * 1024 * 1024 : 32768);
 				if (body.length) {
 					init.body = body.toString("utf8");
 					init.headers = { "Content-Type": "application/json" };

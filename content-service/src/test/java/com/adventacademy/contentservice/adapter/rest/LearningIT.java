@@ -211,6 +211,8 @@ class LearningIT extends AbstractPostgresIT {
         UUID component = id(post("/api/components"), editor, "{\"title\":\"Module\",\"description\":\"Text\"}", "$.id", 201);
         UUID first = id(post("/api/components/{id}/lessons", component), editor, "{\"title\":\"First\"}", "$.lessons[0].id", 201);
         UUID second = id(post("/api/components/{id}/lessons", component), editor, "{\"title\":\"Second\"}", "$.lessons[1].id", 201);
+        mvc.perform(multipart("/api/lessons/{id}/assets", first).file(new MockMultipartFile("file", "notes.txt", "text/plain", "notes".getBytes(StandardCharsets.UTF_8)))
+                .header(HttpHeaders.AUTHORIZATION, editor)).andExpect(status().isCreated());
         for (UUID lesson : List.of(first, second)) {
             mvc.perform(multipart("/api/lessons/{id}/content", lesson).file(new MockMultipartFile("file", "lesson.md", "text/markdown", "# Real lesson".getBytes(StandardCharsets.UTF_8)))
                     .header(HttpHeaders.AUTHORIZATION, editor)).andExpect(status().isCreated());
@@ -218,8 +220,6 @@ class LearningIT extends AbstractPostgresIT {
                     .andExpect(status().isForbidden());
             mvc.perform(post("/api/lessons/{id}/content/publish", lesson).header(HttpHeaders.AUTHORIZATION, editor)).andExpect(status().isNoContent());
         }
-        mvc.perform(multipart("/api/lessons/{id}/assets", first).file(new MockMultipartFile("file", "notes.txt", "text/plain", "notes".getBytes(StandardCharsets.UTF_8)))
-                .header(HttpHeaders.AUTHORIZATION, editor)).andExpect(status().isCreated());
         if (assignment) {
             mvc.perform(put("/api/lessons/{id}/requirements", first).header(HttpHeaders.AUTHORIZATION, editor)
                     .contentType(MediaType.APPLICATION_JSON).content("{\"requiredAssignment\":true}")).andExpect(status().isNoContent());
