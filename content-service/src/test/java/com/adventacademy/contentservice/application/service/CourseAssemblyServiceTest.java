@@ -62,7 +62,7 @@ public class CourseAssemblyServiceTest {
     void addComponentShouldThrowWhenComponentDoesNotExist() {
         UUID courseId = UUID.randomUUID();
         UUID componentId = UUID.randomUUID();
-        when(componentRepository.existsById(componentId)).thenReturn(false);
+        when(componentRepository.findById(componentId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.addComponent(courseId, componentId))
                 .isInstanceOf(IllegalArgumentException.class);

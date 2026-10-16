@@ -121,8 +121,12 @@ public class CourseAssemblyService {
     }
 
     public Course addComponent(UUID courseId, UUID componentId) {
-        if (!componentRepository.existsById(componentId)) {
-            throw new IllegalArgumentException("component does not exist: " + componentId);
+        var component = componentRepository.findById(componentId)
+                .orElseThrow(() -> new IllegalArgumentException("component does not exist: " + componentId));
+        if (component.getStatus() == PublicationStatus.DRAFT
+                && !currentUserProvider.hasAnyRole(CURATOR_ROLES)
+                && !currentUserProvider.currentUserId().map(owner -> owner.equals(component.getOwnerId())).orElse(false)) {
+            throw new ContentAccessDeniedException("Component", componentId);
         }
         Course course = load(courseId);
         requireCurator(course, "ADD_COMPONENT");
