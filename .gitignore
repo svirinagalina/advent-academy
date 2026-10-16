@@ -55,3 +55,6 @@ planTask*.md
 .ci-tmp/
 /secrets/
 /tls/
+
+# Regenerable graphify AST cache
+/graphify-out/cache/
