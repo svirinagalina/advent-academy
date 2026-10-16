@@ -1,6 +1,6 @@
 # Security risk register
 
-Current assessment: 2026-10-16, branch `fix/architecture-readiness`, based on `origin/dev` at `9aff3a9`.
+Current assessment: 2026-10-16, branch `fix/audit-production-defects`, based on `dev` at `fa64798`.
 This replaces the August baseline descriptions; old milestone documents are historical.
 
 `Closed` means the stated control is implemented and locally verified, not that every production
@@ -15,7 +15,7 @@ requires an accountable owner, rationale, compensating controls, expiry date and
 | R-003 Inline SVG and MIME spoofing stored XSS | Critical | Active uploads rejected; legacy files become sandboxed octet-stream attachments; browser download and MIME regressions | Content team | SEC-105 | 2026-10-30 | Closed |
 | R-004 Uncontained rendered HTML | High | Frontend SafeHtml forbids scripts/forms/popups/top navigation and adds CSP; regression injects unsafe server HTML | Content team | SEC-105 | 2026-10-30 | Closed |
 | R-005 Incomplete MFA and account recovery | Critical | TOTP, encrypted seeds, single-use recovery, SMTP reset/verification APIs and reset UI are implemented and tested | Identity team | SEC-103 | 2026-10-30 | Closed |
-| R-006 Refresh-token family replay response | High | Durable single-use tokens and cross-process rotation receipts work; automatic family-wide revocation on stolen-token reuse is still absent | Identity team | SEC-104 | 2026-10-30 | Open |
+| R-006 Refresh-token family replay response | High | V17 retains consumed token family IDs; replay revokes descendants while bounded matching BFF receipts remain idempotent. PostgreSQL regression covers independent sessions | Identity team | SEC-104 | 2026-10-30 | Closed |
 | R-007 Shared HMAC signing capability | Critical | Production rejects HMAC and resource private keys; RSA signing is issuer-only with explicit active/previous public keys | Platform team | SEC-104 | 2026-10-30 | Closed |
 | R-008 Public operational metadata and missing edge policy | High | Production edge is TLS-only, service ports private, docs disabled, minimal readiness follows backend failures | Platform team | SEC-106 | 2026-10-30 | Closed |
 | R-009 Meeting availability and real network capacity | High | One leased transport node and mesh up to eight; SFU/HA and real external TURN/device capacity remain unverified | Meeting team | SEC-107 | 2026-10-30 | Open |

@@ -377,20 +377,20 @@ class MeetingSignalingHandlerTest {
 
     @Test
     void accountRevocationClosesAnExistingSocketAndRejectsPreissuedGrant() throws Exception {
-        var status = mock(com.adventacademy.security.AccessTokenStatusClient.class);
+        final var status = mock(com.adventacademy.security.AccessTokenStatusClient.class);
         handler.accessStatus(status);
-        var room = roomService.createRoom().roomId().value();
-        var session = connectedSession("revoked-session");
-        var user = UUID.randomUUID();
-        var grant = capabilityService.issueScheduled(room, user, MeetingRole.HOST, null, "Bearer access");
+        final var room = roomService.createRoom().roomId().value();
+        final var session = connectedSession("revoked-session");
+        final var user = UUID.randomUUID();
+        final var grant = capabilityService.issueScheduled(room, user, MeetingRole.HOST, null, "Bearer access");
         send(session, "{\"version\":1,\"type\":\"JOIN\",\"roomId\":\"" + room + "\",\"capability\":\"" + grant.token() + "\"}");
-        var pending = capabilityService.issueScheduled(room, UUID.randomUUID(), MeetingRole.PARTICIPANT, null, "Bearer access");
+        final var pending = capabilityService.issueScheduled(room, UUID.randomUUID(), MeetingRole.PARTICIPANT, null, "Bearer access");
         org.mockito.Mockito.doThrow(new com.adventacademy.security.AccessTokenStatusClient.InactiveTokenException())
                 .when(status).requireActive("access");
         handler.revokeInactiveSessions();
         verify(session).close(CloseStatus.POLICY_VIOLATION);
         assertThat(sessionRegistry.findBySession(session.getId())).isEmpty();
-        var newcomer = connectedSession("pending-session");
+        final var newcomer = connectedSession("pending-session");
         send(newcomer, "{\"version\":1,\"type\":\"JOIN\",\"roomId\":\"" + room + "\",\"capability\":\"" + pending.token() + "\"}");
         assertError(newcomer, "ACCESS_REVOKED");
         assertThat(sessionRegistry.findBySession(newcomer.getId())).isEmpty();
@@ -398,14 +398,14 @@ class MeetingSignalingHandlerTest {
 
     @Test
     void renewedCapabilityUpdatesAuthorizationWithoutRejoiningTheRoom() throws Exception {
-        var status = mock(com.adventacademy.security.AccessTokenStatusClient.class);
+        final var status = mock(com.adventacademy.security.AccessTokenStatusClient.class);
         handler.accessStatus(status);
-        var room = roomService.createRoom().roomId().value();
-        var session = connectedSession("renewed-session");
-        var user = UUID.randomUUID();
-        var first = capabilityService.issueScheduled(room, user, MeetingRole.HOST, null, "Bearer old");
+        final var room = roomService.createRoom().roomId().value();
+        final var session = connectedSession("renewed-session");
+        final var user = UUID.randomUUID();
+        final var first = capabilityService.issueScheduled(room, user, MeetingRole.HOST, null, "Bearer old");
         send(session, "{\"version\":1,\"type\":\"JOIN\",\"roomId\":\"" + room + "\",\"capability\":\"" + first.token() + "\"}");
-        var next = capabilityService.issueScheduled(room, user, MeetingRole.HOST, null, "Bearer new");
+        final var next = capabilityService.issueScheduled(room, user, MeetingRole.HOST, null, "Bearer new");
         send(session, "{\"version\":1,\"type\":\"REAUTHORIZE\",\"roomId\":\"" + room + "\",\"capability\":\"" + next.token() + "\"}");
         org.mockito.Mockito.doThrow(new com.adventacademy.security.AccessTokenStatusClient.InactiveTokenException())
                 .when(status).requireActive("old");

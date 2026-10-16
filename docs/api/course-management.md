@@ -156,3 +156,24 @@ The PUT body is `{required,title,description,version}`. Saving a mandatory flag 
 condition is atomic; stale versions return 409 and invalid conditions leave the previous
 configuration untouched. Structure freezes at component publication. The course-management
 UI exposes this under each lesson's “Домашнее задание”. Existing submission/review APIs remain.
+
+## Назначение преподавателя
+
+ADMIN и CONTENT_EDITOR назначают активного пользователя с подтверждённой почтой
+и ролью INSTRUCTOR через `PUT /api/courses/{id}/instructor`:
+`{"instructorId":"<UUID>","version":<версия курса>}`. Назначение доступно только
+для опубликованного курса. `instructorId: null` передаёт управление вызывающему
+куратору. Это смена владельца курса: предыдущий преподаватель теряет управление,
+кураторы сохраняют доступ. Дерево курса содержит `ownerId` и `version`.
+
+Поиск кандидатов: `GET /api/users/teaching/instructors?query=...` (2–100 символов,
+не более 20 результатов); проверка кандидата:
+`GET /api/users/teaching/instructors/{id}`. Обе операции доступны только кураторам.
+Смена владельца проверяет кандидата через identity до записи и сериализуется
+блокировкой курса. Устаревшая версия или неопубликованный курс возвращают 409,
+неподходящий кандидат — 422, отсутствие прав — 403, недоступная identity — 502.
+Изменение фиксируется в аудите. API не назначает глобальную роль пользователю.
+
+Новый преподаватель получает список учеников, проверку работ и управление встречами.
+Отзыв назначения запрещает последующие REST-запросы и отключает уже подключённого
+преподавателя от запланированной встречи при очередной проверке доступа.

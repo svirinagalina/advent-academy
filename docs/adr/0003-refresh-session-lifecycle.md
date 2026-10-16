@@ -26,3 +26,15 @@ shared by replicas, and does not model device sessions, token-family replay, or 
 Refresh behavior survives restart and horizontal scaling, at the cost of a database operation per
 refresh and explicit retention/cleanup. Access-token lifetime still defines the maximum stale-claim
 window and must remain documented and short.
+
+## Implemented replay boundary (2026-10-16)
+
+Migration V17 records family IDs and consumption alongside the existing durable token digest.
+Rotation retains consumed records until expiry and issues the successor in the same family.
+Replay revokes that family's refresh tokens; an independent login remains active. The identity
+user row serializes replay handling with rotations. BFF receipts retain their bounded matching
+retry behavior; expired/mismatching receipts revoke the compromised family. Revocation is
+committed even when the request ends with 401. Access-token family revocation, device session
+management and family security events remain separate work; the target decision above does
+not imply those capabilities are implemented. See deployment ordering in
+`../operations/production.md`.

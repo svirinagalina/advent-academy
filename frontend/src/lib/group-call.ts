@@ -109,11 +109,19 @@ export class GroupCall {
 						? "Занятие завершено или отменено."
 						: "Соединение закрыто. Обновите расписание или подключитесь повторно.",
 				);
-            this.renewal = setInterval(() => {
-                void api<{roomId: string; capability: string}>(`/api/backend/meetings/scheduled/${meetingId}/capabilities`, {method: "POST"})
-                    .then(grant => { if (!this.stopped) this.send("REAUTHORIZE", undefined, undefined, grant.capability); })
-                    .catch(() => this.stop("Доступ к занятию изменился. Подключитесь повторно."));
-            }, 60000);
+			this.renewal = setInterval(() => {
+				void api<{ roomId: string; capability: string }>(
+					`/api/backend/meetings/scheduled/${meetingId}/capabilities`,
+					{ method: "POST" },
+				)
+					.then((grant) => {
+						if (!this.stopped)
+							this.send("REAUTHORIZE", undefined, undefined, grant.capability);
+					})
+					.catch(() =>
+						this.stop("Доступ к занятию изменился. Подключитесь повторно."),
+					);
+			}, 60000);
 			this.heartbeat = setInterval(() => {
 				if (this.joined) {
 					if (Date.now() - this.lastPong > 45000)
@@ -278,7 +286,7 @@ export class GroupCall {
 		this.stopped = true;
 		this.joined = false;
 		if (this.heartbeat) clearInterval(this.heartbeat);
-        if (this.renewal) clearInterval(this.renewal);
+		if (this.renewal) clearInterval(this.renewal);
 		if (this.joinTimeout) clearTimeout(this.joinTimeout);
 		if (this.socket) {
 			this.socket.onclose = null;
