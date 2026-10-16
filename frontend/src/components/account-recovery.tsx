@@ -14,6 +14,7 @@ export function AccountRecovery({mode}: {mode:"request"|"reset"|"verify"}) {
     async function submit(event: FormEvent) {
         event.preventDefault(); if (busy) return; setError("");
         if (mode === "reset" && (password !== confirm || password.length < 8)) {setError("Пароли должны совпадать и содержать не менее 8 символов");return;}
+        if (mode === "reset" && new TextEncoder().encode(password).length > 72) {setError("Пароль слишком длинный. Сократите его.");return;}
         setBusy(true);
         try {
             const response = await fetch("/api/recovery",{method:"POST",headers:{"Content-Type":"application/json"},
@@ -30,8 +31,8 @@ export function AccountRecovery({mode}: {mode:"request"|"reset"|"verify"}) {
             : !ready ? <p role="status">Загрузка…</p> : mode !== "request" && !token.current ? <p role="alert">В ссылке нет токена. Запросите новое письмо.</p>
             : <form onSubmit={submit} className="management-form" aria-busy={busy}>
                 {mode === "request" && <label>Email<input type="email" autoComplete="email" required maxLength={254} value={email} onChange={e=>setEmail(e.target.value)} disabled={busy}/></label>}
-                {mode === "reset" && <><label>Новый пароль<input type="password" autoComplete="new-password" required minLength={8} maxLength={128} value={password} onChange={e=>setPassword(e.target.value)} disabled={busy}/></label>
-                    <label>Повторите пароль<input type="password" autoComplete="new-password" required minLength={8} maxLength={128} value={confirm} onChange={e=>setConfirm(e.target.value)} disabled={busy}/></label></>}
+                {mode === "reset" && <><label>Новый пароль<input type="password" autoComplete="new-password" required minLength={8} maxLength={72} value={password} onChange={e=>setPassword(e.target.value)} disabled={busy}/></label>
+                    <label>Повторите пароль<input type="password" autoComplete="new-password" required minLength={8} maxLength={72} value={confirm} onChange={e=>setConfirm(e.target.value)} disabled={busy}/></label></>}
                 {error && <p role="alert">{error}</p>}<button type="submit" className="button primary" disabled={busy}>{busy ? "Отправляем…" : mode === "request" ? "Отправить ссылку" : mode === "reset" ? "Изменить пароль" : "Подтвердить email"}</button>
             </form>}
         {mode !== "request" && <Link className="text-link" href="/auth/forgot-password">Запросить новую ссылку сброса пароля</Link>}
