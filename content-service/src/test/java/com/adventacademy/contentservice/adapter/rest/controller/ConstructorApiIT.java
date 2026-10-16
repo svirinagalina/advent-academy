@@ -36,6 +36,23 @@ class ConstructorApiIT extends AbstractPostgresIT {
     private LessonContentRepository lessonContentRepository;
 
     @Test
+    void invalidCourseFieldsHaveCodesWithoutChangingTheGeneralErrorContract() throws Exception {
+        mockMvc.perform(post("/api/courses").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"   \"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Invalid request"))
+                .andExpect(jsonPath("$.fieldErrors.title").value("NotBlank"));
+        mockMvc.perform(post("/api/courses").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"" + "x".repeat(256) + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.title").value("Size"));
+        mockMvc.perform(post("/api/courses").contentType(MediaType.APPLICATION_JSON).content("{"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Invalid request"))
+                .andExpect(jsonPath("$.fieldErrors").doesNotExist());
+    }
+
+    @Test
     void fullHappyPathFromComponentToDirection() throws Exception {
         // 1. создаём компонент
         String component = mockMvc.perform(post("/api/components")

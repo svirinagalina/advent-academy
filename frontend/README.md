@@ -8,7 +8,8 @@ Next.js (App Router), React, TypeScript и Tailwind CSS. Утверждённы�
 
 Браузерные проверки Markdown-редактора на одноразовом локальном стенде:
 `npm run test:editor:local`. Команда сама устанавливает зависимости, собирает
-сервисы, создаёт пользователей, запускает `test:editor` и `test:dialogs`, сохраняет
+сервисы, создаёт пользователей, запускает `test:editor`, `test:dialogs` и
+`test:lesson-design`, сохраняет
 артефакты и удаляет стенд. Требования и диагностика:
 [markdown-editor.md](../docs/frontend/markdown-editor.md#автоматический-локальный-запуск).
 

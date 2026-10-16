@@ -1884,6 +1884,33 @@ textarea {
 	max-width: 100%;
 	height: auto;
 }
+
+.lesson-code { margin: 20px 0; min-width: 0; max-width: 100%; }
+.lesson-code-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; color: var(--muted); }
+.lesson-code-toolbar button { min-height: 44px; }
+.lesson-code-status { font-size: 0.875rem; overflow-wrap: anywhere; }
+.lesson-code-scroll { display: flex; gap: 20px; margin-top: 4px; max-width: 100%; }
+.lesson-code-scroll > code { display: block; flex: 1 0 auto; white-space: pre; }
+.lesson-code-numbers { flex: 0 0 auto; color: var(--muted); text-align: right; user-select: none; }
+.lesson-code-numbers::before { content: attr(data-numbers); white-space: pre; }
+.lesson-material .hljs-keyword, .lesson-material .hljs-selector-tag, .lesson-material .hljs-type { color: var(--accent); }
+.lesson-material .hljs-string, .lesson-material .hljs-attr { color: var(--success); }
+.lesson-material .hljs-number, .lesson-material .hljs-literal { color: var(--warning); }
+.lesson-material .hljs-comment { color: var(--muted); }
+.lesson-video-panel { min-width: 0; margin-top: 16px; }
+.lesson-video-panel .lesson-video { background: #08111a; aspect-ratio: 16 / 9; object-fit: contain; }
+.lesson-video[hidden] { display: none; }
+.lesson-attachment { min-width: 0; }
+.attachment-download { width: 100%; text-align: left; color: var(--foreground); cursor: pointer; }
+.attachment-download > span { overflow-wrap: anywhere; min-width: 0; }
+.attachment-download .text-link { margin-left: auto; flex-shrink: 0; }
+.button[aria-disabled="true"], .button[aria-disabled="true"]:hover { background: var(--disabled-bg); color: var(--disabled-text); cursor: not-allowed; }
+.management-form :is(input, textarea, select)[aria-invalid="true"],
+.assignment-form :is(input, textarea, select)[aria-invalid="true"] { border-color: var(--error); }
+@media (max-width: 767px) {
+    .attachment-download { flex-wrap: wrap; }
+    .attachment-download .text-link { flex-shrink: 1; }
+}
 .lesson-material pre,
 .lesson-material table {
 	max-width: 100%;

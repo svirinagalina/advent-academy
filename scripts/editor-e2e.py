@@ -109,6 +109,8 @@ COMMIT;
         fixture.write_text(json.dumps({"users": users, "password": password}))
         fixture.chmod(0o600)
         self.env["ADVENT_EDITOR_FIXTURE"] = str(fixture)
+        self.env.update(ADVENT_TEST_GATEWAY=gateway, ADVENT_TEST_POSTGRES=container,
+                        ADVENT_TEST_PROJECT=self.project)
 
     def execute(self):
         print(f"Artifacts: {self.artifacts}", flush=True)
@@ -162,6 +164,7 @@ COMMIT;
             raise RuntimeError("Frontend readiness timed out; see frontend.log")
         self.command(["npm", "run", "test:editor"], "editor", FRONTEND, timeout=600)
         self.command(["npm", "run", "test:dialogs"], "dialogs", FRONTEND, timeout=600)
+        self.command(["npm", "run", "test:lesson-design"], "lesson-design", FRONTEND, timeout=600)
 
     def cleanup(self):
         self.stop(self.active)

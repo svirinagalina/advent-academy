@@ -104,20 +104,30 @@ export class ClientError extends Error {
 	constructor(
 		public status: number,
 		message: string,
+		public fields: Record<string, string> = {},
 	) {
 		super(message);
 	}
 }
 const messages: Record<string, string> = {
- "Internal Server Error": "Сервис временно недоступен. Попробуйте обновить страницу позже.",
-    "Meeting version changed; reload it": "Занятие уже изменилось. Обновите расписание и повторите действие.",
-    "Meeting is not open for joining": "Вход ещё не открыт или занятие уже завершено.",
-    "Only a planned meeting can be rescheduled": "Перенести можно только ещё не начавшееся занятие.",
-    "This meeting transition is not available": "Действие больше недоступно. Обновите расписание.",
-    "Use a valid future meeting window of at most eight hours": "Проверьте время: окончание позже начала, длительность до 8 часов.",
-    "Select distinct enrolled students other than the meeting host": "Выберите учеников, назначенных этому курсу.",
-    "Course access cannot be verified right now": "Не удалось проверить доступ к курсу. Попробуйте позже.",
-    "Creation request was already used with different content": "Запрос уже сохранён с другими данными. Обновите расписание.",
+	"Internal Server Error":
+		"Сервис временно недоступен. Попробуйте обновить страницу позже.",
+	"Meeting version changed; reload it":
+		"Занятие уже изменилось. Обновите расписание и повторите действие.",
+	"Meeting is not open for joining":
+		"Вход ещё не открыт или занятие уже завершено.",
+	"Only a planned meeting can be rescheduled":
+		"Перенести можно только ещё не начавшееся занятие.",
+	"This meeting transition is not available":
+		"Действие больше недоступно. Обновите расписание.",
+	"Use a valid future meeting window of at most eight hours":
+		"Проверьте время: окончание позже начала, длительность до 8 часов.",
+	"Select distinct enrolled students other than the meeting host":
+		"Выберите учеников, назначенных этому курсу.",
+	"Course access cannot be verified right now":
+		"Не удалось проверить доступ к курсу. Попробуйте позже.",
+	"Creation request was already used with different content":
+		"Запрос уже сохранён с другими данными. Обновите расписание.",
 	"Assignment instructions have not been added":
 		"Условие задания пока не добавлено.",
 	"Use an absolute HTTPS link without credentials":
@@ -146,7 +156,17 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 	if (!response.ok) {
 		const data = await response.json().catch(() => ({}));
 		const message = data.message || data.error || "Не удалось выполнить запрос";
-		throw new ClientError(response.status, messages[message] || message);
+		const fields: Record<string, string> = {};
+		if (data.fieldErrors && typeof data.fieldErrors === "object") {
+			for (const [field, value] of Object.entries(data.fieldErrors)) {
+				if (typeof value === "string") fields[field] = value;
+			}
+		}
+		throw new ClientError(
+			response.status,
+			messages[message] || message,
+			fields,
+		);
 	}
 	const text = await response.text();
 	return text ? JSON.parse(text) : (undefined as T);

@@ -1,6 +1,8 @@
 "use client";
 
 import NextLink from "next/link";
+import LessonMaterial from "@/components/lesson-material";
+import { LessonVideo, DownloadAttachment } from "@/components/lesson-media";
 import { ThemeToggle } from "@/components/theme";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -616,14 +618,16 @@ export default function Academy({
 		setNotice("");
 		const focusTimer = setTimeout(() => {
 			if (new URLSearchParams(routeKey).get("assignment") === "1") {
-				assignmentHeading.current?.scrollIntoView({ block: "start" });
-				assignmentHeading.current?.focus();
+				if (!isLive) {
+					assignmentHeading.current?.scrollIntoView({ block: "start" });
+					assignmentHeading.current?.focus();
+				}
 			} else {
 				heading.current?.focus({ preventScroll: true });
 			}
 		}, 50);
 		return () => clearTimeout(focusTimer);
-	}, [routeKey, ready]);
+	}, [routeKey, ready, isLive]);
 	useEffect(() => {
 		if (
 			live ||
@@ -947,8 +951,12 @@ export default function Academy({
 							</details>
 						)}
 						<ThemeToggle />
-                        {live?.canReview && <Link className="text-link" href="/?view=manage">Управление курсами</Link>}
-                        <div className="profile">
+						{live?.canReview && (
+							<Link className="text-link" href="/?view=manage">
+								Управление курсами
+							</Link>
+						)}
+						<div className="profile">
 							<button
 								type="button"
 								className="profile-button"
@@ -1322,50 +1330,19 @@ export default function Academy({
 														asset.contentType.startsWith("video/"),
 													)
 													.map((asset) => (
-														<video
-															key={asset.id}
-															className="lesson-video"
-															controls
-															preload="metadata"
-															aria-label={asset.filename}
-															src={asset.url.replace(
-																"/api/assets/",
-																"/api/backend/assets/",
-															)}
-														>
-															<track kind="captions" />
-														</video>
+														<LessonVideo key={asset.id} asset={asset} />
 													))}
-												<section
-													className="lesson-material"
-													// biome-ignore lint/security/noDangerouslySetInnerHtml: content-service sanitizes HTML with OWASP before persistence.
-													dangerouslySetInnerHTML={{
-														__html: live.lesson.html.replaceAll(
-															"/api/assets/",
-															"/api/backend/assets/",
-														),
-													}}
-												/>
+												<LessonMaterial html={live.lesson.html} />
 												{live.lesson.assets
 													.filter(
 														(asset) => !asset.contentType.startsWith("video/"),
 													)
 													.map((asset) => (
-														<a
+														<DownloadAttachment
 															key={asset.id}
-															className="card attachment"
-															href={asset.url.replace(
-																"/api/assets/",
-																"/api/backend/assets/",
-															)}
-														>
-															<Icon name="file" />
-															<span>{asset.filename}</span>
-															<span className="text-link">
-																Скачать
-																<Icon name="download" />
-															</span>
-														</a>
+															asset={asset}
+															icon={<Icon name="file" />}
+														/>
 													))}
 											</>
 										) : null

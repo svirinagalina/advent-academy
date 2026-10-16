@@ -45,13 +45,21 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler({org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
-            org.springframework.web.bind.MethodArgumentNotValidException.class,
             org.springframework.web.bind.MissingRequestHeaderException.class,
             org.springframework.http.converter.HttpMessageNotReadableException.class,
             jakarta.validation.ConstraintViolationException.class,
             org.springframework.web.method.annotation.HandlerMethodValidationException.class})
     public ResponseEntity<ErrorResponse> handleInvalidRequest(Exception e) {
         return ResponseEntity.badRequest().body(new ErrorResponse("Invalid request"));
+    }
+
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ResponseEntity<java.util.Map<String, Object>> handleInvalidFields(
+            org.springframework.web.bind.MethodArgumentNotValidException e) {
+        java.util.Map<String, String> fields = new java.util.LinkedHashMap<>();
+        e.getBindingResult().getFieldErrors().forEach(error ->
+                fields.putIfAbsent(error.getField(), error.getCode() == null ? "Invalid" : error.getCode()));
+        return ResponseEntity.badRequest().body(java.util.Map.of("message", "Invalid request", "fieldErrors", fields));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

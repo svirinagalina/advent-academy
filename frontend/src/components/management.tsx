@@ -1,4 +1,5 @@
 "use client";
+import LessonMaterial from "@/components/lesson-material";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import type { Revision } from "@/components/lesson-editor";
@@ -26,7 +27,9 @@ import {
 	statusLabel,
 } from "@/lib/management";
 
-const LessonEditor = dynamic(() => import("@/components/lesson-editor"), { ssr: false });
+const LessonEditor = dynamic(() => import("@/components/lesson-editor"), {
+	ssr: false,
+});
 
 function Badge({ status }: { status: Status }) {
 	return (
@@ -72,7 +75,12 @@ function Dialog({
 	return (
 		<dialog
 			ref={ref}
-			onKeyDown={event => {if(event.key === "Escape"){event.preventDefault();if(!busy)close();}}}
+			onKeyDown={(event) => {
+				if (event.key === "Escape") {
+					event.preventDefault();
+					if (!busy) close();
+				}
+			}}
 			className="management-dialog"
 			aria-labelledby="dialog-title"
 			onCancel={(event) => {
@@ -124,6 +132,16 @@ function Editor({
 	const [description, setDescription] = useState(initial?.description || "");
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
+	const [titleError, setTitleError] = useState("");
+	const [descriptionError, setDescriptionError] = useState("");
+	const titleInput = useRef<HTMLInputElement>(null);
+	const titleLabel =
+		kind === "lesson" ? "урока" : kind === "module" ? "модуля" : "курса";
+	useEffect(() => {
+		if (!busy && titleError) titleInput.current?.focus();
+		else if (!busy && descriptionError)
+			document.getElementById("management-description")?.focus();
+	}, [busy, titleError, descriptionError]);
 	const titles = {
 		course: "Создать курс",
 		edit: "Изменить название и описание",
@@ -132,23 +150,51 @@ function Editor({
 	};
 	async function save(event: FormEvent) {
 		event.preventDefault();
+		if (busy) return;
+		setError("");
+		setTitleError("");
+		setDescriptionError("");
 		if (!title.trim()) {
-			setError("Введите название");
+			setTitleError(`Введите название ${titleLabel}`);
+			titleInput.current?.focus();
 			return;
 		}
 		setBusy(true);
 		setError("");
 		try {
-			await submit(title, description);
+			await submit(title.trim(), description);
 		} catch (e) {
-			setError(managementError(e));
+			if (e instanceof ClientError && Object.keys(e.fields).length) {
+				if (e.fields.title) {
+					setTitleError(
+						e.fields.title === "NotBlank"
+							? `Введите название ${titleLabel}`
+							: e.fields.title === "Size"
+								? "Название курса должно быть не длиннее 255 символов."
+								: `Проверьте название ${titleLabel}.`,
+					);
+					titleInput.current?.focus();
+				}
+				if (e.fields.description) setDescriptionError("Проверьте описание.");
+				if (
+					Object.keys(e.fields).some(
+						(key) => !["title", "description"].includes(key),
+					)
+				)
+					setError(managementError(e));
+			} else setError(managementError(e));
 		} finally {
 			setBusy(false);
 		}
 	}
 	return (
 		<Dialog title={titles[kind]} busy={busy} close={close}>
-			<form className="management-form" onSubmit={save} aria-busy={busy}>
+			<form
+				className="management-form"
+				onSubmit={save}
+				noValidate
+				aria-busy={busy}
+			>
 				<label htmlFor="management-title">
 					{kind === "lesson"
 						? "Название урока"
@@ -158,20 +204,52 @@ function Editor({
 				</label>
 				<input
 					id="management-title"
+					ref={titleInput}
+					disabled={busy}
 					required
 					maxLength={kind === "course" || kind === "edit" ? 255 : undefined}
 					value={title}
-					onChange={(e) => setTitle(e.target.value)}
-					aria-describedby={error ? "form-error" : undefined}
+					onChange={(e) => {
+						setTitle(e.target.value);
+						setTitleError("");
+					}}
+					aria-invalid={!!titleError}
+					aria-describedby={titleError ? "management-title-error" : undefined}
 				/>
+				{titleError && (
+					<p
+						id="management-title-error"
+						className="feedback error"
+						role="alert"
+					>
+						{titleError}
+					</p>
+				)}
 				{kind !== "lesson" && (
 					<>
 						<label htmlFor="management-description">Описание</label>
 						<textarea
 							id="management-description"
+							disabled={busy}
+							aria-invalid={!!descriptionError}
+							aria-describedby={
+								descriptionError ? "management-description-error" : undefined
+							}
 							value={description}
-							onChange={(e) => setDescription(e.target.value)}
+							onChange={(e) => {
+								setDescription(e.target.value);
+								setDescriptionError("");
+							}}
 						/>
+						{descriptionError && (
+							<p
+								id="management-description-error"
+								className="feedback error"
+								role="alert"
+							>
+								{descriptionError}
+							</p>
+						)}
 					</>
 				)}
 				{error && (
@@ -190,7 +268,9 @@ function Editor({
 					</button>
 					<button className="button primary" type="submit" disabled={busy}>
 						{busy
-							? "Сохраняем…"
+							? kind === "edit"
+								? "Сохраняем…"
+								: "Создаём…"
 							: kind === "edit"
 								? "Сохранить изменения"
 								: titles[kind]}
@@ -214,6 +294,7 @@ function ModulePicker({
 	const [busy, setBusy] = useState(false);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
+	const [selectionError, setSelectionError] = useState("");
 	const load = useCallback(async () => {
 		setLoading(true);
 		setError("");
@@ -230,6 +311,13 @@ function ModulePicker({
 	}, [load]);
 	async function add(event: FormEvent) {
 		event.preventDefault();
+		if (busy) return;
+		if (!selected) {
+			setSelectionError("Выберите модуль");
+			document.getElementById("module-selection")?.focus();
+			return;
+		}
+		setSelectionError("");
 		setBusy(true);
 		setError("");
 		try {
@@ -239,7 +327,9 @@ function ModulePicker({
 			await added();
 			close();
 		} catch (e) {
-			setError(managementError(e));
+			if (e instanceof ClientError && e.fields.componentId)
+				setSelectionError("Выберите доступный модуль");
+			else setError(managementError(e));
 		} finally {
 			setBusy(false);
 		}
@@ -249,13 +339,26 @@ function ModulePicker({
 			{loading ? (
 				<p role="status">Загружаем модули…</p>
 			) : (
-				<form className="management-form" onSubmit={add}>
+				<form
+					className="management-form"
+					onSubmit={add}
+					noValidate
+					aria-busy={busy}
+				>
 					<label htmlFor="module-selection">Модуль</label>
 					<select
 						id="module-selection"
+						disabled={busy}
+						aria-invalid={!!selectionError}
+						aria-describedby={
+							selectionError ? "module-selection-error" : undefined
+						}
 						value={selected}
 						required
-						onChange={(e) => setSelected(e.target.value)}
+						onChange={(e) => {
+							setSelected(e.target.value);
+							setSelectionError("");
+						}}
 					>
 						<option value="">Выберите модуль</option>
 						{modules.map((m) => {
@@ -270,6 +373,15 @@ function ModulePicker({
 							);
 						})}
 					</select>
+					{selectionError && (
+						<p
+							id="module-selection-error"
+							className="feedback error"
+							role="alert"
+						>
+							{selectionError}
+						</p>
+					)}
 					{!modules.length && <p>Нет доступных модулей</p>}
 					{error && <Alert>{error}</Alert>}
 					<div className="management-actions">
@@ -283,7 +395,7 @@ function ModulePicker({
 						</button>
 						<button
 							className="button primary"
-							disabled={busy || !selected}
+							disabled={busy || !modules.length}
 							type="submit"
 						>
 							{busy ? "Добавляем…" : "Добавить в программу"}
@@ -1018,7 +1130,7 @@ function CourseCard({
 					close={() => setConfirm(null)}
 				>
 					<p>{confirm.detail}</p>
-                    {error && <Alert>{error}</Alert>}
+					{error && <Alert>{error}</Alert>}
 					<div className="management-actions">
 						<button
 							className="button secondary"
@@ -1053,87 +1165,231 @@ function CourseCard({
 		</>
 	);
 }
-function MaterialPanel({ lesson, module, course, canManage, back, changed }: {
-    lesson: LessonNode; module: ModuleNode; course: CourseTree; canManage: boolean;
-    back: () => void; changed: () => Promise<void>;
+function MaterialPanel({
+	lesson,
+	module,
+	course,
+	canManage,
+	back,
+	changed,
+}: {
+	lesson: LessonNode;
+	module: ModuleNode;
+	course: CourseTree;
+	canManage: boolean;
+	back: () => void;
+	changed: () => Promise<void>;
 }) {
-    const [material, setMaterial] = useState<Revision | null>(null);
-    const [editing, setEditing] = useState<Revision | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [file, setFile] = useState<File | null>(null);
-    const [busy, setBusy] = useState(false);
-    const [error, setError] = useState("");
-    const [notice, setNotice] = useState("");
-    const opened = useRef(false);
-    const editButton = useRef<HTMLButtonElement>(null);
-    const path = `lessons/${lesson.id}/content/draft`;
-    const load = useCallback(async () => {
-        setLoading(true); setError("");
-        try {
-            const value = await request<Revision>(path); setMaterial(value);
-            if (canManage && !opened.current) { opened.current = true; setEditing(value); }
-        }
-        catch (e) { setError(managementError(e)); }
-        finally { setLoading(false); }
-    }, [path, canManage]);
-    useEffect(() => { void load(); }, [load]);
-    async function upload(event: FormEvent) {
-        event.preventDefault();
-        if (!file || busy) return;
-        if (file.size > 5 * 1024 * 1024) { setError("Файл слишком большой. Максимум 5 MiB."); return; }
-        if (!/\.(md|markdown|zip)$/i.test(file.name)) { setError("Выберите файл .md или ZIP с Markdown и вложениями"); return; }
-        setBusy(true); setError(""); setNotice("");
-        const body = new FormData(); body.append("file", file);
-        try {
-            await import("@/lib/learning").then(({ api }) => api(`/api/backend/lessons/${lesson.id}/content`, { method: "POST", body }));
-            await load(); await changed(); setFile(null);
-            setNotice("Материал загружен. HTML подготовлен и сохранён как черновик.");
-        } catch (e) {
-            // A failed response may follow a committed upload. Read back without discarding any editor text.
-            try {
-                const value = await request<Revision>(path); setMaterial(value);
-                setError(value.version > 0 ? "Материал уже существует. Откройте редактор и проверьте сохранённый текст." : managementError(e));
-            } catch { setError(managementError(e)); }
-        } finally { setBusy(false); }
-    }
-    async function closeEditor() {
-        setEditing(null);
-        await load();
-        requestAnimationFrame(() => editButton.current?.focus());
-    }
-    async function publish() {
-        if (!material) return;
-        setBusy(true); setError("");
-        try {
-            setMaterial(await request<Revision>(`${path}/publish`, "POST", { version: material.version }));
-            await changed(); setNotice("Материал опубликован. Модуль и курс публикуются отдельно.");
-        } catch (e) { setError(managementError(e)); }
-        finally { setBusy(false); }
-    }
-    return <section className="management-material">
-        <button className="text-link" type="button" disabled={busy} onClick={back}>← К программе курса</button>
-        <p className="eyebrow">{course.title} / {module.title}</p><h1>{lesson.title}</h1>
-        {error && <Alert>{error}</Alert>}
-        {notice && <p className="management-success" role="status">{notice}</p>}
-        {loading ? <p role="status">Загружаем материал…</p> : material ? <>
-            <div className="management-actions">
-                <Badge status={material.published ? "PUBLISHED" : "DRAFT"} />
-                {canManage && <button ref={editButton} className="button primary" type="button" disabled={busy} onClick={() => setEditing(material)}>Редактировать содержимое</button>}
-                {canManage && material.markdown.trim() && <button className="button secondary" type="button" disabled={busy} onClick={() => void publish()}>Опубликовать материал</button>}
-                <button className="button secondary" type="button" disabled={busy} onClick={() => void load()}>Обновить материал</button>
-            </div>
-            <p>Сохранение черновика не изменяет опубликованный материал. Модуль и курс публикуются отдельно.</p>
-            {material.version > 0 ? <section className="card management-preview"><h2>Предпросмотр HTML</h2><div className="lesson-article lesson-material"
-                // biome-ignore lint/security/noDangerouslySetInnerHtml: authorized HTML sanitized by content-service.
-                dangerouslySetInnerHTML={{ __html: material.html.replaceAll("/api/assets/", "/api/backend/assets/") }} /></section> : canManage && <form className="card management-form" onSubmit={upload}>
-                <h2>Импорт материала урока</h2><label htmlFor="lesson-file">Markdown или ZIP с Markdown и вложениями</label>
-                <input id="lesson-file" type="file" accept=".md,.markdown,.zip" disabled={busy} onChange={e => setFile(e.target.files?.[0] || null)} />
-                <p>Файл до 5 MiB. ZIP: один Markdown-файл в корне, вложения в assets/.</p>
-                <button className="button primary" type="submit" disabled={busy || !file}>{busy ? "Загружаем…" : "Загрузить материал"}</button>
-            </form>}
-        </> : <button className="button secondary" type="button" onClick={() => void load()}>Повторить</button>}
-        {editing && <LessonEditor lessonId={lesson.id} title={lesson.title} initial={editing} close={() => void closeEditor()} changed={changed} />}
-    </section>;
+	const [material, setMaterial] = useState<Revision | null>(null);
+	const [editing, setEditing] = useState<Revision | null>(null);
+	const [loading, setLoading] = useState(true);
+	const [file, setFile] = useState<File | null>(null);
+	const [busy, setBusy] = useState(false);
+	const [error, setError] = useState("");
+	const [notice, setNotice] = useState("");
+	const opened = useRef(false);
+	const editButton = useRef<HTMLButtonElement>(null);
+	const path = `lessons/${lesson.id}/content/draft`;
+	const load = useCallback(async () => {
+		setLoading(true);
+		setError("");
+		try {
+			const value = await request<Revision>(path);
+			setMaterial(value);
+			if (canManage && !opened.current) {
+				opened.current = true;
+				setEditing(value);
+			}
+		} catch (e) {
+			setError(managementError(e));
+		} finally {
+			setLoading(false);
+		}
+	}, [path, canManage]);
+	useEffect(() => {
+		void load();
+	}, [load]);
+	async function upload(event: FormEvent) {
+		event.preventDefault();
+		if (!file || busy) return;
+		if (file.size > 5 * 1024 * 1024) {
+			setError("Файл слишком большой. Максимум 5 MiB.");
+			return;
+		}
+		if (!/\.(md|markdown|zip)$/i.test(file.name)) {
+			setError("Выберите файл .md или ZIP с Markdown и вложениями");
+			return;
+		}
+		setBusy(true);
+		setError("");
+		setNotice("");
+		const body = new FormData();
+		body.append("file", file);
+		try {
+			await import("@/lib/learning").then(({ api }) =>
+				api(`/api/backend/lessons/${lesson.id}/content`, {
+					method: "POST",
+					body,
+				}),
+			);
+			await load();
+			await changed();
+			setFile(null);
+			setNotice("Материал загружен. HTML подготовлен и сохранён как черновик.");
+		} catch (e) {
+			// A failed response may follow a committed upload. Read back without discarding any editor text.
+			try {
+				const value = await request<Revision>(path);
+				setMaterial(value);
+				setError(
+					value.version > 0
+						? "Материал уже существует. Откройте редактор и проверьте сохранённый текст."
+						: managementError(e),
+				);
+			} catch {
+				setError(managementError(e));
+			}
+		} finally {
+			setBusy(false);
+		}
+	}
+	async function closeEditor() {
+		setEditing(null);
+		await load();
+		requestAnimationFrame(() => editButton.current?.focus());
+	}
+	async function publish() {
+		if (!material) return;
+		setBusy(true);
+		setError("");
+		try {
+			setMaterial(
+				await request<Revision>(`${path}/publish`, "POST", {
+					version: material.version,
+				}),
+			);
+			await changed();
+			setNotice("Материал опубликован. Модуль и курс публикуются отдельно.");
+		} catch (e) {
+			setError(managementError(e));
+		} finally {
+			setBusy(false);
+		}
+	}
+	return (
+		<section className="management-material">
+			<button
+				className="text-link"
+				type="button"
+				disabled={busy}
+				onClick={back}
+			>
+				← К программе курса
+			</button>
+			<p className="eyebrow">
+				{course.title} / {module.title}
+			</p>
+			<h1>{lesson.title}</h1>
+			{error && <Alert>{error}</Alert>}
+			{notice && (
+				<p className="management-success" role="status">
+					{notice}
+				</p>
+			)}
+			{loading ? (
+				<p role="status">Загружаем материал…</p>
+			) : material ? (
+				<>
+					<div className="management-actions">
+						<Badge status={material.published ? "PUBLISHED" : "DRAFT"} />
+						{canManage && (
+							<button
+								ref={editButton}
+								className="button primary"
+								type="button"
+								disabled={busy}
+								onClick={() => setEditing(material)}
+							>
+								Редактировать содержимое
+							</button>
+						)}
+						{canManage && material.markdown.trim() && (
+							<button
+								className="button secondary"
+								type="button"
+								disabled={busy}
+								onClick={() => void publish()}
+							>
+								Опубликовать материал
+							</button>
+						)}
+						<button
+							className="button secondary"
+							type="button"
+							disabled={busy}
+							onClick={() => void load()}
+						>
+							Обновить материал
+						</button>
+					</div>
+					<p>
+						Сохранение черновика не изменяет опубликованный материал. Модуль и
+						курс публикуются отдельно.
+					</p>
+					{material.version > 0 ? (
+						<section className="card management-preview">
+							<h2>Предпросмотр HTML</h2>
+							<LessonMaterial html={material.html} className="lesson-article" />
+						</section>
+					) : (
+						canManage && (
+							<form className="card management-form" onSubmit={upload}>
+								<h2>Импорт материала урока</h2>
+								<label htmlFor="lesson-file">
+									Markdown или ZIP с Markdown и вложениями
+								</label>
+								<input
+									id="lesson-file"
+									type="file"
+									accept=".md,.markdown,.zip"
+									disabled={busy}
+									onChange={(e) => setFile(e.target.files?.[0] || null)}
+								/>
+								<p>
+									Файл до 5 MiB. ZIP: один Markdown-файл в корне, вложения в
+									assets/.
+								</p>
+								<button
+									className="button primary"
+									type="submit"
+									disabled={busy || !file}
+								>
+									{busy ? "Загружаем…" : "Загрузить материал"}
+								</button>
+							</form>
+						)
+					)}
+				</>
+			) : (
+				<button
+					className="button secondary"
+					type="button"
+					onClick={() => void load()}
+				>
+					Повторить
+				</button>
+			)}
+			{editing && (
+				<LessonEditor
+					lessonId={lesson.id}
+					title={lesson.title}
+					initial={editing}
+					close={() => void closeEditor()}
+					changed={changed}
+				/>
+			)}
+		</section>
+	);
 }
 function Students({
 	course,
@@ -1232,7 +1488,13 @@ function Students({
 				`${student.firstName} ${student.lastName} назначен(а) на курс.`,
 			);
 		} catch (e) {
-			setAssignError({ id: student.id, message: e instanceof ClientError && e.status === 422 ? "Пользователь больше недоступен для назначения. Обновите результаты поиска." : managementError(e) });
+			setAssignError({
+				id: student.id,
+				message:
+					e instanceof ClientError && e.status === 422
+						? "Пользователь больше недоступен для назначения. Обновите результаты поиска."
+						: managementError(e),
+			});
 			if (e instanceof ClientError && (e.status === 403 || e.status === 409))
 				void stale();
 		} finally {

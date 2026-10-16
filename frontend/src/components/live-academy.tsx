@@ -185,7 +185,8 @@ export default function LiveAcademy() {
 				</section>
 			</main>
 		);
-	if (view === "manage") return <Management profile={profile} logout={logout} />;
+	if (view === "manage")
+		return <Management profile={profile} logout={logout} />;
 	const adapted = toDemo(courses);
 	// An empty structure keeps hooks stable without putting demonstration courses in the real UI.
 	if (!adapted.courses.length)
@@ -218,6 +219,8 @@ export default function LiveAcademy() {
 						<AssignmentPanel
 							key={`${profile.id}/${selected.id}/${selectedLesson}`}
 							userId={profile.id}
+							focusOnOpen={search.get("assignment") === "1"}
+							navigationKey={search.toString()}
 							courseId={selected.id}
 							lessonId={selectedLesson}
 							onChanged={refreshProgress}

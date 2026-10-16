@@ -81,12 +81,16 @@ export function AssignmentPanel({
 	lessonId,
 	onChanged,
 	onExpired,
+	focusOnOpen = false,
+	navigationKey = "",
 }: {
 	userId: string;
 	courseId: string;
 	lessonId: string;
 	onChanged: () => Promise<void>;
 	onExpired: () => void;
+	focusOnOpen?: boolean;
+	navigationKey?: string;
 }) {
 	const path = `/api/backend/learning/courses/${courseId}/lessons/${lessonId}`;
 	const storage = `advent-assignment-draft/${userId}/${courseId}/${lessonId}`;
@@ -102,6 +106,26 @@ export function AssignmentPanel({
 	const [storageError, setStorageError] = useState(false);
 	const [busy, setBusy] = useState(false);
 	const [notice, setNotice] = useState("");
+	const [urlError, setUrlError] = useState("");
+	const [commentError, setCommentError] = useState("");
+	const heading = useRef<HTMLHeadingElement>(null);
+	const focused = useRef<string | null>(null);
+	useEffect(() => {
+		if (!focusOnOpen || focused.current === navigationKey || loading || !data)
+			return;
+		const frame = requestAnimationFrame(() => {
+			heading.current?.scrollIntoView({ block: "start", behavior: "instant" });
+			heading.current?.focus({ preventScroll: true });
+			focused.current = navigationKey;
+		});
+		return () => cancelAnimationFrame(frame);
+	}, [data, loading, focusOnOpen, navigationKey]);
+	useEffect(() => {
+		if (!busy && (urlError || commentError))
+			document
+				.getElementById(urlError ? "live-solution" : "live-comment")
+				?.focus();
+	}, [busy, urlError, commentError]);
 	const alive = useRef(true);
 	const reload = useCallback(async () => {
 		setLoading(true);
@@ -171,6 +195,7 @@ export function AssignmentPanel({
 		}
 	}, [draft, ready, storage]);
 	async function refresh() {
+		if (loading || busy) return;
 		await reload();
 		try {
 			await onChanged();
@@ -182,12 +207,32 @@ export function AssignmentPanel({
 		event.preventDefault();
 		if (busy) return;
 		const url = draft.url.trim();
+		setUrlError("");
+		setCommentError("");
+		setError("");
+		if (draft.comment.length > 4000) {
+			setCommentError("Комментарий должен быть не длиннее 4000 символов.");
+			document.getElementById("live-comment")?.focus();
+			return;
+		}
 		try {
 			const value = new URL(url);
-			if (value.protocol !== "https:" || value.username || value.password)
+			if (
+				url.length > 2048 ||
+				value.protocol !== "https:" ||
+				value.username ||
+				value.password
+			)
 				throw new Error();
 		} catch {
-			setError("Укажите HTTPS-ссылку без логина и пароля.");
+			setUrlError(
+				!url
+					? "Укажите ссылку на решение."
+					: url.length > 2048
+						? "Ссылка должна быть не длиннее 2048 символов."
+						: "Укажите HTTPS-ссылку без логина и пароля.",
+			);
+			document.getElementById("live-solution")?.focus();
 			return;
 		}
 		setBusy(true);
@@ -222,7 +267,22 @@ export function AssignmentPanel({
 		} catch (e) {
 			if (alive.current) {
 				if (e instanceof ClientError && e.status === 401) onExpired();
-				else setError(errorText(e));
+				else if (e instanceof ClientError && Object.keys(e.fields).length) {
+					if (e.fields.url)
+						setUrlError(
+							"Укажите корректную HTTPS-ссылку длиной до 2048 символов.",
+						);
+					if (e.fields.comment)
+						setCommentError(
+							"Комментарий должен быть не длиннее 4000 символов.",
+						);
+					if (
+						Object.keys(e.fields).some(
+							(key) => !["url", "comment"].includes(key),
+						)
+					)
+						setError(errorText(e));
+				} else setError(errorText(e));
 			}
 		} finally {
 			if (alive.current) setBusy(false);
@@ -234,7 +294,9 @@ export function AssignmentPanel({
 			<div className="assignment-heading">
 				<div>
 					<span className="eyebrow">Практическое задание</span>
-					<h2>{data?.title || "Обязательное задание"}</h2>
+					<h2 ref={heading} tabIndex={-1}>
+						{data?.title || "Обязательное задание"}
+					</h2>
 				</div>
 				<Badge status={latest?.status || "draft"} />
 			</div>
@@ -275,38 +337,64 @@ export function AssignmentPanel({
 							Решение отправлено. Ожидайте результата проверки.
 						</p>
 					) : (
-						<form onSubmit={submit}>
+						<form onSubmit={submit} noValidate aria-busy={busy}>
 							<label htmlFor="live-solution">Ссылка на решение</label>
 							<input
 								id="live-solution"
 								type="url"
 								required
 								maxLength={2048}
+								aria-invalid={!!urlError}
+								aria-describedby={urlError ? "live-solution-error" : undefined}
 								value={draft.url}
 								disabled={busy || !ready || loading}
-								onChange={(e) =>
+								onChange={(e) => {
+									setUrlError("");
 									setDraft((old) => ({
 										...old,
 										url: e.target.value,
 										requestId: crypto.randomUUID(),
-									}))
-								}
+									}));
+								}}
 								placeholder="https://github.com/…"
 							/>
+							{urlError && (
+								<p
+									id="live-solution-error"
+									className="feedback error"
+									role="alert"
+								>
+									{urlError}
+								</p>
+							)}
 							<label htmlFor="live-comment">Комментарий к решению</label>
 							<textarea
 								id="live-comment"
 								maxLength={4000}
+								aria-invalid={!!commentError}
+								aria-describedby={
+									commentError ? "live-comment-error" : undefined
+								}
 								value={draft.comment}
 								disabled={busy}
-								onChange={(e) =>
+								onChange={(e) => {
+									setCommentError("");
 									setDraft((old) => ({
 										...old,
 										comment: e.target.value,
 										requestId: crypto.randomUUID(),
-									}))
-								}
+									}));
+								}}
 							/>
+							{commentError && (
+								<p
+									id="live-comment-error"
+									className="feedback error"
+									role="alert"
+								>
+									{commentError}
+								</p>
+							)}
 							<button
 								type="submit"
 								className="button primary full"
@@ -326,10 +414,14 @@ export function AssignmentPanel({
 			<button
 				type="button"
 				className="button secondary"
-				disabled={loading || busy}
+				aria-disabled={loading || busy}
 				onClick={() => void refresh()}
 			>
-				Обновить статус
+				{loading
+					? "Обновляем…"
+					: error && !data
+						? "Повторить"
+						: "Обновить статус"}
 			</button>
 		</section>
 	);
@@ -417,6 +509,7 @@ export function AssignmentList({
 					<Link
 						className="button secondary"
 						href={`/?view=lesson&course=${item.courseId}&lesson=${item.lessonId}&assignment=1`}
+						scroll={false}
 					>
 						Открыть задание
 					</Link>

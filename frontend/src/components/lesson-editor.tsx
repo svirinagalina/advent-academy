@@ -1,4 +1,5 @@
 "use client";
+import LessonMaterial from "@/components/lesson-material";
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { api, ClientError } from "@/lib/learning";
@@ -302,9 +303,9 @@ export default function LessonEditor({
 						type="checkbox"
 						checked={split}
 						onChange={(e) => {
-						setSplit(e.target.checked);
-						setTab("Markdown");
-					}}
+							setSplit(e.target.checked);
+							setTab("Markdown");
+						}}
 					/>
 					Markdown и предпросмотр рядом
 				</label>
@@ -393,16 +394,7 @@ export default function LessonEditor({
 					) : preview.text !== text ? (
 						<p role="status">Обновляем предпросмотр…</p>
 					) : (
-						<div
-							className="lesson-article lesson-material"
-							// biome-ignore lint/security/noDangerouslySetInnerHtml: only authorized server-sanitized HTML is rendered.
-							dangerouslySetInnerHTML={{
-								__html: preview.html.replaceAll(
-									"/api/assets/",
-									"/api/backend/assets/",
-								),
-							}}
-						/>
+						<LessonMaterial html={preview.html} className="lesson-article" />
 					)}
 				</section>
 				<section
