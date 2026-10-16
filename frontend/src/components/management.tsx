@@ -132,6 +132,13 @@ function Editor({
 		module: "Создать модуль",
 		lesson: "Создать урок",
 	};
+	function cancel() {
+		if (
+			(title === (initial?.title || "") &&
+				description === (initial?.description || "")) ||
+			window.confirm("Есть несохранённые изменения. Закрыть форму без сохранения?")
+		) close();
+	}
 	async function save(event: FormEvent) {
 		event.preventDefault();
 		if (!title.trim()) {
@@ -149,7 +156,7 @@ function Editor({
 		}
 	}
 	return (
-		<Dialog title={titles[kind]} busy={busy} close={close}>
+		<Dialog title={titles[kind]} busy={busy} close={cancel}>
 			<form className="management-form" onSubmit={save} aria-busy={busy}>
 				<label htmlFor="management-title">
 					{kind === "lesson"
@@ -186,7 +193,7 @@ function Editor({
 						className="button secondary"
 						type="button"
 						disabled={busy}
-						onClick={close}
+						onClick={cancel}
 					>
 						Отмена
 					</button>
@@ -327,6 +334,8 @@ export default function Management({
 	const [error, setError] = useState("");
 	const [filter, setFilter] = useState("ALL");
 	const [create, setCreate] = useState(false);
+	const [leaving, setLeaving] = useState(false);
+	const [logoutError, setLogoutError] = useState("");
     const [page, setPage] = useState(0);
     const [total, setTotal] = useState(0);
 	const load = useCallback(async () => {
@@ -347,6 +356,18 @@ export default function Management({
 		void load();
 	}, [load]);
 	const selected = courses.find((c) => c.id === courseId);
+	async function leave() {
+		if (leaving) return;
+		setLeaving(true);
+		setLogoutError("");
+		try {
+			await logout();
+		} catch (e) {
+			setLogoutError(e instanceof Error ? e.message : "Не удалось выйти");
+		} finally {
+			setLeaving(false);
+		}
+	}
 	return (
 		<div className="management-shell">
 			<aside className="sidebar">
@@ -364,7 +385,7 @@ export default function Management({
 							Пользователи
 						</Link>
 					)}
-					<Link className="nav-link" href="/">
+					<Link className="nav-link" href="/cabinet">
 						Кабинет ученика
 					</Link>
 				</nav>
@@ -376,6 +397,9 @@ export default function Management({
 					</Link>
 					<div className="header-actions">
 						<ThemeToggle />
+						<Link className="text-link management-home-link" href="/cabinet">
+							Кабинет ученика
+						</Link>
 						{profile.roles.includes("ADMIN") && (
 							<Link className="text-link" href="/?view=users">
 								Пользователи
@@ -394,17 +418,19 @@ export default function Management({
 						<button
 							className="button secondary"
 							type="button"
-							onClick={() => void logout()}
+							disabled={leaving}
+							onClick={() => void leave()}
 						>
-							Выйти
+							{leaving ? "Выходим…" : "Выйти"}
 						</button>
 					</div>
 				</header>
 				<main className="main-content management-content">
+					{logoutError && <Alert>{logoutError}</Alert>}
 					{!allowed ? (
 						<section className="card empty-state">
 							<h1>Нет доступа к управлению курсами</h1>
-							<Link className="text-link" href="/">
+							<Link className="text-link" href="/cabinet">
 								В кабинет ученика
 							</Link>
 						</section>
@@ -423,7 +449,7 @@ export default function Management({
 							>
 								Повторить
 							</button>
-							<Link className="text-link" href="/">
+							<Link className="text-link" href="/cabinet">
 								Войти заново / кабинет ученика
 							</Link>
 						</section>

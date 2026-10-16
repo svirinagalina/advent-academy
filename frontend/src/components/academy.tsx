@@ -38,7 +38,7 @@ function Link(props: ComponentProps<typeof NextLink>) {
 		typeof props.href === "string" &&
 		props.href.startsWith("/")
 			? `/demo${props.href.slice(1)}`
-			: props.href;
+			: props.href === "/" ? "/cabinet" : props.href;
 	return <NextLink {...props} href={href} />;
 }
 

@@ -14,7 +14,7 @@ const errors=[];for(const p of [page,reviewPage,foreignPage]) p.on('pageerror',e
 const lesson=fixture.lessons[2];
 const path=`/api/backend/learning/courses/${fixture.course}/lessons/${lesson}`;
 const href=`${base}/?view=lesson&course=${fixture.course}&lesson=${lesson}`;
-async function login(p,email,name) { await p.goto(base);await p.getByLabel('Email',{exact:true}).fill(email);await p.getByLabel('Пароль',{exact:true}).fill(fixture.password);await p.getByRole('button',{name:'Войти',exact:true}).click();await p.getByRole('button',{name:`Меню пользователя ${name}`,exact:true}).waitFor(); }
+async function login(p,email,name) { await p.goto(base + "/cabinet");await p.getByLabel('Email',{exact:true}).fill(email);await p.getByLabel('Пароль',{exact:true}).fill(fixture.password);await p.getByRole('button',{name:'Войти',exact:true}).click();await p.getByRole('button',{name:`Меню пользователя ${name}`,exact:true}).waitFor(); }
 async function logout(p,name) {await p.getByRole('button',{name:`Меню пользователя ${name}`,exact:true}).click();await p.getByRole('link',{name:'Выйти',exact:true}).click();await p.getByRole('heading',{name:'Войти в кабинет'}).waitFor();}
 async function unlock(context) {for(const id of fixture.lessons.slice(0,2)){const r=await context.request.post(`${base}/api/backend/learning/courses/${fixture.course}/lessons/${id}/complete`,{headers:{Origin:base}});assert.equal(r.status(),200);}}
 try {
