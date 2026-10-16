@@ -1,0 +1,3980 @@
+{
+  ".codex/hooks.json": {
+    "mtime": 1792171927.1290839,
+    "seen": 1792174676.54368,
+    "ast_hash": "005ac71c84af2cae38e255e2b9de2411",
+    "semantic_hash": ""
+  },
+  "api-gateway/build.gradle": {
+    "mtime": 1787643019.1879804,
+    "seen": 1792174676.5436835,
+    "ast_hash": "689c828ddab1c65b83490e3c41817472",
+    "semantic_hash": ""
+  },
+  "api-gateway/src/main/java/com/adventacademy/apigateway/ApiGatewayApplication.java": {
+    "mtime": 1787643019.1879804,
+    "seen": 1792174676.5436852,
+    "ast_hash": "ec2c6d99a843f08c6e50a54c81e45f67",
+    "semantic_hash": ""
+  },
+  "api-gateway/src/main/java/com/adventacademy/apigateway/BackendReadiness.java": {
+    "mtime": 1792161390.6165614,
+    "seen": 1792174676.543686,
+    "ast_hash": "3c419c6386740f000d3b85f96e66eb60",
+    "semantic_hash": ""
+  },
+  "api-gateway/src/test/java/com/adventacademy/apigateway/BackendReadinessTest.java": {
+    "mtime": 1792161390.6165614,
+    "seen": 1792174676.5436866,
+    "ast_hash": "ab54b9d631b9b9e83c81e360d4499ebc",
+    "semantic_hash": ""
+  },
+  "api-gateway/src/test/java/com/adventacademy/apigateway/GatewayRouteConfigTest.java": {
+    "mtime": 1789369301.1615891,
+    "seen": 1792174676.543687,
+    "ast_hash": "7f22d16f6cb7491483093f40fdd00108",
+    "semantic_hash": ""
+  },
+  "api-gateway/src/test/java/com/adventacademy/apigateway/GatewayRoutingIntegrationIT.java": {
+    "mtime": 1787643019.1879804,
+    "seen": 1792174676.5436878,
+    "ast_hash": "1494165c4bef678fe6b184f39c3c4021",
+    "semantic_hash": ""
+  },
+  "api-gateway/src/test/java/com/adventacademy/apigateway/GatewaySwaggerConfigTest.java": {
+    "mtime": 1787643019.1879804,
+    "seen": 1792174676.5436888,
+    "ast_hash": "862b1c991fde0c7290a09cecc5fdb489",
+    "semantic_hash": ""
+  },
+  "build.gradle": {
+    "mtime": 1792161390.6165614,
+    "seen": 1792174676.5436893,
+    "ast_hash": "8d5f57c1125dac006c7bd857c971c11f",
+    "semantic_hash": ""
+  },
+  "ci/build-images.sh": {
+    "mtime": 1791983742.499215,
+    "seen": 1792174676.5436897,
+    "ast_hash": "b269710e8b67fdd8efdb6a5747e65b3f",
+    "semantic_hash": ""
+  },
+  "ci/check-backend.sh": {
+    "mtime": 1791983742.499215,
+    "seen": 1792174676.5436902,
+    "ast_hash": "c91cfc3ebf8a334996ef085e7fd4e119",
+    "semantic_hash": ""
+  },
+  "ci/check-branch-sync.sh": {
+    "mtime": 1791983742.499215,
+    "seen": 1792174676.543691,
+    "ast_hash": "c6d14386162f5608f1c6a7014243cec4",
+    "semantic_hash": ""
+  },
+  "ci/select-modules.sh": {
+    "mtime": 1792161390.6165614,
+    "seen": 1792174676.5436919,
+    "ast_hash": "da29ea95d62896798eb010bb188acc7b",
+    "semantic_hash": ""
+  },
+  "ci/test-branch-sync.sh": {
+    "mtime": 1791983742.499215,
+    "seen": 1792174676.5436924,
+    "ast_hash": "332b65c9be90a516e260142e964e40f1",
+    "semantic_hash": ""
+  },
+  "ci/test-select-modules.sh": {
+    "mtime": 1792161390.6165614,
+    "seen": 1792174676.5436928,
+    "ast_hash": "c4672d57ec4cd35e1a435b998c4621c3",
+    "semantic_hash": ""
+  },
+  "content-service/build.gradle": {
+    "mtime": 1792161390.6165614,
+    "seen": 1792174676.5436933,
+    "ast_hash": "7cebe88868bd6491919705037c141e84",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/ContentServiceApplication.java": {
+    "mtime": 1782315512.2186346,
+    "seen": 1792174676.543694,
+    "ast_hash": "431744850990f570b4925c58a1688390",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/controller/AssetController.java": {
+    "mtime": 1792161390.6165614,
+    "seen": 1792174676.5436945,
+    "ast_hash": "47af3db307b36218464b596d5cc5abe0",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/controller/AssignmentController.java": {
+    "mtime": 1792161390.6165614,
+    "seen": 1792174676.5436954,
+    "ast_hash": "85df4fd843594a44c05bb65772d8c93e",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/controller/CatalogController.java": {
+    "mtime": 1786090693.5531335,
+    "seen": 1792174676.543696,
+    "ast_hash": "200cf115a1cd24d18fecb1472a351171",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/controller/ComponentController.java": {
+    "mtime": 1791929380.4487836,
+    "seen": 1792174676.5436964,
+    "ast_hash": "66863226c05ae9753a4c6f6839c54c58",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/controller/CourseController.java": {
+    "mtime": 1792174126.3756526,
+    "seen": 1792174676.5436969,
+    "ast_hash": "bfb8834b0ba32ed8d48026302a6d85c0",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/controller/DirectionController.java": {
+    "mtime": 1791929380.4487836,
+    "seen": 1792174676.5436976,
+    "ast_hash": "dae99a60556c81fca7e81e93fa42d72b",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/controller/LearningController.java": {
+    "mtime": 1792161390.6175616,
+    "seen": 1792174676.543698,
+    "ast_hash": "d99e1ec43faa202e8c71385c82a37c2b",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/controller/LessonAuthoringController.java": {
+    "mtime": 1792138478.621085,
+    "seen": 1792174676.5436988,
+    "ast_hash": "40fc0b8bde0b60bbb0b57b520c27c363",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/controller/LessonContentController.java": {
+    "mtime": 1792138478.621085,
+    "seen": 1792174676.5436995,
+    "ast_hash": "c8d69cce319086a20ff21d38c33d356a",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/controller/MarkdownPreviewController.java": {
+    "mtime": 1791929380.4487836,
+    "seen": 1792174676.5437,
+    "ast_hash": "68580d4b02d0b48d57e243581483e529",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/controller/MarkdownPreviewPageController.java": {
+    "mtime": 1787643019.1889803,
+    "seen": 1792174676.5437005,
+    "ast_hash": "44c164adae5c30a72a78585fa1d2e28f",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/controller/TeachingCourseController.java": {
+    "mtime": 1791984462.3309658,
+    "seen": 1792174676.5437012,
+    "ast_hash": "1673ff4a0a05b64f474b167e5acf0fa6",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/dto/AddComponentRequest.java": {
+    "mtime": 1786090693.5531335,
+    "seen": 1792174676.5437016,
+    "ast_hash": "e65b22addbbc3f2c177f98be6dc8acc2",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/dto/AddCourseRequest.java": {
+    "mtime": 1786090693.5531335,
+    "seen": 1792174676.5437024,
+    "ast_hash": "7d8529cbb350ba771f440db9fb9f7b2f",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/dto/AssetResponse.java": {
+    "mtime": 1787643019.1889803,
+    "seen": 1792174676.5437028,
+    "ast_hash": "22455049c3b8ca765f94fec3effa876e",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/dto/CatalogResponse.java": {
+    "mtime": 1786090693.5531335,
+    "seen": 1792174676.5437033,
+    "ast_hash": "5b5ef2237b1bab4909583b953ad27520",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/dto/ComponentRequest.java": {
+    "mtime": 1786090693.5531335,
+    "seen": 1792174676.543704,
+    "ast_hash": "7cccfc6e926ae50db96c7a0865cc509c",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/dto/ComponentResponse.java": {
+    "mtime": 1792138478.621085,
+    "seen": 1792174676.5437045,
+    "ast_hash": "8feae5e147f35b9d8cdfd895d77d8a3a",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/dto/CourseRequest.java": {
+    "mtime": 1786090693.5531335,
+    "seen": 1792174676.543705,
+    "ast_hash": "e6954d8a7d58b08e9b1420c0f07bcfe7",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/dto/CourseResponse.java": {
+    "mtime": 1786090693.5531335,
+    "seen": 1792174676.5437057,
+    "ast_hash": "4e37cd8a156fe5ed8f00baf37981e2b7",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/dto/CourseTreeResponse.java": {
+    "mtime": 1792174126.3756526,
+    "seen": 1792174676.5437062,
+    "ast_hash": "8b49174dd59af2929af154a2343e9556",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/dto/DirectionRequest.java": {
+    "mtime": 1786090693.5531335,
+    "seen": 1792174676.543707,
+    "ast_hash": "9b0bfbdd87de13bf0fc5755d70354e9b",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/dto/DirectionResponse.java": {
+    "mtime": 1786090693.5531335,
+    "seen": 1792174676.5437074,
+    "ast_hash": "068faae2d0dfe987ffeb0e84222ed3bc",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/dto/LessonContentResponse.java": {
+    "mtime": 1784624744.45669,
+    "seen": 1792174676.5437078,
+    "ast_hash": "71f284bd1976cf4c853571d6d5a2e33c",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/dto/LessonRequest.java": {
+    "mtime": 1786090693.5531335,
+    "seen": 1792174676.5437083,
+    "ast_hash": "2ddb682b8f46a1a23b57e0705e4ecf71",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/dto/MarkdownPreviewResponse.java": {
+    "mtime": 1787643019.1889803,
+    "seen": 1792174676.543709,
+    "ast_hash": "912f5e40d56431af04c01e0e2e39efdf",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/dto/ReorderRequest.java": {
+    "mtime": 1786090693.5531335,
+    "seen": 1792174676.5437148,
+    "ast_hash": "403455f65ff4bff57fc8bee3a67d81e9",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/exception/AssetLinkErrorResponse.java": {
+    "mtime": 1787643019.1889803,
+    "seen": 1792174676.5437152,
+    "ast_hash": "1c7908c12073f91002b86cc79ab19b8e",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/exception/ErrorResponse.java": {
+    "mtime": 1784624744.45669,
+    "seen": 1792174676.543716,
+    "ast_hash": "a3f5d19651854647668b3272d6f5057d",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/exception/GlobalExceptionHandler.java": {
+    "mtime": 1792146922.906164,
+    "seen": 1792174676.5437164,
+    "ast_hash": "96a60be7292dca41f2c8c7a6e14bc6c2",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/exception/PublicationErrorResponse.java": {
+    "mtime": 1786090693.5531335,
+    "seen": 1792174676.543717,
+    "ast_hash": "56de496c0bff5174694f3079a8a39365",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/filter/AuthoringBodyLimitFilter.java": {
+    "mtime": 1792138478.621085,
+    "seen": 1792174676.5437174,
+    "ast_hash": "97f4508f61342281a61f994a68929763",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/adapter/rest/filter/ContentWorkLimiter.java": {
+    "mtime": 1792161390.6175616,
+    "seen": 1792174676.543718,
+    "ast_hash": "0c02bb5a0f647b96de3d58665d6f93bb",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/command/UploadAssetCommand.java": {
+    "mtime": 1787643019.1889803,
+    "seen": 1792174676.5437186,
+    "ast_hash": "0e2f6a2ec4ac23854f98cddd3e3c523c",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/command/UploadLessonContentCommand.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.543719,
+    "ast_hash": "31714507b2b53d6a46ceea3e1ed7e9a5",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/port/AuditTrailPort.java": {
+    "mtime": 1791929380.4487836,
+    "seen": 1792174676.5437198,
+    "ast_hash": "abee5a533e3efd98fb3753804ca7aa39",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/port/CurrentUserProvider.java": {
+    "mtime": 1791929380.4487836,
+    "seen": 1792174676.5437205,
+    "ast_hash": "34921961ce864a994707633a68234af4",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/port/EnrollmentUserPort.java": {
+    "mtime": 1792174126.3756526,
+    "seen": 1792174676.543721,
+    "ast_hash": "822ddb7d57aaeffb77ff222c7bac1a95",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/port/JwtProvider.java": {
+    "mtime": 1791929380.4487836,
+    "seen": 1792174676.5437214,
+    "ast_hash": "1c17ce9860a5f6f5562b2bf69e693bde",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/port/MarkdownRenderer.java": {
+    "mtime": 1784624744.45669,
+    "seen": 1792174676.543722,
+    "ast_hash": "d4aa74f0afdc610d0d4a935862bec44d",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/port/MarkdownRenderingException.java": {
+    "mtime": 1784624744.45669,
+    "seen": 1792174676.5437224,
+    "ast_hash": "0611336978dff322daa55d87d8cf9989",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/AssetAccessDeniedException.java": {
+    "mtime": 1791929380.4487836,
+    "seen": 1792174676.5437233,
+    "ast_hash": "fbde8fa4b6975fe2a23d196dc5102e78",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/AssetLinkResolver.java": {
+    "mtime": 1792161390.6175616,
+    "seen": 1792174676.5437238,
+    "ast_hash": "aa09f99b0d7f80e6dd818e26814b6892",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/AssignmentAuthoringService.java": {
+    "mtime": 1792161390.6175616,
+    "seen": 1792174676.5437243,
+    "ast_hash": "b5aaf5af024af1632ed939471238b5e8",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/AssignmentService.java": {
+    "mtime": 1792161390.6175616,
+    "seen": 1792174676.5437248,
+    "ast_hash": "2f50f3b9edce91f3465ecf83bbb12e91",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/ComponentInUseException.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.5437255,
+    "ast_hash": "7ceb584389960c7dbab77c80ec608842",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/ComponentLifecycleService.java": {
+    "mtime": 1792174041.068863,
+    "seen": 1792174676.543726,
+    "ast_hash": "e5d73dd5d14c2ec1c851687602d4709c",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/ComponentStructureService.java": {
+    "mtime": 1791929380.4487836,
+    "seen": 1792174676.543729,
+    "ast_hash": "7acdfe75e90ed4cf8a1df6f51c10ec01",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/ContentAccessDeniedException.java": {
+    "mtime": 1791929380.4487836,
+    "seen": 1792174676.5437298,
+    "ast_hash": "9ae7d1aa84c317279cb56707813a228b",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/ContentAccessGuard.java": {
+    "mtime": 1791929380.4487836,
+    "seen": 1792174676.5437305,
+    "ast_hash": "6f51adf8c23d8f381ab4f219dad2e471",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/CourseAccessDeniedException.java": {
+    "mtime": 1791929380.4487836,
+    "seen": 1792174676.543731,
+    "ast_hash": "4736710a4eebabb079bb420ef26520f4",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/CourseAssemblyService.java": {
+    "mtime": 1792174004.9155276,
+    "seen": 1792174676.5437315,
+    "ast_hash": "86471b5776cefa8dff03d8a66ece6a40",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/CourseDirectory.java": {
+    "mtime": 1792161390.6175616,
+    "seen": 1792174676.5437322,
+    "ast_hash": "ffbab0141d171e40ba16e00d592a2579",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/CourseInUseException.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.5437326,
+    "ast_hash": "439404b3e357386540bf8034e5f903eb",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/DirectionAssemblyService.java": {
+    "mtime": 1791929380.4497836,
+    "seen": 1792174676.5437334,
+    "ast_hash": "bbb383c68f2d9cfdfb8a51aebbe6188c",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/DownloadAssetService.java": {
+    "mtime": 1792161390.6175616,
+    "seen": 1792174676.5437338,
+    "ast_hash": "bc0b0b2c7b745fe1faeeb5954d34512c",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/EnrollmentWriter.java": {
+    "mtime": 1792174179.1891408,
+    "seen": 1792174676.5437353,
+    "ast_hash": "0b009132e15ca4aa9f0008a3959eb566",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/GetCatalogService.java": {
+    "mtime": 1792174004.9165275,
+    "seen": 1792174676.5437357,
+    "ast_hash": "c613194711b7983f6668527116ce2f3d",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/InvalidAssetLinkException.java": {
+    "mtime": 1787643019.1889803,
+    "seen": 1792174676.5437362,
+    "ast_hash": "027d03e910ef2813afd47fe191279ea5",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/LearningService.java": {
+    "mtime": 1792174126.3756526,
+    "seen": 1792174676.5437372,
+    "ast_hash": "d11c4f2453ffc43990db0e778c211114",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/LessonAuthoringService.java": {
+    "mtime": 1792138478.622085,
+    "seen": 1792174676.543738,
+    "ast_hash": "68e2deddfdd9b6b2c6c3df8aa62dd4bc",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/LessonContentAlreadyExistsException.java": {
+    "mtime": 1784624744.45669,
+    "seen": 1792174676.5437384,
+    "ast_hash": "e6803414064e9f6efa2a831df77ba229",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/LessonContentReadService.java": {
+    "mtime": 1792138478.622085,
+    "seen": 1792174676.5437388,
+    "ast_hash": "0d38a7681621d0961dc7f2c238cb0367",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/MarkdownPreviewResult.java": {
+    "mtime": 1787643019.1889803,
+    "seen": 1792174676.5437396,
+    "ast_hash": "52add009803866c27ea7a14252a64c02",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/MarkdownPreviewService.java": {
+    "mtime": 1787643019.1889803,
+    "seen": 1792174676.5437403,
+    "ast_hash": "f866775acaee88cef299f34f99415607",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/NotFoundException.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.5437407,
+    "ast_hash": "a1e544226e7129e694ba0c0b2cee8438",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/UploadAssetService.java": {
+    "mtime": 1792161390.6175616,
+    "seen": 1792174676.5437412,
+    "ast_hash": "542038ff3bc4c29ed7bebefed9347285",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/UploadLessonContentService.java": {
+    "mtime": 1792138478.622085,
+    "seen": 1792174676.543742,
+    "ast_hash": "5e311ebbb9aef7cb425e334eaae83366",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/service/ZipContentExtractor.java": {
+    "mtime": 1787643019.1889803,
+    "seen": 1792174676.5437424,
+    "ast_hash": "6a6852ff24b478b5d8a66b2019e54fa0",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/validation/AssetFileValidator.java": {
+    "mtime": 1792161390.6175616,
+    "seen": 1792174676.5437438,
+    "ast_hash": "9a14748835ebdc6bcbfbf68ae55c1c5f",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/validation/AssetTypePolicy.java": {
+    "mtime": 1792161390.6175616,
+    "seen": 1792174676.5437443,
+    "ast_hash": "8065ef583e38d11aae8d1adadf5dbf84",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/validation/InvalidAssetFileException.java": {
+    "mtime": 1787643019.1889803,
+    "seen": 1792174676.5437448,
+    "ast_hash": "021f6d9bb7dd1f5bb723c1f76f112ec7",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/validation/InvalidMarkdownFileException.java": {
+    "mtime": 1784624744.45669,
+    "seen": 1792174676.5437453,
+    "ast_hash": "56a6b19ba293d70c572be702c32beb1d",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/validation/MarkdownFileValidator.java": {
+    "mtime": 1787643019.1889803,
+    "seen": 1792174676.5437458,
+    "ast_hash": "60eb8e7bd0379f7f468ad59ad806cb8c",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/application/validation/PlainTextNormalizer.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.5437465,
+    "ast_hash": "981b6473a75959a433ef2dd190aff0b5",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/config/ArchiveUploadProperties.java": {
+    "mtime": 1787643019.1889803,
+    "seen": 1792174676.5437472,
+    "ast_hash": "88035992e608a4fb00eb1e4a4a683d44",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/config/AssetUploadConfig.java": {
+    "mtime": 1787643019.1889803,
+    "seen": 1792174676.5437477,
+    "ast_hash": "1eba1c2d01bd50aa8a7999909aca4449",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/config/AssetUploadProperties.java": {
+    "mtime": 1787643019.1889803,
+    "seen": 1792174676.5437481,
+    "ast_hash": "a1f480ad49dbefc9aa4ad9de198f9bdc",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/config/ContentUploadConfig.java": {
+    "mtime": 1787643019.1889803,
+    "seen": 1792174676.5437486,
+    "ast_hash": "5af7abfcdda70bfc4fce1695591d6e4c",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/AssetMetadata.java": {
+    "mtime": 1792161390.6175616,
+    "seen": 1792174676.543749,
+    "ast_hash": "d020d88dda56a282151a2aff1f28f36b",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/ContentStatus.java": {
+    "mtime": 1784624744.45669,
+    "seen": 1792174676.5437496,
+    "ast_hash": "484403fea64dc9bef15604aaf591208a",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/LessonContent.java": {
+    "mtime": 1784624744.45669,
+    "seen": 1792174676.5437503,
+    "ast_hash": "9124c078fdf4b19ab502595bdad37798",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/StoredAsset.java": {
+    "mtime": 1791929380.4497836,
+    "seen": 1792174676.543751,
+    "ast_hash": "94fafc2405951eb8e779fad7bc5cb162",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/constructor/Component.java": {
+    "mtime": 1791929380.4497836,
+    "seen": 1792174676.5437515,
+    "ast_hash": "0e965f7569429b983908af4cad6af9d9",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/constructor/ComponentNotReadyForPublicationException.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.543752,
+    "ast_hash": "61a9f26e841904de75dd2668fe10af0c",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/constructor/ComponentPublicationPolicy.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.5437524,
+    "ast_hash": "8877547af29832061fa03036c63f77a4",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/constructor/ComponentRef.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.543753,
+    "ast_hash": "59d8bfc9b5c7f4d61e13d3769f40cd1d",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/constructor/Course.java": {
+    "mtime": 1791929380.4497836,
+    "seen": 1792174676.5437534,
+    "ast_hash": "9081a43c389556f1e27706a96aa529ff",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/constructor/CourseNotReadyForPublicationException.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.543755,
+    "ast_hash": "d1f1646983190b9cf254a09848ea4fdd",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/constructor/CoursePublicationPolicy.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.5437555,
+    "ast_hash": "4814e68deb725da5271738924f2ebebf",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/constructor/CourseRef.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.5437562,
+    "ast_hash": "b44fce18387aed5fe43be03d5e660fa9",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/constructor/Direction.java": {
+    "mtime": 1791929380.4497836,
+    "seen": 1792174676.5437567,
+    "ast_hash": "c2479315e209cb56f7da49d65e6e0843",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/constructor/Lesson.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.5437577,
+    "ast_hash": "2ea8a5158213ba4606180c063b5f7a11",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/constructor/PublicationStatus.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.5437582,
+    "ast_hash": "6f833f366ffa483291998fcf8f93a2e3",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/repository/AssetStorage.java": {
+    "mtime": 1792161390.6175616,
+    "seen": 1792174676.5437586,
+    "ast_hash": "28d8b14f77489cc462b1e445a3856b0f",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/repository/ComponentRepository.java": {
+    "mtime": 1791929380.4497836,
+    "seen": 1792174676.543759,
+    "ast_hash": "16374eb6a7402db0be3cb442435a9098",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/repository/CourseRepository.java": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.5437596,
+    "ast_hash": "d207f2630444b93e968dbfc8b8ac68f5",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/repository/DirectionRepository.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.54376,
+    "ast_hash": "73ab2b321174adbdc92f93ecc79a9dfb",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/repository/LessonContentRepository.java": {
+    "mtime": 1784624744.45669,
+    "seen": 1792174676.543761,
+    "ast_hash": "2b8c188cfe285351e746444976b5b978",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/domain/repository/LessonRepository.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.5437615,
+    "ast_hash": "267d38a679707101856938b65e746a66",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/audit/AuditTrailPersistenceAdapter.java": {
+    "mtime": 1791929380.4497836,
+    "seen": 1792174676.543762,
+    "ast_hash": "3722b6ad9973b358418f039b17c59c4a",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/config/ProductionConfigurationGuard.java": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.5437624,
+    "ast_hash": "d080c0dc9448176d0a75ce80b41002df",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/config/SecurityConfiguration.java": {
+    "mtime": 1792172273.8963683,
+    "seen": 1792174676.5437632,
+    "ast_hash": "a4e1b858e49a8d69ab2e6cdfb7648d58",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/markdown/CommonMarkMarkdownRenderer.java": {
+    "mtime": 1787643019.1899803,
+    "seen": 1792174676.5437636,
+    "ast_hash": "2a9530405254390c50bf1d956a710d6f",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/adapter/ComponentPublicationPolicyAdapter.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.5437646,
+    "ast_hash": "96ad7807c1e2ec9b09b6ba8215086c21",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/adapter/ComponentRepositoryAdapter.java": {
+    "mtime": 1791929380.4497836,
+    "seen": 1792174676.543765,
+    "ast_hash": "e2cc67c4b17090f3931cf3dc71d2e8c7",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/adapter/CoursePublicationPolicyAdapter.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.5437655,
+    "ast_hash": "fdb05440b00fd6091c6213544714e918",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/adapter/CourseRepositoryAdapter.java": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.5437663,
+    "ast_hash": "0c6929a44960694069ac639f9f3b7132",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/adapter/DirectionRepositoryAdapter.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.5437667,
+    "ast_hash": "1f26ca4550acbf2469a4681583cf109e",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/adapter/LessonContentRepositoryAdapter.java": {
+    "mtime": 1784624744.45769,
+    "seen": 1792174676.5437672,
+    "ast_hash": "f31f04dc78bf54b6d10edd7d9e56d8bf",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/adapter/LessonRepositoryAdapter.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.5437677,
+    "ast_hash": "fb06f402bdc0eef8e44ae74145848e8f",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/adapter/PostgresAssetStorageAdapter.java": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.5437686,
+    "ast_hash": "12fd99fd30f3003fed5711f8a8b7143a",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/entity/AssetEntity.java": {
+    "mtime": 1791929380.4497836,
+    "seen": 1792174676.5437691,
+    "ast_hash": "bc76ba8bda3d2d80a6195bb72b1be93a",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/entity/ComponentEntity.java": {
+    "mtime": 1791929380.4497836,
+    "seen": 1792174676.5437696,
+    "ast_hash": "5c1cef692e28b6be35229141cd3a4afa",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/entity/ComponentRefEmbeddable.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.54377,
+    "ast_hash": "ee852d4664d02319e7bb9a5c22ac6317",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/entity/ContentAuditEventEntity.java": {
+    "mtime": 1791929380.4497836,
+    "seen": 1792174676.5437706,
+    "ast_hash": "7c0719dd2b3e168677e750d32ff8a651",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/entity/CourseEntity.java": {
+    "mtime": 1791929380.4497836,
+    "seen": 1792174676.5437715,
+    "ast_hash": "68d191f43ce169f5c4c8c33e2aa99f46",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/entity/CourseRefEmbeddable.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.543772,
+    "ast_hash": "1e6189f034ebb91f9b65df8e06160dfb",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/entity/DirectionEntity.java": {
+    "mtime": 1791929380.4497836,
+    "seen": 1792174676.5437727,
+    "ast_hash": "f25ca6e094f61c9cba86fbd21d50258a",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/entity/LessonContentEntity.java": {
+    "mtime": 1784624744.45769,
+    "seen": 1792174676.5437732,
+    "ast_hash": "10c8a90e21844d04633efb89475b6b7a",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/entity/LessonDraftEntity.java": {
+    "mtime": 1792138478.622085,
+    "seen": 1792174676.5437737,
+    "ast_hash": "04bcb82ceb44f025f368f60ff382040b",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/entity/LessonEntity.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.5437741,
+    "ast_hash": "e5aa3d10bc0f8d8f260212c2281ced47",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/jpa/AssetJpaRepository.java": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.543775,
+    "ast_hash": "22b0b02a76d374973f4114aa11f077f6",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/jpa/ComponentJpaRepository.java": {
+    "mtime": 1791929380.4497836,
+    "seen": 1792174676.5437756,
+    "ast_hash": "47c4c58f0f6969d2daaf4e242f550cdc",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/jpa/ContentAuditEventJpaRepository.java": {
+    "mtime": 1791929380.4497836,
+    "seen": 1792174676.543776,
+    "ast_hash": "8d58917b1a21ec06cadf42b7fe4adf9e",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/jpa/CourseJpaRepository.java": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.5437765,
+    "ast_hash": "9073df803e72f12186e3555ad0186ad0",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/jpa/DirectionJpaRepository.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.543777,
+    "ast_hash": "5304bec7bdc53721adfe72f383d84a84",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/jpa/LessonContentJpaRepository.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.5437777,
+    "ast_hash": "3bfb960f415ec25d27647ba957d751de",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/jpa/LessonJpaRepository.java": {
+    "mtime": 1786090693.5541337,
+    "seen": 1792174676.5437784,
+    "ast_hash": "0322f65bc93e8f3d7ee1463fa914eaca",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/mapper/AssetMapper.java": {
+    "mtime": 1791929380.4497836,
+    "seen": 1792174676.543779,
+    "ast_hash": "ae68dfadded30c3bd50d1c51d3792787",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/mapper/ComponentMapper.java": {
+    "mtime": 1791929380.4497836,
+    "seen": 1792174676.5437794,
+    "ast_hash": "98716a9968966dc5c43b8e9eff1c3e96",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/mapper/CourseMapper.java": {
+    "mtime": 1791929380.4497836,
+    "seen": 1792174676.5437799,
+    "ast_hash": "328d581efacfcec8f19c1316834221a0",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/mapper/DirectionMapper.java": {
+    "mtime": 1791929380.4497836,
+    "seen": 1792174676.5437803,
+    "ast_hash": "3cb91fe16e595c8b88d8a491bce6e07a",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/persistence/mapper/LessonContentMapper.java": {
+    "mtime": 1784624744.45769,
+    "seen": 1792174676.5437808,
+    "ast_hash": "740a009645e65de5b01241516e05475d",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/security/JjwtProvider.java": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.5437813,
+    "ast_hash": "883a9fa364ba417d83a656753a53d1c1",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/security/JwtAuthenticationFilter.java": {
+    "mtime": 1792172273.8973682,
+    "seen": 1792174676.543782,
+    "ast_hash": "bba0268806169c9534e6c2d4bc3fb3c3",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/security/SecurityContextCurrentUserProvider.java": {
+    "mtime": 1791929380.4497836,
+    "seen": 1792174676.5437825,
+    "ast_hash": "042f7dc033214547cc8302250592f521",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/java/com/adventacademy/contentservice/infrastructure/user/HttpEnrollmentUserAdapter.java": {
+    "mtime": 1792174126.3756526,
+    "seen": 1792174676.5437832,
+    "ast_hash": "871d2881968b94a931309fea11c86da0",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/AbstractPostgresIT.java": {
+    "mtime": 1792172273.8973682,
+    "seen": 1792174676.5437837,
+    "ast_hash": "d14716cae967cd29b999a49f1eaf044b",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/ContentServiceApplicationTests.java": {
+    "mtime": 1784624744.45869,
+    "seen": 1792174676.5437841,
+    "ast_hash": "43e698e557d3bdad7be1e0dd86cbba2f",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/adapter/rest/AssignmentIT.java": {
+    "mtime": 1792138478.622085,
+    "seen": 1792174676.5437846,
+    "ast_hash": "82c4af175554e62c3f8de2a2fbf1a3a4",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/adapter/rest/LearningIT.java": {
+    "mtime": 1792174253.061823,
+    "seen": 1792174676.5437853,
+    "ast_hash": "5cde432b2dc7a2b35bb925c55e35d4a4",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/adapter/rest/LessonAuthoringIT.java": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.5437858,
+    "ast_hash": "b191bc95904db0675bfb908be50e7fa0",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/adapter/rest/controller/AssetApiIT.java": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.5437863,
+    "ast_hash": "59a5bbf35a9c9ca120079e15a806b082",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/adapter/rest/controller/ConstructorApiIT.java": {
+    "mtime": 1792174041.068863,
+    "seen": 1792174676.5437868,
+    "ast_hash": "1b413620aa34af58c1afe104aeafdb87",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/adapter/rest/controller/LessonContentApiIT.java": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.5437875,
+    "ast_hash": "e22116e4fd3aa575715901fced75204c",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/adapter/rest/controller/LessonContentAtomicityIT.java": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.543788,
+    "ast_hash": "b733390ec12efb53c3ab6ad78b4176d2",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/adapter/rest/controller/MarkdownPreviewApiIT.java": {
+    "mtime": 1791929380.4507837,
+    "seen": 1792174676.5437884,
+    "ast_hash": "2afed3fe35085e207e8e6e048faba5a5",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/adapter/rest/controller/XssSanitizationApiIT.java": {
+    "mtime": 1791929380.4507837,
+    "seen": 1792174676.5437891,
+    "ast_hash": "3ab165f95ebb8fa7e39d59eb48e4a782",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/adapter/rest/filter/AuthoringBodyLimitFilterTest.java": {
+    "mtime": 1792138478.623085,
+    "seen": 1792174676.5437896,
+    "ast_hash": "61c50ea5664839588f691911541e60f3",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/adapter/rest/filter/ContentWorkLimiterTest.java": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.5437903,
+    "ast_hash": "2e0cf1a2bbc656d1802dda0139dea8e9",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/adapter/rest/security/SecurityIT.java": {
+    "mtime": 1792174004.9165275,
+    "seen": 1792174676.5437908,
+    "ast_hash": "b337f42d4329ccd1e84fd3304f5497fd",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/application/port/MarkdownRendererContractTest.java": {
+    "mtime": 1787643019.1899803,
+    "seen": 1792174676.5437913,
+    "ast_hash": "370fc85f42734524b8cacabb515d32d2",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/application/service/AssetLinkResolverTest.java": {
+    "mtime": 1792138478.623085,
+    "seen": 1792174676.5437918,
+    "ast_hash": "f8bceb3d4faf2be6af0ed161e3ab6c22",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/application/service/ComponentStructureServiceTest.java": {
+    "mtime": 1791929380.4507837,
+    "seen": 1792174676.5437934,
+    "ast_hash": "b0e31f94f19fdaacd4d48cd8a203eaec",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/application/service/CourseAssemblyServiceTest.java": {
+    "mtime": 1792174004.9165275,
+    "seen": 1792174676.543794,
+    "ast_hash": "e74a4baf9706aa3cb086170311555b95",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/application/service/DirectionAssemblyServiceTest.java": {
+    "mtime": 1791929380.4507837,
+    "seen": 1792174676.5437944,
+    "ast_hash": "862d1a6701369cf5eee567e9ac0ad753",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/application/service/DownloadAssetServiceTest.java": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.543795,
+    "ast_hash": "b8d46be92d39011f3172db4948c6a9ac",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/application/service/GetCatalogServiceTest.java": {
+    "mtime": 1791929380.4507837,
+    "seen": 1792174676.5437958,
+    "ast_hash": "c245a5e195c2fc8aa2599fc040844f3d",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/application/service/LessonAuthoringPreviewTest.java": {
+    "mtime": 1792138478.623085,
+    "seen": 1792174676.5437963,
+    "ast_hash": "95eac531eb95b851675f1b0059658ea1",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/application/service/MarkdownPreviewServiceTest.java": {
+    "mtime": 1787643019.1899803,
+    "seen": 1792174676.5437968,
+    "ast_hash": "4d91c3eb5e15d533d48a2df03476e0ed",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/application/service/PublicationRaceIT.java": {
+    "mtime": 1792173977.1242697,
+    "seen": 1792174676.5437973,
+    "ast_hash": "855fc22db4602cc0026aa55a48f6145a",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/application/service/ZipContentExtractorTest.java": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.5437977,
+    "ast_hash": "042b82931918aa246c7f9739391c1cc5",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/application/validation/AssetFileValidatorTest.java": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.5437982,
+    "ast_hash": "ac8ef8cf94ba6a2ab2b8ebccf5bb6c89",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/application/validation/MarkdownFileValidatorTest.java": {
+    "mtime": 1786090693.5551336,
+    "seen": 1792174676.5437987,
+    "ast_hash": "0bc58d97932ab20caaa1700a911f22e5",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/application/validation/PlainTextNormalizerTest.java": {
+    "mtime": 1786090693.5551336,
+    "seen": 1792174676.5437994,
+    "ast_hash": "7c3ce13ba5d31f3f119984171c6494b5",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/domain/LessonContentTest.java": {
+    "mtime": 1784624744.45869,
+    "seen": 1792174676.5437999,
+    "ast_hash": "059b74b0a49ca0e56cf51e072f65df86",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/domain/StoredAssetTest.java": {
+    "mtime": 1787643019.1909804,
+    "seen": 1792174676.5438006,
+    "ast_hash": "9b98a8a836035a3d647b65feac2427ef",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/domain/constructor/ComponentTest.java": {
+    "mtime": 1791929380.4507837,
+    "seen": 1792174676.543801,
+    "ast_hash": "d7733df36eee3c55e015d4065c30db88",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/domain/constructor/CourseTest.java": {
+    "mtime": 1791929380.4507837,
+    "seen": 1792174676.5438015,
+    "ast_hash": "d0c6eb421e3b19453f5e12f14a125280",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/domain/constructor/DirectionTest.java": {
+    "mtime": 1791929380.4507837,
+    "seen": 1792174676.543802,
+    "ast_hash": "9c2c84b7476c85bbaa8f718927a96b4e",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/domain/constructor/LessonTest.java": {
+    "mtime": 1786090693.5551336,
+    "seen": 1792174676.5438027,
+    "ast_hash": "652f4319e756c4f77f2cd7324ec51d74",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/domain/constructor/PublicationStatusTest.java": {
+    "mtime": 1786090693.5551336,
+    "seen": 1792174676.5438035,
+    "ast_hash": "94b603bc6bd7838cb5bf84e95ce17c64",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/infrastructure/markdown/CommonMarkMarkdownRendererTest.java": {
+    "mtime": 1787643019.1909804,
+    "seen": 1792174676.543804,
+    "ast_hash": "1bbee3b2a91e962edcd626a80f5563df",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/infrastructure/persistence/ComponentRepositoryAdapterIT.java": {
+    "mtime": 1791929380.4507837,
+    "seen": 1792174676.5438044,
+    "ast_hash": "0390f471e60502f2ebc95b50e3172f4e",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/infrastructure/persistence/CourseRepositoryAdapterIT.java": {
+    "mtime": 1791929380.4507837,
+    "seen": 1792174676.5438056,
+    "ast_hash": "fbe3a73a9fc847857ed5a9cbf48bd5b4",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/infrastructure/persistence/DirectionRepositoryAdapterIT.java": {
+    "mtime": 1791929380.4507837,
+    "seen": 1792174676.5438063,
+    "ast_hash": "8adae8f49b06ef219a3f395b09aa581b",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/infrastructure/persistence/LessonContentRepositoryAdapterIT.java": {
+    "mtime": 1784624744.45869,
+    "seen": 1792174676.543807,
+    "ast_hash": "84709e206c44df3f3f0fe84379249a79",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/infrastructure/persistence/PostgresAssetStorageAdapterIT.java": {
+    "mtime": 1787643019.1909804,
+    "seen": 1792174676.5438075,
+    "ast_hash": "3ad1752c8b618abd32b246989c740532",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/infrastructure/user/HttpEnrollmentUserAdapterTest.java": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.543808,
+    "ast_hash": "30808a511dd28213b565a74b2057fb37",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/support/WithContentEditor.java": {
+    "mtime": 1791929380.4507837,
+    "seen": 1792174676.5438085,
+    "ast_hash": "53d86c72c6f107bee4abf9edd3a4e31a",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/java/com/adventacademy/contentservice/support/WithContentEditorSecurityContextFactory.java": {
+    "mtime": 1791929380.4507837,
+    "seen": 1792174676.543809,
+    "ast_hash": "400e921ea4589419729d25926dbc83a1",
+    "semantic_hash": ""
+  },
+  "deploy/production/backup.sh": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.54381,
+    "ast_hash": "b7eaaa2d90391c2b3be5f4eaf3784860",
+    "semantic_hash": ""
+  },
+  "deploy/production/generate-local-secrets.py": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.5438104,
+    "ast_hash": "64b632c795c12bdd917d829b59a04b3b",
+    "semantic_hash": ""
+  },
+  "deploy/production/init-db.sh": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.5438108,
+    "ast_hash": "2e5bdf923cdf6c760a7d4cd16ab733ef",
+    "semantic_hash": ""
+  },
+  "deploy/production/restore.sh": {
+    "mtime": 1792161390.6195614,
+    "seen": 1792174676.5438113,
+    "ast_hash": "266871c449b65a9fa234eed6a2f12a0e",
+    "semantic_hash": ""
+  },
+  "docs/plans/architecture-readiness.json": {
+    "mtime": 1792161390.6195614,
+    "seen": 1792174676.543812,
+    "ast_hash": "af65ace1aaa8efb53df7a5c1c0a1dd2b",
+    "semantic_hash": ""
+  },
+  "frontend/biome.json": {
+    "mtime": 1791984462.3319657,
+    "seen": 1792174676.5438125,
+    "ast_hash": "74547881906756529c76c91277bdeb4d",
+    "semantic_hash": ""
+  },
+  "frontend/next-env.d.ts": {
+    "mtime": 1792138478.6580853,
+    "seen": 1792174676.5438132,
+    "ast_hash": "8195d2c60ce847a459ae9d308d6a5724",
+    "semantic_hash": ""
+  },
+  "frontend/next.config.ts": {
+    "mtime": 1791984462.4249666,
+    "seen": 1792174676.5438137,
+    "ast_hash": "3935539d2c844ca5f634dea2be4cef6d",
+    "semantic_hash": ""
+  },
+  "frontend/package.json": {
+    "mtime": 1792174383.4290247,
+    "seen": 1792174676.5438142,
+    "ast_hash": "907592495e8e4400e54f01136ba245c1",
+    "semantic_hash": ""
+  },
+  "frontend/postcss.config.mjs": {
+    "mtime": 1791984462.4249666,
+    "seen": 1792174676.543815,
+    "ast_hash": "239f3ebf717465dc636818a1a619398d",
+    "semantic_hash": ""
+  },
+  "frontend/scripts/assignment-smoke.mjs": {
+    "mtime": 1791984462.4249666,
+    "seen": 1792174676.5438154,
+    "ast_hash": "8ada259146b228e44923b0ec28a9fcc7",
+    "semantic_hash": ""
+  },
+  "frontend/scripts/dialog-smoke.mjs": {
+    "mtime": 1792143617.5985165,
+    "seen": 1792174676.5438159,
+    "ast_hash": "af5eb597adff4f1de8f408350cf0f758",
+    "semantic_hash": ""
+  },
+  "frontend/scripts/editor-smoke.mjs": {
+    "mtime": 1792161390.6325617,
+    "seen": 1792174676.5438166,
+    "ast_hash": "4115ea1ff281a1dd7983a2b4e40cd3ed",
+    "semantic_hash": ""
+  },
+  "frontend/scripts/instructor-smoke.mjs": {
+    "mtime": 1792174383.459025,
+    "seen": 1792174676.543817,
+    "ast_hash": "e1c259c5582256a3f4a82e26712c2ff7",
+    "semantic_hash": ""
+  },
+  "frontend/scripts/layout-and-meetings-smoke.mjs": {
+    "mtime": 1792138478.6590853,
+    "seen": 1792174676.5438178,
+    "ast_hash": "dce9f236dc32d3aefaa0f561612d3f50",
+    "semantic_hash": ""
+  },
+  "frontend/scripts/management-errors-smoke.mjs": {
+    "mtime": 1792138478.6590853,
+    "seen": 1792174676.5438182,
+    "ast_hash": "7e5b7fcd8c6bd97853fbadd15c54ce5c",
+    "semantic_hash": ""
+  },
+  "frontend/scripts/management-smoke.mjs": {
+    "mtime": 1792161390.6325617,
+    "seen": 1792174676.5438187,
+    "ast_hash": "dca72516e2aaa27a6275d614842f122c",
+    "semantic_hash": ""
+  },
+  "frontend/scripts/meeting-smoke.mjs": {
+    "mtime": 1791984462.4249666,
+    "seen": 1792174676.5438192,
+    "ast_hash": "94d4fd77b9330e074e13fe48a517e6a2",
+    "semantic_hash": ""
+  },
+  "frontend/scripts/provision-runtime.py": {
+    "mtime": 1791984462.4259665,
+    "seen": 1792174676.5438197,
+    "ast_hash": "2c908cbf09c213f17dab8c2572fcc05d",
+    "semantic_hash": ""
+  },
+  "frontend/scripts/readiness-smoke.mjs": {
+    "mtime": 1792161390.6325617,
+    "seen": 1792174676.5438206,
+    "ast_hash": "2d3e4ce7c71d15012ed4271f88649c0f",
+    "semantic_hash": ""
+  },
+  "frontend/scripts/runtime-smoke.mjs": {
+    "mtime": 1792161390.6325617,
+    "seen": 1792174676.543821,
+    "ast_hash": "b10c4440845ad9fc71fa3e5de30e0c6d",
+    "semantic_hash": ""
+  },
+  "frontend/scripts/smoke-browser.mjs": {
+    "mtime": 1792174383.4290247,
+    "seen": 1792174676.5438216,
+    "ast_hash": "a2535e68f16d0e10f1c0b7c2d7ca9d75",
+    "semantic_hash": ""
+  },
+  "frontend/scripts/theme-smoke.mjs": {
+    "mtime": 1792138478.6590853,
+    "seen": 1792174676.543822,
+    "ast_hash": "f8715c7e5a8bd7c97693d7e458982456",
+    "semantic_hash": ""
+  },
+  "frontend/scripts/user-admin-smoke.mjs": {
+    "mtime": 1792161390.6325617,
+    "seen": 1792174676.5438225,
+    "ast_hash": "cf2e2c1b85f3e1a60dc43bca9141e588",
+    "semantic_hash": ""
+  },
+  "frontend/src/app/api/backend/[...path]/route.ts": {
+    "mtime": 1792174126.3756526,
+    "seen": 1792174676.5438232,
+    "ast_hash": "afc59967d5d9d10d1b6dd7d4199f834b",
+    "semantic_hash": ""
+  },
+  "frontend/src/app/api/health/route.ts": {
+    "mtime": 1791984462.4269667,
+    "seen": 1792174676.543824,
+    "ast_hash": "f61beaf298b1986d218d8f583048988d",
+    "semantic_hash": ""
+  },
+  "frontend/src/app/api/invitations/route.ts": {
+    "mtime": 1792161390.6325617,
+    "seen": 1792174676.5438244,
+    "ast_hash": "25160854c5b04f50ff79ed80ff4b7ae0",
+    "semantic_hash": ""
+  },
+  "frontend/src/app/api/recovery/route.ts": {
+    "mtime": 1792161390.6325617,
+    "seen": 1792174676.543825,
+    "ast_hash": "234174f0adf62bcaf3eaf4dace189033",
+    "semantic_hash": ""
+  },
+  "frontend/src/app/api/session/route.ts": {
+    "mtime": 1792161390.6325617,
+    "seen": 1792174676.5438254,
+    "ast_hash": "291b4fc614276839fd112a5573739678",
+    "semantic_hash": ""
+  },
+  "frontend/src/app/auth/accept-invitation/page.tsx": {
+    "mtime": 1792161390.6325617,
+    "seen": 1792174676.543826,
+    "ast_hash": "71d4d3b9458162a5b9f8142b59379f02",
+    "semantic_hash": ""
+  },
+  "frontend/src/app/auth/confirm-email/page.tsx": {
+    "mtime": 1792161390.6325617,
+    "seen": 1792174676.5438266,
+    "ast_hash": "e9dd2edd9c76f951d531129eddafba60",
+    "semantic_hash": ""
+  },
+  "frontend/src/app/auth/forgot-password/page.tsx": {
+    "mtime": 1792161390.6325617,
+    "seen": 1792174676.5438273,
+    "ast_hash": "fd194ceaebb811d4de93ca7efd2f47cd",
+    "semantic_hash": ""
+  },
+  "frontend/src/app/auth/reset-password/page.tsx": {
+    "mtime": 1792161390.6325617,
+    "seen": 1792174676.5438278,
+    "ast_hash": "4ea7c0d6c008e34481fe77f5be68abc2",
+    "semantic_hash": ""
+  },
+  "frontend/src/app/demo/page.tsx": {
+    "mtime": 1791984462.4269667,
+    "seen": 1792174676.5438282,
+    "ast_hash": "197c5ce32998f6530fa39b48889f5bc2",
+    "semantic_hash": ""
+  },
+  "frontend/src/app/layout.tsx": {
+    "mtime": 1792161390.6335616,
+    "seen": 1792174676.543829,
+    "ast_hash": "f084c0ab7a8ad44087b974502403b4a7",
+    "semantic_hash": ""
+  },
+  "frontend/src/app/page.tsx": {
+    "mtime": 1791984462.4269667,
+    "seen": 1792174676.5438294,
+    "ast_hash": "69b584e465fa032c0bf4832792be3a89",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/academy.tsx": {
+    "mtime": 1792161390.6335616,
+    "seen": 1792174676.5438302,
+    "ast_hash": "c40fc9e02877d48b4aced31d4407b211",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/account-recovery.tsx": {
+    "mtime": 1792173850.4870918,
+    "seen": 1792174676.5438309,
+    "ast_hash": "2ab71148321b66e662b43ee3bf91d473",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/assignment-authoring.tsx": {
+    "mtime": 1792161390.6335616,
+    "seen": 1792174676.5438313,
+    "ast_hash": "51a031289cf8d4ef3a9146744ac553d5",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/assignments.tsx": {
+    "mtime": 1792146922.9081638,
+    "seen": 1792174676.5438318,
+    "ast_hash": "782a98db850d699fc2452ee5c5aabf72",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/lesson-editor.tsx": {
+    "mtime": 1792161390.6335616,
+    "seen": 1792174676.5438325,
+    "ast_hash": "31aa8ed181bc8a72d59ab321b2b2420b",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/live-academy.tsx": {
+    "mtime": 1792161390.6335616,
+    "seen": 1792174676.543833,
+    "ast_hash": "5e42ba19ee83622a4cfba001ad9116f1",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/management.tsx": {
+    "mtime": 1792174179.1891408,
+    "seen": 1792174676.5438335,
+    "ast_hash": "c3ddc4d5bd48b82672b72dbc3f9df180",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/markdown-source.tsx": {
+    "mtime": 1792138478.6600854,
+    "seen": 1792174676.5438342,
+    "ast_hash": "5c67eac7600bddee76af88a3b386f335",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/meetings.tsx": {
+    "mtime": 1791984462.4269667,
+    "seen": 1792174676.5438347,
+    "ast_hash": "dca304b152e5d8747a1abcd6c1b01699",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/safe-html.tsx": {
+    "mtime": 1792161390.6335616,
+    "seen": 1792174676.5438354,
+    "ast_hash": "6719d586d10ac69d93ef4c00341339c3",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/theme.tsx": {
+    "mtime": 1792138478.6600854,
+    "seen": 1792174676.5438359,
+    "ast_hash": "43edf83019a1179634d23197328f3300",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/user-admin-dialog.tsx": {
+    "mtime": 1792161390.6335616,
+    "seen": 1792174676.5438364,
+    "ast_hash": "8b20e1a9ee7c5a21d8d87ea06eae37e5",
+    "semantic_hash": ""
+  },
+  "frontend/src/components/user-admin.tsx": {
+    "mtime": 1792161390.6345618,
+    "seen": 1792174676.5438368,
+    "ast_hash": "0d1e2ef3666f36aacbaf8beea70806b2",
+    "semantic_hash": ""
+  },
+  "frontend/src/lib/demo.ts": {
+    "mtime": 1791984462.4269667,
+    "seen": 1792174676.5438378,
+    "ast_hash": "bf9c06accb14cf73785ee7d6217b1aa2",
+    "semantic_hash": ""
+  },
+  "frontend/src/lib/group-call.ts": {
+    "mtime": 1792174803.4138844,
+    "seen": 1792174925.8296838,
+    "ast_hash": "1bdd6a9c8adfc626f50a16cc09ffe2e1",
+    "semantic_hash": ""
+  },
+  "frontend/src/lib/learning.ts": {
+    "mtime": 1792161390.6345618,
+    "seen": 1792174676.5438387,
+    "ast_hash": "89d636f89a355e5a22ff178ac8f09135",
+    "semantic_hash": ""
+  },
+  "frontend/src/lib/management.ts": {
+    "mtime": 1792174253.061823,
+    "seen": 1792174676.5438392,
+    "ast_hash": "068f47b66de4f207ec81ddf6af256d33",
+    "semantic_hash": ""
+  },
+  "frontend/src/lib/request-body.ts": {
+    "mtime": 1792161390.6345618,
+    "seen": 1792174676.5438397,
+    "ast_hash": "e555bc3e2ed8c07561edb35ac7f26d58",
+    "semantic_hash": ""
+  },
+  "frontend/src/lib/server-session.ts": {
+    "mtime": 1792161390.6345618,
+    "seen": 1792174676.5438402,
+    "ast_hash": "47b6482afc744633e69d0671ef3ba23a",
+    "semantic_hash": ""
+  },
+  "frontend/src/lib/user-admin.ts": {
+    "mtime": 1792161390.6345618,
+    "seen": 1792174676.543841,
+    "ast_hash": "f34dd4c6dc5f56930ecc7a35f3fdf670",
+    "semantic_hash": ""
+  },
+  "frontend/tsconfig.json": {
+    "mtime": 1791984462.4269667,
+    "seen": 1792174676.5438414,
+    "ast_hash": "f78018b3d5cbaf5f8bca694082a84c54",
+    "semantic_hash": ""
+  },
+  "gradlew": {
+    "mtime": 1770198225.817896,
+    "seen": 1792174676.5438418,
+    "ast_hash": "780b1d3e23a3b82154795f73df943a14",
+    "semantic_hash": ""
+  },
+  "meeting-service/build.gradle": {
+    "mtime": 1792161390.6345618,
+    "seen": 1792174676.5438423,
+    "ast_hash": "1b66b96c3f816d36ac44a4d1068653f8",
+    "semantic_hash": ""
+  },
+  "meeting-service/package.json": {
+    "mtime": 1791929380.4507837,
+    "seen": 1792174676.543843,
+    "ast_hash": "20a1f917a9283ba8c72cfe5b86824271",
+    "semantic_hash": ""
+  },
+  "meeting-service/playwright.config.js": {
+    "mtime": 1787643019.1919804,
+    "seen": 1792174676.5438435,
+    "ast_hash": "32555592795219218d465e9ac2276bbe",
+    "semantic_hash": ""
+  },
+  "meeting-service/scripts/build-frontend.mjs": {
+    "mtime": 1787643019.1919804,
+    "seen": 1792174676.543844,
+    "ast_hash": "a7dd7b2d5bfad6a90a184db65f25778f",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/MeetingServiceApplication.java": {
+    "mtime": 1791984462.4279666,
+    "seen": 1792174676.5438447,
+    "ast_hash": "80fe5ebf6cd1bcecb59057e06f95908b",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/adapter/rest/MeetingController.java": {
+    "mtime": 1792173646.6281834,
+    "seen": 1792174676.5438452,
+    "ast_hash": "3518042558fbdc1bb5427e7d4ca1c37e",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/adapter/rest/ScheduledMeetingController.java": {
+    "mtime": 1791984462.4279666,
+    "seen": 1792174676.5438457,
+    "ast_hash": "3bf55e148efe6de9c2484a71954f74f7",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/adapter/rest/dto/CapabilityResponse.java": {
+    "mtime": 1787643019.1919804,
+    "seen": 1792174676.5438464,
+    "ast_hash": "045586c38fb78f7e025b83217ae3c582",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/adapter/rest/dto/MeetingConfigurationResponse.java": {
+    "mtime": 1787643019.1919804,
+    "seen": 1792174676.5438468,
+    "ast_hash": "166fea702a356972690778a2ecdb5fda",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/adapter/rest/dto/MemberResponse.java": {
+    "mtime": 1787643019.1919804,
+    "seen": 1792174676.5438473,
+    "ast_hash": "506caa6d4747fe5d3b49a2875b884d3c",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/adapter/rest/dto/RoomResponse.java": {
+    "mtime": 1787643019.1919804,
+    "seen": 1792174676.543848,
+    "ast_hash": "bc87955c7b0dc65078705dd79ba8e706",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/adapter/rest/error/ErrorResponse.java": {
+    "mtime": 1787643019.1929803,
+    "seen": 1792174676.5438485,
+    "ast_hash": "44d83b44590000a32784382e472d4e6a",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/adapter/rest/error/MeetingExceptionHandler.java": {
+    "mtime": 1791984462.4279666,
+    "seen": 1792174676.543849,
+    "ast_hash": "09f54e0c36cc17bd51848c531f9e2741",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/adapter/websocket/MeetingSignalingHandler.java": {
+    "mtime": 1792174179.1891408,
+    "seen": 1792174676.5438497,
+    "ast_hash": "d5f42d9ab011fd1c555b890be55833e1",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/adapter/websocket/ScheduledMeetingListener.java": {
+    "mtime": 1791984462.4279666,
+    "seen": 1792174676.5438502,
+    "ast_hash": "f4aae5a6ac5de1ea76c84e1d5315ada7",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/adapter/websocket/SignalMessage.java": {
+    "mtime": 1787643019.1929803,
+    "seen": 1792174676.5438507,
+    "ast_hash": "5fef0035d061a889f90c77920fd02a22",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/adapter/websocket/SignalMessageValidator.java": {
+    "mtime": 1792173646.6281834,
+    "seen": 1792174676.5438514,
+    "ast_hash": "e9c33bda673c39fb43cf46437c20d90f",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/adapter/websocket/SignalType.java": {
+    "mtime": 1792173646.6281834,
+    "seen": 1792174676.5438519,
+    "ast_hash": "afddbb6acd47c010c185b2e7f0b4fbbf",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/application/security/IssuedCapability.java": {
+    "mtime": 1787643019.1929803,
+    "seen": 1792174676.5438526,
+    "ast_hash": "f22aea7b0cd45279353f565fe2b736c6",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/application/security/MeetingAccessService.java": {
+    "mtime": 1792173646.6271834,
+    "seen": 1792174676.543853,
+    "ast_hash": "c71dec57fdfd244b1f86961ac01fffbc",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/application/security/MeetingCapabilityService.java": {
+    "mtime": 1791984462.4279666,
+    "seen": 1792174676.5438535,
+    "ast_hash": "f79cf9e0a5619627fb9b4c7abfde1ae6",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/application/security/MeetingGrant.java": {
+    "mtime": 1791984462.4279666,
+    "seen": 1792174676.543854,
+    "ast_hash": "dd556c608c40f35919a695ca56f243d6",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/application/security/MeetingRateLimiter.java": {
+    "mtime": 1787643019.1929803,
+    "seen": 1792174676.5438545,
+    "ast_hash": "8049d69f99bd58ca66eb0a44882ca6f4",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/application/service/CourseMeetingAccess.java": {
+    "mtime": 1792161390.6345618,
+    "seen": 1792174676.5438554,
+    "ast_hash": "113c113484c67d286a6d9761b9dd5f10",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/application/service/MeetingSessionRegistry.java": {
+    "mtime": 1791984462.4279666,
+    "seen": 1792174676.543856,
+    "ast_hash": "ce8b8e535f49ea3f136e58ced066cbfe",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/application/service/RoomClosedListener.java": {
+    "mtime": 1787643019.1929803,
+    "seen": 1792174676.5438564,
+    "ast_hash": "61e47f69206eec6058a68e873e54aa9d",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/application/service/RoomService.java": {
+    "mtime": 1791984462.4279666,
+    "seen": 1792174676.5438569,
+    "ast_hash": "fc15c8a3c21d2451e9d1060ad52338bb",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/application/service/ScheduledMeetingService.java": {
+    "mtime": 1792174179.1891408,
+    "seen": 1792174676.5438573,
+    "ast_hash": "63f2292e0ed49b8debf75a2c4e9a7aae",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/application/service/ScheduledMeetingStore.java": {
+    "mtime": 1791984462.4279666,
+    "seen": 1792174676.5438578,
+    "ast_hash": "d2042d3390bcda5c2497b329397f4dc3",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/application/session/MeetingSession.java": {
+    "mtime": 1787643019.1929803,
+    "seen": 1792174676.5438585,
+    "ast_hash": "23f495414433d4490bead04a5d4b809c",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/application/session/SessionDeparture.java": {
+    "mtime": 1787643019.1929803,
+    "seen": 1792174676.5438592,
+    "ast_hash": "1b16f12d4d09bf324b95ac74d58b0da9",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/application/session/SessionRegistration.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.5438597,
+    "ast_hash": "c50b71408bc3eb631ac63e1ba0f03737",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/application/session/SessionSignalType.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.5438602,
+    "ast_hash": "e245d1847f6005219a7cc237b7769ac2",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/application/session/SignalRoute.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.5438607,
+    "ast_hash": "8ab3ee3d0a584edc63a68726dcfbdae7",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/domain/exception/DuplicateParticipantException.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.5438612,
+    "ast_hash": "e60238f4aa1b8c466c390b03a5316d1d",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/domain/exception/InvalidCapabilityException.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.543862,
+    "ast_hash": "bcef4b2a40f74532b5e1da0b15ff3400",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/domain/exception/InvalidSignalException.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.5438626,
+    "ast_hash": "058da32803c088f6af158b67badd408e",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/domain/exception/MeetingAccessDeniedException.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.543863,
+    "ast_hash": "a74dbab0bf7e5b0513fcee55ebd8016c",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/domain/exception/MeetingException.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.5438635,
+    "ast_hash": "1b23a3b486dfd3314d728e3f43175ab1",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/domain/exception/ParticipantNotRegisteredException.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.543864,
+    "ast_hash": "94757413eaa8541e521ab3df4ed4d691",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/domain/exception/RateLimitExceededException.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.5438645,
+    "ast_hash": "e249cde490fa86dd75e9af1ec880f586",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/domain/exception/RoomClosedException.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.5438654,
+    "ast_hash": "4f696355ed6f08eb540bb6a8d847b2a9",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/domain/exception/RoomFullException.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.543866,
+    "ast_hash": "93e65f5bed2292cd1d42b0ea87cdd864",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/domain/exception/RoomNotFoundException.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.5438664,
+    "ast_hash": "462f462802835ce003569d20b69b1091",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/domain/exception/ScheduleException.java": {
+    "mtime": 1791984462.4279666,
+    "seen": 1792174676.5438669,
+    "ast_hash": "93ec3a28b1d5e1b9571519b1b7b7cb3b",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/domain/exception/TargetParticipantNotFoundException.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.5438673,
+    "ast_hash": "6b95bdea24fefb64e980c8aac69c313d",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/domain/model/MeetingRole.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.5438678,
+    "ast_hash": "3caa2049b16afb7301856ff3a07e0268",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/domain/model/MeetingRoom.java": {
+    "mtime": 1791984462.4279666,
+    "seen": 1792174676.5438688,
+    "ast_hash": "66fb4b47ef4892708c5fa18930105bc5",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/domain/model/ParticipantId.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.5438693,
+    "ast_hash": "1ca29a1d6795f22276d4cb782100c191",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/domain/model/RoomId.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.5438697,
+    "ast_hash": "c57d6d6989c1b532883e892938a6edef",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/domain/model/RoomJoinResult.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.5438702,
+    "ast_hash": "2919826a865ceda71db6b5e53ad158c0",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/domain/model/RoomSnapshot.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.543871,
+    "ast_hash": "c15c1506349711b24bbe285978f1ae37",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/domain/model/RoomStatus.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.5438714,
+    "ast_hash": "b352897c87cf45478c882a0b25be1e7f",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/infrastructure/config/ClockConfiguration.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.543872,
+    "ast_hash": "86c1f392d27bd87e373bfe2c4eca1744",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/infrastructure/config/MeetingPlacementLease.java": {
+    "mtime": 1792161390.6345618,
+    "seen": 1792174676.5438726,
+    "ast_hash": "1dba1351be86c81517fca01f7404061d",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/infrastructure/config/MeetingProperties.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.543873,
+    "ast_hash": "876b2a8eacda69cd87f7f57cfbafd5a9",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/infrastructure/config/ProductionConfigurationGuard.java": {
+    "mtime": 1792161390.6345618,
+    "seen": 1792174676.5438735,
+    "ast_hash": "2aece2761a32bc6a3041297eabe12da4",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/infrastructure/config/SecurityConfiguration.java": {
+    "mtime": 1792172273.9013684,
+    "seen": 1792174676.543874,
+    "ast_hash": "df9a325432a9ea9f365e3afed49c03b5",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/infrastructure/config/WebSocketConfiguration.java": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.5438745,
+    "ast_hash": "1c536b295961620f13737092347381f7",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/infrastructure/security/AccessTokenVerifier.java": {
+    "mtime": 1792161390.6345618,
+    "seen": 1792174676.543875,
+    "ast_hash": "a5e304f6b4572c8d19c07f29f08afef6",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/java/com/adventacademy/meetingservice/infrastructure/security/JwtAuthenticationFilter.java": {
+    "mtime": 1792172273.9013684,
+    "seen": 1792174676.543876,
+    "ast_hash": "7d207afced1e252ae69a116363200e26",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/resources/static/js/app.js": {
+    "mtime": 1791929380.4507837,
+    "seen": 1792174676.5438764,
+    "ast_hash": "071e044c50bd0e496236ee380bf50dea",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/resources/static/js/media-effects.js": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.5438771,
+    "ast_hash": "a0501cb5aba9bec8caf5fe7facbedb18",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/resources/static/js/meeting-client.js": {
+    "mtime": 1791929380.4507837,
+    "seen": 1792174676.5438776,
+    "ast_hash": "629452daccbc8a473d9f4aecfe8050e7",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/resources/static/js/network-quality.js": {
+    "mtime": 1791929380.4507837,
+    "seen": 1792174676.5438783,
+    "ast_hash": "869ac5c786394cfdae43f30a2dd614e8",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/resources/static/vendor/mediapipe/selfie_segmentation.js": {
+    "mtime": 1787643019.1949804,
+    "seen": 1792174676.5438788,
+    "ast_hash": "e946199ccd7a913f671a58b0a1e14ff4",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/resources/static/vendor/mediapipe/selfie_segmentation_solution_simd_wasm_bin.js": {
+    "mtime": 1787643019.1989803,
+    "seen": 1792174676.5438795,
+    "ast_hash": "8351a2228d0d2de9dc9cc041db580385",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/resources/static/vendor/mediapipe/selfie_segmentation_solution_wasm_bin.js": {
+    "mtime": 1787643019.2249804,
+    "seen": 1792174676.5438802,
+    "ast_hash": "e9e7ba7caece4fde78c2b44cd9053f7a",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/test/browser/meeting.e2e.spec.js": {
+    "mtime": 1791929380.4507837,
+    "seen": 1792174676.5438807,
+    "ast_hash": "ce1c97276ccd4e73ba8c28d23e8f0eea",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/test/frontend/media-effects.test.js": {
+    "mtime": 1787643019.2499804,
+    "seen": 1792174676.5438812,
+    "ast_hash": "f0737117623e0d463e19a1c9efd6a571",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/test/frontend/meeting-client.test.js": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.543882,
+    "ast_hash": "f36f46903065d707dba67b388a595cb6",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/test/frontend/network-quality.test.js": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.5438826,
+    "ast_hash": "80f185cac4fb9c2c68a7d2ba07cd62f6",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/test/java/com/adventacademy/meetingservice/adapter/rest/MeetingControllerIT.java": {
+    "mtime": 1792174468.73381,
+    "seen": 1792174676.543883,
+    "ast_hash": "540c6fb0164ad8a0f81ebfb933825703",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/test/java/com/adventacademy/meetingservice/adapter/websocket/ConcurrentJoinTest.java": {
+    "mtime": 1792174588.7339132,
+    "seen": 1792174676.5438836,
+    "ast_hash": "95c39eb079f32c74594b4987d6d0814c",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/test/java/com/adventacademy/meetingservice/adapter/websocket/MeetingSignalingHandlerTest.java": {
+    "mtime": 1792174468.73381,
+    "seen": 1792174676.5438843,
+    "ast_hash": "fa60ac664e8badb37c112c7743036a03",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/test/java/com/adventacademy/meetingservice/adapter/websocket/MeetingWebSocketIT.java": {
+    "mtime": 1792174468.73381,
+    "seen": 1792174676.5438848,
+    "ast_hash": "b3df4fec24bd38f96c5c856e7f4c9c8f",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/test/java/com/adventacademy/meetingservice/application/security/MeetingAccessServiceTest.java": {
+    "mtime": 1792174468.73381,
+    "seen": 1792174676.5438852,
+    "ast_hash": "b159dc4b0333e669583dd6a63c9d32ad",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/test/java/com/adventacademy/meetingservice/application/security/MeetingCapabilityServiceTest.java": {
+    "mtime": 1792174468.73381,
+    "seen": 1792174676.5438857,
+    "ast_hash": "d19c7598e223830b4c96539c3e6a35d3",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/test/java/com/adventacademy/meetingservice/application/security/MeetingRateLimiterTest.java": {
+    "mtime": 1792174468.73381,
+    "seen": 1792174676.5438867,
+    "ast_hash": "d49d12ffc0e04b0d644a65885b6205bc",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/test/java/com/adventacademy/meetingservice/application/service/MeetingSessionRegistryTest.java": {
+    "mtime": 1792174468.73381,
+    "seen": 1792174676.5438871,
+    "ast_hash": "c2fb52f1be4375a22a7fd421f78e5d01",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/test/java/com/adventacademy/meetingservice/application/service/RoomServiceTest.java": {
+    "mtime": 1792174468.73381,
+    "seen": 1792174676.5438876,
+    "ast_hash": "041808f04d019e2a1c42dd54c68d4b7f",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/test/java/com/adventacademy/meetingservice/application/service/ScheduledMeetingServiceTest.java": {
+    "mtime": 1792174468.73381,
+    "seen": 1792174676.5438883,
+    "ast_hash": "d4a544830a07f6647b02c883afcbac4d",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/test/java/com/adventacademy/meetingservice/domain/model/MeetingRoomTest.java": {
+    "mtime": 1792174468.73381,
+    "seen": 1792174676.5438888,
+    "ast_hash": "e0535788d49504cd04b39968d69e169f",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/test/java/com/adventacademy/meetingservice/support/TestAccessTokens.java": {
+    "mtime": 1792174468.73381,
+    "seen": 1792174676.5438895,
+    "ast_hash": "e2de1218bfbb16a545c826b11a5dd2f4",
+    "semantic_hash": ""
+  },
+  "platform/build.gradle": {
+    "mtime": 1792173850.4860919,
+    "seen": 1792174676.54389,
+    "ast_hash": "2267d16d1dbf830341e624b19e12aac9",
+    "semantic_hash": ""
+  },
+  "scripts/api-pentest.py": {
+    "mtime": 1792174810.993954,
+    "seen": 1792174925.8321204,
+    "ast_hash": "95fc62d186a155a6bdfaf00778303279",
+    "semantic_hash": ""
+  },
+  "scripts/course-management-smoke.py": {
+    "mtime": 1792138478.6600854,
+    "seen": 1792174676.5438926,
+    "ast_hash": "40bd87ec5064035e03e146ba1913215e",
+    "semantic_hash": ""
+  },
+  "scripts/editor-e2e.py": {
+    "mtime": 1792174383.4290247,
+    "seen": 1792174676.5438933,
+    "ast_hash": "5e407dc2f5db8b6d69f9986439533b47",
+    "semantic_hash": ""
+  },
+  "scripts/fixtures/smtp/server.py": {
+    "mtime": 1792161390.6345618,
+    "seen": 1792174676.5438938,
+    "ast_hash": "e81d4a7cee42e9ec03fba7346d9caec0",
+    "semantic_hash": ""
+  },
+  "scripts/management-browser-fixture.py": {
+    "mtime": 1792138478.6600854,
+    "seen": 1792174676.5438943,
+    "ast_hash": "ae9ee643eb1d88c1301dfcbc6588e5c5",
+    "semantic_hash": ""
+  },
+  "scripts/production-readiness-smoke.py": {
+    "mtime": 1792161390.6345618,
+    "seen": 1792174676.543895,
+    "ast_hash": "c34c806c284fe00acd5f8c6830f65d7e",
+    "semantic_hash": ""
+  },
+  "scripts/test_editor_e2e.py": {
+    "mtime": 1792143617.5985165,
+    "seen": 1792174676.5438955,
+    "ast_hash": "18c3bc9c7177a5a0596709662e11f17d",
+    "semantic_hash": ""
+  },
+  "scripts/user-admin-e2e.py": {
+    "mtime": 1792161390.6345618,
+    "seen": 1792174676.543896,
+    "ast_hash": "3d8c13508a964db130f61d0ac805edb5",
+    "semantic_hash": ""
+  },
+  "security-common/build.gradle": {
+    "mtime": 1792161390.6345618,
+    "seen": 1792174676.543897,
+    "ast_hash": "596ce352c32672f42243564078ed2112",
+    "semantic_hash": ""
+  },
+  "security-common/src/main/java/com/adventacademy/security/AccessTokenStatusClient.java": {
+    "mtime": 1792172273.9033682,
+    "seen": 1792174676.5438974,
+    "ast_hash": "4e00f5994d854f157f6437706da0ce78",
+    "semantic_hash": ""
+  },
+  "security-common/src/main/java/com/adventacademy/security/JwtKeys.java": {
+    "mtime": 1792161390.6345618,
+    "seen": 1792174676.5438979,
+    "ast_hash": "1637e43bbc814fb76d967c0573a38126",
+    "semantic_hash": ""
+  },
+  "security-common/src/main/java/com/adventacademy/security/SignedRequest.java": {
+    "mtime": 1792161390.6345618,
+    "seen": 1792174676.5438983,
+    "ast_hash": "b5a93df6670f5ae2f65a6c5633a39999",
+    "semantic_hash": ""
+  },
+  "security-common/src/test/java/com/adventacademy/security/AccessTokenStatusClientTest.java": {
+    "mtime": 1792172273.9033682,
+    "seen": 1792174676.5438988,
+    "ast_hash": "e273a5cd509ce3beeb87b12f6c709de1",
+    "semantic_hash": ""
+  },
+  "security-common/src/test/java/com/adventacademy/security/JwtKeysTest.java": {
+    "mtime": 1792161390.6345618,
+    "seen": 1792174676.5438995,
+    "ast_hash": "db602fd5338d77d178cdffd6c20380c0",
+    "semantic_hash": ""
+  },
+  "settings.gradle": {
+    "mtime": 1792161390.6345618,
+    "seen": 1792174676.5439003,
+    "ast_hash": "0d911b6449f6c65a065e36b0418109c5",
+    "semantic_hash": ""
+  },
+  "src/main/java/com/adventacademy/AdventAcademyApplication.java": {
+    "mtime": 1784624744.45969,
+    "seen": 1792174676.5439007,
+    "ast_hash": "0ed5bc0d511cae262526f7d6642423d6",
+    "semantic_hash": ""
+  },
+  "src/test/java/com/adventacademy/security/SecurityDocumentationContractTest.java": {
+    "mtime": 1789369301.170589,
+    "seen": 1792174676.5439012,
+    "ast_hash": "7dbeffa0d5d13d38fce0df99ca9457d1",
+    "semantic_hash": ""
+  },
+  "user-service/build.gradle": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.5439017,
+    "ast_hash": "4b55bc9fbfe155839b28f94773d14f7d",
+    "semantic_hash": ""
+  },
+  "user-service/config/ClockConfig.java": {
+    "mtime": 1780466795.6694615,
+    "seen": 1792174676.5439022,
+    "ast_hash": "93d8d9dd09ace8cdacfa928a7b026054",
+    "semantic_hash": ""
+  },
+  "user-service/gradlew": {
+    "mtime": 1780466795.6694615,
+    "seen": 1792174676.5439029,
+    "ast_hash": "780b1d3e23a3b82154795f73df943a14",
+    "semantic_hash": ""
+  },
+  "user-service/settings.gradle": {
+    "mtime": 1780466795.6694615,
+    "seen": 1792174676.5439036,
+    "ast_hash": "9c55b3e19a2240c666c3489ab7e21070",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/UserServiceApplication.java": {
+    "mtime": 1787643019.2519803,
+    "seen": 1792174676.543904,
+    "ast_hash": "27b47f72b2430cb1822962c0b4a4a395",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/adapter/config/OpenApiConfig.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439045,
+    "ast_hash": "f774a5342d03bce1dd0770884f6205f3",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/AuthController.java": {
+    "mtime": 1792172273.9033682,
+    "seen": 1792174676.543905,
+    "ast_hash": "ab41b1a03ff232a38b637b22ccfce045",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/InvitationController.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.5439055,
+    "ast_hash": "0ce0e0697b91b33f72f60462df524e65",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/JwksController.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.5439062,
+    "ast_hash": "3de4018950eb4e5b98c248ac4d81f5ba",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/PermissionController.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.543907,
+    "ast_hash": "bf2cf6e63e4a22863b2672c0af30cd6a",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/RoleController.java": {
+    "mtime": 1784624744.45969,
+    "seen": 1792174676.5439074,
+    "ast_hash": "712c1817da81994925dcdde4107321d5",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/RoleRequestController.java": {
+    "mtime": 1789369301.171589,
+    "seen": 1792174676.5439079,
+    "ast_hash": "41c5edfacac759fb5c4d690c189d2d8d",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/TeachingRosterController.java": {
+    "mtime": 1792174126.3756526,
+    "seen": 1792174676.5439084,
+    "ast_hash": "3c8903dfe1b5f032b3d311d3d4b8f022",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/UserAdminController.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.5439088,
+    "ast_hash": "6e7534ca5764b389c130c0ef9f6ab0b5",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/adapter/rest/controller/UserController.java": {
+    "mtime": 1791984462.4289665,
+    "seen": 1792174676.5439093,
+    "ast_hash": "cdc5bfcb6b0eb13fd6934270294dd7bb",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/adapter/rest/exception/ErrorResponse.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.54391,
+    "ast_hash": "89ac897ff5d2c79269768d2c9bd99a1d",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/adapter/rest/exception/GlobalExceptionHandler.java": {
+    "mtime": 1792172273.9033682,
+    "seen": 1792174676.5439107,
+    "ast_hash": "af7778712220d67f069c277ad37e5ae8",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/adapter/rest/filter/RequestIdFilter.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439115,
+    "ast_hash": "54cf92f02cb8234f1992410b887a5612",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/adapter/rest/filter/RequestLoggingFilter.java": {
+    "mtime": 1782315512.2196345,
+    "seen": 1792174676.543912,
+    "ast_hash": "5f1aeaa79a472a2697ac681d5e97c194",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/UserAdminContract.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.5439124,
+    "ast_hash": "0d1c8be84c85a38c0f13d8fea3c1f225",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/request/ChangePasswordRequest.java": {
+    "mtime": 1792173850.4870918,
+    "seen": 1792174676.543913,
+    "ast_hash": "5b5813b99b5a52a56b29669adb0375ce",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/request/CompletePasswordResetRequest.java": {
+    "mtime": 1792173850.4870918,
+    "seen": 1792174676.5439138,
+    "ast_hash": "d57cfa74cdbf29cae6d47222fe2f2235",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/request/ConfirmMfaRequest.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.5439143,
+    "ast_hash": "5b4e38696a1ec5fc2b8b89418e5b3323",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/request/CreatePermissionRequest.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439148,
+    "ast_hash": "4b3de53e276c4e67efd3d0a3881984fa",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/request/CreateRoleRequest.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439153,
+    "ast_hash": "6038a40c5dbc1f424dae730d3814cab3",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/request/DisableMfaRequest.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.5439157,
+    "ast_hash": "6aac0c25e554e1822c947c2554da7ccd",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/request/EnableMfaRequest.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.5439162,
+    "ast_hash": "438d127c67263f83137f2b02b8e16e29",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/request/LoginRequest.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439167,
+    "ast_hash": "4e2ad4e46957f6d8ebcc0563dc21b167",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/request/PasswordResetRequest.java": {
+    "mtime": 1782315512.2196345,
+    "seen": 1792174676.5439174,
+    "ast_hash": "77ad369bb357206658ce34afad2010d0",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/request/RefreshTokenRequest.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439181,
+    "ast_hash": "fee1a50be302da99954b4b78c1c54900",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/request/RegisterUserRequest.java": {
+    "mtime": 1792173850.4870918,
+    "seen": 1792174676.5439186,
+    "ast_hash": "0dc23419d20621f170bc68c2b7320561",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/request/ResendVerificationRequest.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.543919,
+    "ast_hash": "e2429f4a1d39eba2b9517cb0fd94aad3",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/request/RoleRequestDecisionRequest.java": {
+    "mtime": 1789369301.171589,
+    "seen": 1792174676.5439196,
+    "ast_hash": "422f7bf525c110af7635bbf221af7eef",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/request/SubmitRoleRequestRequest.java": {
+    "mtime": 1786090693.5561335,
+    "seen": 1792174676.5439203,
+    "ast_hash": "86debde41e661f4afbc6598b41587401",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/response/AuthResponse.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.543921,
+    "ast_hash": "cc33454cd7748f831dc3e887424c95ba",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/response/ConfirmMfaResponse.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.5439215,
+    "ast_hash": "e4137fcc216d264c1689319e0d047474",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/response/EnableMfaResponse.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.543922,
+    "ast_hash": "6fe840a5419e87bd125d165558a719e1",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/response/MessageResponse.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439227,
+    "ast_hash": "b040a3af912fa38bb3f0669f63510910",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/response/PermissionResponse.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439231,
+    "ast_hash": "44286c4d497533494c2afe120360f0cd",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/response/RoleRequestResponse.java": {
+    "mtime": 1786090693.5561335,
+    "seen": 1792174676.5439236,
+    "ast_hash": "832e98df53c951035d2d4044a1085dff",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/response/RoleResponse.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439243,
+    "ast_hash": "865f884c0f953a606552b9d4195725c0",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/dto/response/UserResponse.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.543925,
+    "ast_hash": "804501f5dd7850effc922ceecbd75798",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/port/AuditTrailPort.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439255,
+    "ast_hash": "99a0d0a8806da279b189010a7e3a5b58",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/port/EmailService.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.543926,
+    "ast_hash": "f421249a38bb079e883be1caba2e6c67",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/port/JwtProvider.java": {
+    "mtime": 1792173769.0263312,
+    "seen": 1792174676.5439265,
+    "ast_hash": "5e92f9846a931fcbb2e55ee059cf55c6",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/port/MfaProvider.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.5439272,
+    "ast_hash": "4b5513b12a7d56f1289e1bd750f20b04",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/port/MfaSecretCipher.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.543928,
+    "ast_hash": "63a55fd443dbc35d914c7f025459fa66",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/port/PasswordEncoder.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439284,
+    "ast_hash": "aa6cebe377de2ea6a968f3293009353a",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/port/RefreshTokenStore.java": {
+    "mtime": 1792173769.0263312,
+    "seen": 1792174676.5439289,
+    "ast_hash": "a3af39312d9fa350b15f3773c44e91bf",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/port/RoleApprovalWorkflowPort.java": {
+    "mtime": 1789369301.171589,
+    "seen": 1792174676.5439293,
+    "ast_hash": "e6ddd1173365dc63731dc45ec19ee071",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/admin/AdminProblem.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.54393,
+    "ast_hash": "3832670963d6ff2334d1af0b688753ff",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/admin/UserAdminPolicy.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.5439305,
+    "ast_hash": "9503e7a7f3edeef8370b1614630e0830",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/admin/UserAdminService.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.5439312,
+    "ast_hash": "f68ca1777280432fa102ae05484ec89a",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/auth/ChangePasswordService.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.543932,
+    "ast_hash": "75d4e5d258afd91229d5a1c4edf08fb0",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/auth/ConfirmEmailService.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.5439324,
+    "ast_hash": "1b41323e503087029d46379b8ddb90b9",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/auth/EmailDispatcher.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.543933,
+    "ast_hash": "e92b6982433b8d623b5c3140ffd5a11e",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/auth/LoginService.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.5439334,
+    "ast_hash": "948a5cba8ac2ae6f1e791d463c9fd37c",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/auth/MfaCodeVerifier.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.543934,
+    "ast_hash": "599e99dfbbb1d7b03b75e697f7226d54",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/auth/MfaService.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.5439348,
+    "ast_hash": "d7355980397ee32c599dd70309d30974",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/auth/OpaqueTokens.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.5439353,
+    "ast_hash": "870ca5d5042ced3cbd25b64f0d6e6705",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/auth/PasswordResetService.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.543936,
+    "ast_hash": "bd536415ce874062f74c0f676b6200f4",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/auth/RefreshRotationCoordinator.java": {
+    "mtime": 1792173769.0263312,
+    "seen": 1792174676.5439365,
+    "ast_hash": "59f9838db08ec6d7846fc794a56afecc",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/auth/RefreshTokenService.java": {
+    "mtime": 1792173769.0263312,
+    "seen": 1792174676.5439372,
+    "ast_hash": "2894286e8e52973951e47a83581ab69d",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/auth/RegisterUserService.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.5439377,
+    "ast_hash": "66b52bff3f313bfe7e112f35c23f8505",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/auth/VerificationTokenService.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.5439384,
+    "ast_hash": "adbf1b7fbaf4d0634faee9fe3275192b",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/permission/CreatePermissionService.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439389,
+    "ast_hash": "29cdf8cbf236b3832b2f1e5f8f0cb6bd",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/permission/GetPermissionService.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439396,
+    "ast_hash": "912a7558aeeeb2f2d1bc06c16fedf4cb",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/role/AssignRoleService.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.54394,
+    "ast_hash": "55b9841f86b181fd456da678a47c3680",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/role/CreateRoleService.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439405,
+    "ast_hash": "7b89dceb258aac6fb2090afa239ea12d",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/role/GetRoleService.java": {
+    "mtime": 1784624744.45969,
+    "seen": 1792174676.543941,
+    "ast_hash": "ed31b50376ab27c4fdf39c8c63a65017",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/role/RoleRequestService.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.543942,
+    "ast_hash": "6fe043b4f04771aee2e864a6d57c0afb",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/role/RoleRequestSubmittedEvent.java": {
+    "mtime": 1789369301.171589,
+    "seen": 1792174676.5439425,
+    "ast_hash": "88cbe8d9dffc03886b0bd57bd5b7ef6c",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/role/WorkflowStartLease.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.543943,
+    "ast_hash": "1ea9d1d28afb9d72270fceb02f0dda02",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/security/AccountLockService.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.5439434,
+    "ast_hash": "c84b548c1e059ef4936e21f5360a5b11",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/user/DeleteUserService.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.5439441,
+    "ast_hash": "5cd56b4db9c4f4096bfe5fcd1599b6c6",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/user/GetUserService.java": {
+    "mtime": 1784624744.45969,
+    "seen": 1792174676.5439446,
+    "ast_hash": "56ec2dee1cf2997caef071da0f4b4901",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/application/service/user/TeachingRosterService.java": {
+    "mtime": 1792174126.3756526,
+    "seen": 1792174676.5439453,
+    "ast_hash": "dacd7ee4102bca5ccae8cf1f38d31b11",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/exception/AccountLockedException.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439458,
+    "ast_hash": "b2af5bb087b7a06ee0280b706ba03ad8",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/exception/DuplicateActiveRoleRequestException.java": {
+    "mtime": 1786090693.5561335,
+    "seen": 1792174676.5439463,
+    "ast_hash": "57637106247fac423394a1adb5bfacc2",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/exception/EmailNotVerifiedException.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.543947,
+    "ast_hash": "c7c01d3a308958a4673ce9224ef49a5c",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/exception/InvalidCredentialsException.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439475,
+    "ast_hash": "e041beef39e055bda07bfd6a13bc1d57",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/exception/InvalidRoleRequestStateException.java": {
+    "mtime": 1786090693.5561335,
+    "seen": 1792174676.543948,
+    "ast_hash": "8213df68b45293651fdd51c9054a75e8",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/exception/InvalidSortFieldException.java": {
+    "mtime": 1784624744.46069,
+    "seen": 1792174676.5439487,
+    "ast_hash": "d35b0cf38a21772070c90e9e7f28b15d",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/exception/InvalidTokenException.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.5439491,
+    "ast_hash": "579c3b831278f4470ba348c8744ce7ec",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/exception/InvalidUserStateException.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439496,
+    "ast_hash": "4457b3c84165a3caf7e0fc72bcf13ce4",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/exception/PermissionNotFoundException.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439503,
+    "ast_hash": "981e103b87b941a064d63b2592d2a2de",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/exception/RoleNotFoundException.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439508,
+    "ast_hash": "4a1746736a6418729144dd13ed485566",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/exception/RoleRequestNotFoundException.java": {
+    "mtime": 1786090693.5561335,
+    "seen": 1792174676.5439513,
+    "ast_hash": "0ec8905a3d2bd61315679d47d3c65294",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/exception/SelfApprovalNotAllowedException.java": {
+    "mtime": 1789369301.171589,
+    "seen": 1792174676.543952,
+    "ast_hash": "7ecf368b61eefa8d9014fb386cc250db",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/exception/UserAlreadyExistsException.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439525,
+    "ast_hash": "6b897211f42b6351b112a0488045cc5e",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/exception/UserNotFoundException.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.543953,
+    "ast_hash": "2407a41d8bc6392446f2020c7f4510f4",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/model/AuditEvent.java": {
+    "mtime": 1782315512.2196345,
+    "seen": 1792174676.5439537,
+    "ast_hash": "27dea45c43821f9639758275deb3c7d1",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/model/AuditEventType.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.5439541,
+    "ast_hash": "7c8b70b1707de7d1d8576b6684ba3336",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/model/AuditMetadataSanitizer.java": {
+    "mtime": 1782315512.2196345,
+    "seen": 1792174676.5439546,
+    "ast_hash": "afeef14e189aa9ca9bfba0367b79f45f",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/model/AuditResult.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.543955,
+    "ast_hash": "2fd7acc5476f5ac8fd2958cb4f5c43cc",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/model/Permission.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439558,
+    "ast_hash": "f2230670f14a1921f6ea4f9555772ba5",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/model/RecoveryCode.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.5439565,
+    "ast_hash": "6ae04d9f1b74234eddae132fdbe62fb6",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/model/Role.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.543957,
+    "ast_hash": "0dad0a5e7560195f54b7b6ad913656a9",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/model/RoleRequest.java": {
+    "mtime": 1789369301.171589,
+    "seen": 1792174676.5439575,
+    "ast_hash": "c4d1b4ef34b5c2a7457eb58650277d8e",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/model/RoleRequestDecision.java": {
+    "mtime": 1789369301.171589,
+    "seen": 1792174676.5439582,
+    "ast_hash": "64316ee5be54fd6fbd7dd36b60e32a76",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/model/RoleRequestStatus.java": {
+    "mtime": 1786090693.5561335,
+    "seen": 1792174676.543959,
+    "ast_hash": "e7683ec29081200570f6a679f76bfdd6",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/model/User.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.5439594,
+    "ast_hash": "62950a4f098ebb4a34ad53bd076367ea",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/model/UserStatus.java": {
+    "mtime": 1780466795.6704617,
+    "seen": 1792174676.5439599,
+    "ast_hash": "21d4f5b67176e686c64c0043294c8839",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/model/VerificationToken.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.5439603,
+    "ast_hash": "bc9439595f7f85b3757d17b60a106762",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/pagination/PageRequest.java": {
+    "mtime": 1784624744.46069,
+    "seen": 1792174676.5439608,
+    "ast_hash": "13bc5482a3048019d5c3cf7016394be3",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/pagination/PageResult.java": {
+    "mtime": 1784624744.46069,
+    "seen": 1792174676.5439613,
+    "ast_hash": "0ba7a3c712ad99d935a088309d136d30",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/pagination/Sort.java": {
+    "mtime": 1784624744.46069,
+    "seen": 1792174676.5439618,
+    "ast_hash": "9522c58d8a053c5a414f3a60aee3581d",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/pagination/SortDirection.java": {
+    "mtime": 1784624744.46169,
+    "seen": 1792174676.5439627,
+    "ast_hash": "7ed926d16466122f133040657ec354e4",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/repository/PermissionRepository.java": {
+    "mtime": 1784624744.46169,
+    "seen": 1792174676.5439632,
+    "ast_hash": "1f2b17c24987bfa903ed7dcc640875fc",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/repository/RecoveryCodeRepository.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.5439637,
+    "ast_hash": "b9893db3fc21f6c6f0da644a55909959",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/repository/RoleRepository.java": {
+    "mtime": 1784624744.46169,
+    "seen": 1792174676.5439641,
+    "ast_hash": "65d88e58b881d0903a5e1250f8b0eaec",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/repository/RoleRequestRepository.java": {
+    "mtime": 1786090693.5561335,
+    "seen": 1792174676.5439646,
+    "ast_hash": "a252c3fb613233eacbaf406d635cd549",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/repository/UserRepository.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.543965,
+    "ast_hash": "da3d9aacf8cdd455d819baad0bbffc47",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/domain/repository/VerificationTokenRepository.java": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.543966,
+    "ast_hash": "532fa16bc6b897ff3fef9920f9a2f369",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/config/BootstrapAdministrator.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.5439665,
+    "ast_hash": "6955825b69fa0128eafb76e2a92a48aa",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/config/ClockConfig.java": {
+    "mtime": 1780466795.6714616,
+    "seen": 1792174676.543967,
+    "ast_hash": "541181414d06f8b1d42069ffb2b4d004",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/config/ProductionConfigurationGuard.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.5439675,
+    "ast_hash": "4bf2eede26297fcba64f808e76365e5f",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/config/SecurityConfiguration.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.543968,
+    "ast_hash": "bfd910245801b35bf2264ee10eecea19",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/email/MockEmailServiceAdapter.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.5439687,
+    "ast_hash": "f267a70e523e498bf21b759208f1a304",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/email/SmtpEmailServiceAdapter.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.5439694,
+    "ast_hash": "3262615f54b3c51f6a89db6aed49facf",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/adapter/AuditTrailPersistenceAdapter.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.54397,
+    "ast_hash": "7a28d5494a240ecec30e9318143e5064",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/adapter/PermissionRepositoryAdapter.java": {
+    "mtime": 1780466795.6714616,
+    "seen": 1792174676.5439706,
+    "ast_hash": "10e492244e648b143cb097fded354ca1",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/adapter/RecoveryCodeRepositoryAdapter.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.543971,
+    "ast_hash": "29ec885ebdf96c0e9667bf7b8125d621",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/adapter/RefreshTokenStoreAdapter.java": {
+    "mtime": 1792173769.0263312,
+    "seen": 1792174676.5439718,
+    "ast_hash": "0d049240009c12f554788b6417fb1dc4",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/adapter/RoleRepositoryAdapter.java": {
+    "mtime": 1784624744.46169,
+    "seen": 1792174676.5439723,
+    "ast_hash": "88e5975a9f5ac030f22541e32894a010",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/adapter/RoleRequestRepositoryAdapter.java": {
+    "mtime": 1786090693.5561335,
+    "seen": 1792174676.543973,
+    "ast_hash": "4577407b033aab1185ca2376401aa776",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/adapter/UserRepositoryAdapter.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.5439737,
+    "ast_hash": "8c14edc175cea175e08c459cb0102539",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/adapter/VerificationTokenRepositoryAdapter.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.5439742,
+    "ast_hash": "07b52c91311664a8265b1c26ee2548f1",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/entity/AuditEventEntity.java": {
+    "mtime": 1780466795.6714616,
+    "seen": 1792174676.5439746,
+    "ast_hash": "c0ba457772941ebaa459713af3a47d41",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/entity/PermissionEntity.java": {
+    "mtime": 1780466795.6714616,
+    "seen": 1792174676.5439754,
+    "ast_hash": "a515c11fae977e49c1af284acf54a671",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/entity/RecoveryCodeEntity.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.5439758,
+    "ast_hash": "bd7548d7e4ae5a7096ecb9762b106f92",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/entity/RefreshTokenEntity.java": {
+    "mtime": 1792173769.0253313,
+    "seen": 1792174676.5439765,
+    "ast_hash": "e1172d618c48bb0308dfa3a0c2723c90",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/entity/RoleEntity.java": {
+    "mtime": 1782315512.2196345,
+    "seen": 1792174676.543977,
+    "ast_hash": "19e2fa7aa7226f73f4d011ae73315beb",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/entity/RoleRequestEntity.java": {
+    "mtime": 1789369301.171589,
+    "seen": 1792174676.5439775,
+    "ast_hash": "8e6a08df1f96bf9c9f01aaf3805f8e77",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/entity/UserEntity.java": {
+    "mtime": 1792172273.9043684,
+    "seen": 1792174676.5439782,
+    "ast_hash": "3f51243094749be988e69a26dcceb2d3",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/entity/VerificationTokenEntity.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.5439787,
+    "ast_hash": "9076c0ecef852dd3c8c148a6c901bc9f",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/id/AssignedOrRandomUuid.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.5439792,
+    "ast_hash": "13fb9076d7fdfae9f855f971109fbef0",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/id/AssignedOrRandomUuidGenerator.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.54398,
+    "ast_hash": "4fe25e601d09b77da8bd1c9a389ef1e6",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/jpa/AuditEventJpaRepository.java": {
+    "mtime": 1780466795.6714616,
+    "seen": 1792174676.5439804,
+    "ast_hash": "4003007fa0538a1ae3ee7e6cdcc68251",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/jpa/PermissionJpaRepository.java": {
+    "mtime": 1780466795.6714616,
+    "seen": 1792174676.5439808,
+    "ast_hash": "fa19a7fdfcd0eb1ae802c09bb0b2cd1f",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/jpa/RecoveryCodeJpaRepository.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.5439816,
+    "ast_hash": "53dcc147c97992ae1ad8bab88b521955",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/jpa/RefreshTokenJpaRepository.java": {
+    "mtime": 1792173769.0263312,
+    "seen": 1792174676.543982,
+    "ast_hash": "0b6e1b3a6ac6905f6019285afd836a2e",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/jpa/RoleJpaRepository.java": {
+    "mtime": 1784624744.4626899,
+    "seen": 1792174676.5439825,
+    "ast_hash": "de79485b71d48935d483cd9291958f19",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/jpa/RoleRequestJpaRepository.java": {
+    "mtime": 1786090693.5561335,
+    "seen": 1792174676.5439835,
+    "ast_hash": "3baf63ab52bf02fc32c855a38f9209fb",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/jpa/UserJpaRepository.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.543984,
+    "ast_hash": "6dbdb248350e9e981f307167e4410956",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/jpa/VerificationTokenJpaRepository.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.5439847,
+    "ast_hash": "ccd8d3a3deb935198784e595aa42dd5b",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/mapper/AuditEventMapper.java": {
+    "mtime": 1780466795.6714616,
+    "seen": 1792174676.5439851,
+    "ast_hash": "419b064bae112ca7deba1d4fa5ef1b19",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/mapper/PermissionMapper.java": {
+    "mtime": 1780466795.6714616,
+    "seen": 1792174676.5439856,
+    "ast_hash": "c1c70795a00b10b7d00cbdcd59279a25",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/mapper/RecoveryCodeMapper.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.543986,
+    "ast_hash": "41f4bad42864ba352c5bc8b85a118f9d",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/mapper/RoleMapper.java": {
+    "mtime": 1782315512.2196345,
+    "seen": 1792174676.5439868,
+    "ast_hash": "97312c6da10a8fdcf67ca4bd533d2181",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/mapper/RoleRequestMapper.java": {
+    "mtime": 1789369301.171589,
+    "seen": 1792174676.5439873,
+    "ast_hash": "6a319cfbeeea13a1f7c98266cbe45908",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/mapper/UserMapper.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.543988,
+    "ast_hash": "461ba17a3353b1fcee1dcb6dc2e990b1",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/mapper/VerificationTokenMapper.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.5439885,
+    "ast_hash": "5fd56e64812df09987777a33937e7f1f",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/persistence/pagination/PaginationMapper.java": {
+    "mtime": 1784624744.4626899,
+    "seen": 1792174676.543989,
+    "ast_hash": "f5279559e6d65aaccdc1a1525140e801",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/ratelimit/AuthRateLimitConfiguration.java": {
+    "mtime": 1792161390.6355617,
+    "seen": 1792174676.5439897,
+    "ast_hash": "9fc04f380ba527a785a5e69af2426964",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/ratelimit/AuthRateLimitFilter.java": {
+    "mtime": 1792161390.6365619,
+    "seen": 1792174676.5439904,
+    "ast_hash": "de5b20377adc64109a149c636f87d9b9",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/ratelimit/AuthRateLimitProperties.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.5439909,
+    "ast_hash": "79fce676ebb3a19720fefe59b01d8f16",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/ratelimit/CachedBodyHttpServletRequest.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.5439913,
+    "ast_hash": "23eb0a47209ceeefe18345df1c79035b",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/ratelimit/JpaRateLimiter.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.5439918,
+    "ast_hash": "b4d1087fda8ea147c2f2b1727ff46f1e",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/ratelimit/RateLimitBucketEntity.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.5439923,
+    "ast_hash": "d5c66754467628c6707ef3ca58e82934",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/ratelimit/RateLimitBucketJpaRepository.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.543993,
+    "ast_hash": "1c2cfc26c1d60cf98342654b0d802027",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/ratelimit/RateLimiter.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.5439937,
+    "ast_hash": "980daa5010a02dc7ca9ec0fb040afd18",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/security/AccessTokenState.java": {
+    "mtime": 1792173769.0263312,
+    "seen": 1792174676.5439942,
+    "ast_hash": "a40b494cf14047d723d8d763a02f1eec",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/security/AesGcmMfaSecretCipher.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.5439947,
+    "ast_hash": "52e50e221e0ad8b7b5d00da61755738b",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/security/BCryptPasswordEncoderAdapter.java": {
+    "mtime": 1792173850.4860919,
+    "seen": 1792174676.5439951,
+    "ast_hash": "a0e1f58b5a213276f96eda269a87287f",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/security/JjwtProvider.java": {
+    "mtime": 1792173769.0263312,
+    "seen": 1792174676.5439956,
+    "ast_hash": "b9ecb217bf7791e7ca199902f1f2655a",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/security/JwtAuthenticationFilter.java": {
+    "mtime": 1787643019.2539804,
+    "seen": 1792174676.543996,
+    "ast_hash": "4e61252d3380fa4bdc6094e7cbb5f49f",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/security/MfaEncryptionProperties.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.5439968,
+    "ast_hash": "fe5abb93a758437b3c3c375533546dbe",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/security/RotationReceiptCleanup.java": {
+    "mtime": 1792161390.6365619,
+    "seen": 1792174676.5439975,
+    "ast_hash": "4c8e6b10131c63162b88e62f97a88bf3",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/security/TotpProvider.java": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.543998,
+    "ast_hash": "190e6960b128633eaeaf60b4d37486df",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/workflow/ApproveRoleRequestWorker.java": {
+    "mtime": 1789369301.171589,
+    "seen": 1792174676.5439987,
+    "ast_hash": "42dbf37b0234c33441daa2afb68eee4e",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/workflow/BindRoleRequestWorker.java": {
+    "mtime": 1792161390.6365619,
+    "seen": 1792174676.5439992,
+    "ast_hash": "5818bc51f8fc2970453ff75fb7977075",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/workflow/CamundaDeploymentConfiguration.java": {
+    "mtime": 1786091903.514982,
+    "seen": 1792174676.5439997,
+    "ast_hash": "847c4fb22e6173b40ea36d06f154dec9",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/workflow/PermanentWorkflowFailure.java": {
+    "mtime": 1789369301.171589,
+    "seen": 1792174676.5440006,
+    "ast_hash": "4f3def4635a4e7381b48e9a7ee65519d",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/workflow/RejectRoleRequestWorker.java": {
+    "mtime": 1789369301.171589,
+    "seen": 1792174676.544001,
+    "ast_hash": "99aa0978199952ae91b1a41806ffc97c",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/workflow/RoleApprovalWorkflowPortStub.java": {
+    "mtime": 1789369301.171589,
+    "seen": 1792174676.5440016,
+    "ast_hash": "58afec907d8374f4515b3ae1714345ee",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/workflow/WorkflowStartRecovery.java": {
+    "mtime": 1792161390.6365619,
+    "seen": 1792174676.544002,
+    "ast_hash": "53c5bbcedd23cbfa9a3846505d395251",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/java/com/adventacademy/userservice/infrastructure/workflow/ZeebeRoleApprovalWorkflowAdapter.java": {
+    "mtime": 1789369301.171589,
+    "seen": 1792174676.5440028,
+    "ast_hash": "b2edc0b5a22614cc9f25f764b6257390",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/ArchitectureTest.java": {
+    "mtime": 1789369301.171589,
+    "seen": 1792174676.5440032,
+    "ast_hash": "2c590fa0b55cfb554ea4f1d1f7b892ef",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/adapter/rest/controller/RoleRequestApiPerformanceRegressionTest.java": {
+    "mtime": 1787643019.2539804,
+    "seen": 1792174676.5440037,
+    "ast_hash": "5772c7e0d3f45af3e7ad350fd11c72b6",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/adapter/rest/controller/RoleRequestControllerIT.java": {
+    "mtime": 1787643019.2549803,
+    "seen": 1792174676.5440044,
+    "ast_hash": "a362b25aa72a4c52c983b006df2c7f9d",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/adapter/rest/controller/RoleRequestDecisionSecurityIT.java": {
+    "mtime": 1792172273.9043684,
+    "seen": 1792174676.5440052,
+    "ast_hash": "3d2ba2df484478e331d9dc63ac781c58",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/adapter/rest/controller/TeachingRosterControllerIT.java": {
+    "mtime": 1792174253.061823,
+    "seen": 1792174676.5440056,
+    "ast_hash": "9e229ea2d9cce2c346e8c10fb98a9d2e",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/adapter/rest/controller/UserAdminIT.java": {
+    "mtime": 1792173807.1146872,
+    "seen": 1792174676.544006,
+    "ast_hash": "5e40898a199bc6999cd60f138f7e9a1d",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/adapter/rest/security/AuthSecurityIT.java": {
+    "mtime": 1792173769.0263312,
+    "seen": 1792174676.5440066,
+    "ast_hash": "f7094cd9e1a3606b3994b4ae0a5c89ee",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/application/service/auth/ChangePasswordServiceTest.java": {
+    "mtime": 1791929380.4537838,
+    "seen": 1792174676.5440075,
+    "ast_hash": "f58fcc45aad67451a3ccb0ffc6e6fa77",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/application/service/auth/ConfirmEmailServiceTest.java": {
+    "mtime": 1791929380.4537838,
+    "seen": 1792174676.544008,
+    "ast_hash": "ea14dd7cfe06855a76bedda5e5e1c355",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/application/service/auth/EmailDispatcherTest.java": {
+    "mtime": 1791929380.4537838,
+    "seen": 1792174676.5440085,
+    "ast_hash": "9c0428416625eb65e62824e89d364ed2",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/application/service/auth/LoginServiceTest.java": {
+    "mtime": 1791929380.4537838,
+    "seen": 1792174676.544009,
+    "ast_hash": "5e1396584f8499db1983d23668b19656",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/application/service/auth/MfaCodeVerifierTest.java": {
+    "mtime": 1791929380.4537838,
+    "seen": 1792174676.5440097,
+    "ast_hash": "e552dfef0b3775c08d54cc6dd11ca5ba",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/application/service/auth/MfaServiceTest.java": {
+    "mtime": 1791929380.4537838,
+    "seen": 1792174676.5440102,
+    "ast_hash": "e22cd49a29b4eebfd32e6bdc5b0cd169",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/application/service/auth/OpaqueTokensTest.java": {
+    "mtime": 1791929380.4537838,
+    "seen": 1792174676.544011,
+    "ast_hash": "3ab4614b4c5772ccff71d3c17c03d0ec",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/application/service/auth/PasswordResetServiceTest.java": {
+    "mtime": 1791929380.4537838,
+    "seen": 1792174676.5440116,
+    "ast_hash": "b75ad1b801281b1198137ea43989d621",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/application/service/auth/RefreshTokenServiceTest.java": {
+    "mtime": 1792173769.0263312,
+    "seen": 1792174676.544012,
+    "ast_hash": "e291fa70525d763cc07fd0b6b344516d",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/application/service/auth/RegisterUserServiceTest.java": {
+    "mtime": 1791929380.4537838,
+    "seen": 1792174676.5440125,
+    "ast_hash": "595511bdf8e980aae15d94a12ba61f13",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/application/service/auth/VerificationTokenServiceTest.java": {
+    "mtime": 1791929380.4537838,
+    "seen": 1792174676.544013,
+    "ast_hash": "1066f3a1790b4e54b52b27052bbffbac",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/application/service/role/AssignRoleServiceTest.java": {
+    "mtime": 1792161390.6365619,
+    "seen": 1792174676.5440137,
+    "ast_hash": "8851d8512d5b1e4f8108874141ef576f",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/application/service/role/RoleRequestApprovalAtomicityIT.java": {
+    "mtime": 1792161390.6365619,
+    "seen": 1792174676.5440145,
+    "ast_hash": "e8a9ca9e391015492599829aa74f9d42",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/application/service/role/RoleRequestServiceTest.java": {
+    "mtime": 1789369301.171589,
+    "seen": 1792174676.544015,
+    "ast_hash": "df13d00abb2c10f6fbc17e94ddd0cccd",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/application/service/security/AccountLockServiceTest.java": {
+    "mtime": 1782315512.2206347,
+    "seen": 1792174676.5440156,
+    "ast_hash": "fa8b9c119f9289af4a09f7b7a5c1c54d",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/application/service/security/auth/LoginServiceTest.java": {
+    "mtime": 1791929380.4537838,
+    "seen": 1792174676.5440161,
+    "ast_hash": "866e3047067c2444cb8962f28bb64547",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/domain/model/AuditMetadataSanitizerTest.java": {
+    "mtime": 1782315512.2206347,
+    "seen": 1792174676.5440166,
+    "ast_hash": "6f7d2c5a21e6a90f4e5f697039d812c7",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/domain/model/RoleRequestTest.java": {
+    "mtime": 1789369301.171589,
+    "seen": 1792174676.5440173,
+    "ast_hash": "7ca048a1d1b5611dfc60b197f066c738",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/domain/model/RoleTest.java": {
+    "mtime": 1780466795.6714616,
+    "seen": 1792174676.544018,
+    "ast_hash": "a996d7d3fc735f6f2bc7fadf5ac62edd",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/domain/model/UserTest.java": {
+    "mtime": 1791929380.4537838,
+    "seen": 1792174676.5440185,
+    "ast_hash": "e6c255fe001455197d50e3cc425b8ec7",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/infrastructure/persistence/FetchStrategyDiagnosticIT.java": {
+    "mtime": 1784624744.4626899,
+    "seen": 1792174676.544019,
+    "ast_hash": "0fe0ea8c9ba4de0807ede0d3ba0844c2",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/infrastructure/persistence/RoleRequestRepositoryAdapterIT.java": {
+    "mtime": 1786090693.5571337,
+    "seen": 1792174676.5440195,
+    "ast_hash": "9e99ad7f9156b8c3edca1ceb4014a7cf",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/infrastructure/persistence/UserRoleRemovalIT.java": {
+    "mtime": 1782315512.2206347,
+    "seen": 1792174676.5440202,
+    "ast_hash": "1622a122177b080f2d018f0c61a893e1",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/infrastructure/ratelimit/InvitationRateLimitTest.java": {
+    "mtime": 1792161390.6365619,
+    "seen": 1792174676.5440207,
+    "ast_hash": "812b0e4f52c59bd0d1cb5987d6cc07d0",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/infrastructure/ratelimit/TrustedClientRateLimitTest.java": {
+    "mtime": 1792161390.6365619,
+    "seen": 1792174676.5440216,
+    "ast_hash": "e2cf3f864c56697e2e99de28f6a2815d",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/infrastructure/security/AesGcmMfaSecretCipherTest.java": {
+    "mtime": 1791929380.4537838,
+    "seen": 1792174676.544022,
+    "ast_hash": "0e7f941566c3e426acd8811965840652",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/infrastructure/security/BCryptPasswordEncoderAdapterTest.java": {
+    "mtime": 1792173850.4870918,
+    "seen": 1792174676.5440226,
+    "ast_hash": "bf7e177f6f89caa60e3b60646c58a073",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/infrastructure/security/JjwtProviderTest.java": {
+    "mtime": 1792173769.0263312,
+    "seen": 1792174676.544023,
+    "ast_hash": "682c9a8284fdd85458b0091932de1cb4",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/infrastructure/security/SecurityIntegrationTest.java": {
+    "mtime": 1792172273.9053683,
+    "seen": 1792174676.5440238,
+    "ast_hash": "53f3cc189623c3b4cdb3b24019088b0f",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/infrastructure/security/TotpProviderTest.java": {
+    "mtime": 1791929380.4537838,
+    "seen": 1792174676.5440242,
+    "ast_hash": "723ad7d6da9a0196f5ed5d09650eaf0c",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/infrastructure/workflow/ApproveRoleRequestWorkerTest.java": {
+    "mtime": 1789369301.171589,
+    "seen": 1792174676.544025,
+    "ast_hash": "7ee2fc6fd1994506efc87f4f44c8e928",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/infrastructure/workflow/CamundaConnectionSmokeTest.java": {
+    "mtime": 1786091903.514982,
+    "seen": 1792174676.5440254,
+    "ast_hash": "b700522d748d7033165d8c7d04712e43",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/infrastructure/workflow/RejectRoleRequestWorkerTest.java": {
+    "mtime": 1789369301.171589,
+    "seen": 1792174676.544026,
+    "ast_hash": "fa36d10e10adcbb871ad4d14b1e5d198",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/infrastructure/workflow/RoleApprovalProcessTest.java": {
+    "mtime": 1792161390.6365619,
+    "seen": 1792174676.5440266,
+    "ast_hash": "e54bfc33befaa8e1b1696d54ad00ff48",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/infrastructure/workflow/RoleApprovalWorkerIntegrationIT.java": {
+    "mtime": 1792161390.6365619,
+    "seen": 1792174676.544027,
+    "ast_hash": "786827b211ae9fcbf18e351df05786cd",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/infrastructure/workflow/RoleApprovalWorkflowIT.java": {
+    "mtime": 1792161390.6365619,
+    "seen": 1792174676.5440276,
+    "ast_hash": "cd7407a038d6bbeb1ee41e54470483ee",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/java/com/adventacademy/userservice/infrastructure/workflow/ZeebeRoleApprovalWorkflowAdapterTest.java": {
+    "mtime": 1789369301.172589,
+    "seen": 1792174676.5440285,
+    "ast_hash": "a998fcda8421cbd41d77a181c7d335d5",
+    "semantic_hash": ""
+  },
+  ".gitlab-ci.yml": {
+    "mtime": 1792161390.6165614,
+    "seen": 1792174676.544029,
+    "ast_hash": "1a65739c47df03d847a90765171e86c9",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1792161390.6165614,
+    "seen": 1792174676.5440295,
+    "ast_hash": "d26efd44f586e886100e77a8b31385c9",
+    "semantic_hash": ""
+  },
+  "api-gateway/README.md": {
+    "mtime": 1787643019.1879804,
+    "seen": 1792174676.54403,
+    "ast_hash": "b37a2c9ab6223f646d60c48c1be97f5b",
+    "semantic_hash": ""
+  },
+  "api-gateway/src/main/resources/application-docker.yml": {
+    "mtime": 1789369301.1405895,
+    "seen": 1792174676.5440307,
+    "ast_hash": "a1e4955f75c89e7d4a7ea2d0548674e3",
+    "semantic_hash": ""
+  },
+  "api-gateway/src/main/resources/application-local.yml": {
+    "mtime": 1789369301.1505892,
+    "seen": 1792174676.5440311,
+    "ast_hash": "4c67c4589764c0918fd979b24e331a2e",
+    "semantic_hash": ""
+  },
+  "api-gateway/src/main/resources/application-production.yml": {
+    "mtime": 1792161390.6165614,
+    "seen": 1792174676.5440319,
+    "ast_hash": "ffa4b32ff3574ec96c4fabfc52f01b9d",
+    "semantic_hash": ""
+  },
+  "api-gateway/src/main/resources/application.yml": {
+    "mtime": 1792161390.6165614,
+    "seen": 1792174676.5440326,
+    "ast_hash": "961453b87420bb98c87ab7b7e81511bb",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/resources/application-docker.yml": {
+    "mtime": 1782315512.2186346,
+    "seen": 1792174676.544033,
+    "ast_hash": "fb931d7088582e1835aa2616e39bab3a",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/resources/application-local.yml": {
+    "mtime": 1784624744.45769,
+    "seen": 1792174676.5440338,
+    "ast_hash": "91ec20a237660f7f7aef1231f5456e8c",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/resources/application-production.yml": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.5440342,
+    "ast_hash": "6f7d4b86b2ad2efda42a7fb8a16f8208",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/resources/application.yml": {
+    "mtime": 1792161390.6185615,
+    "seen": 1792174676.5440347,
+    "ast_hash": "ef238e45c49fc1932142f14b5fb27f6c",
+    "semantic_hash": ""
+  },
+  "content-service/src/main/resources/static/markdown-preview/index.html": {
+    "mtime": 1787643019.1899803,
+    "seen": 1792174676.5440354,
+    "ast_hash": "27df4dcdb249886722a4386a103a127f",
+    "semantic_hash": ""
+  },
+  "content-service/src/test/resources/application-test.yml": {
+    "mtime": 1791929380.4507837,
+    "seen": 1792174676.544036,
+    "ast_hash": "e98dbf3fb6e16f5d37938c7f069304b8",
+    "semantic_hash": ""
+  },
+  "deploy/production/compose.yml": {
+    "mtime": 1792172273.8983684,
+    "seen": 1792174676.5440366,
+    "ast_hash": "b2896fdad05a3a2f61514b54e29618df",
+    "semantic_hash": ""
+  },
+  "docker-compose.yml": {
+    "mtime": 1792172273.8983684,
+    "seen": 1792174676.544037,
+    "ast_hash": "727a5772227d0c8740b5383d871e5c7b",
+    "semantic_hash": ""
+  },
+  "docs/adr/0001-camunda-role-approval-boundaries.md": {
+    "mtime": 1786090693.5551336,
+    "seen": 1792174676.5440376,
+    "ast_hash": "a06f4fbdf01094883ef0fe504c2d8acc",
+    "semantic_hash": ""
+  },
+  "docs/adr/0002-jwt-key-ownership-and-resource-verification.md": {
+    "mtime": 1792161390.6195614,
+    "seen": 1792174676.544038,
+    "ast_hash": "d88245cc3f6541d281abcc0e3e3e6e55",
+    "semantic_hash": ""
+  },
+  "docs/adr/0003-refresh-session-lifecycle.md": {
+    "mtime": 1792174810.993954,
+    "seen": 1792174925.839232,
+    "ast_hash": "45d8570c7f4f115bf93fc3c46b1d8276",
+    "semantic_hash": ""
+  },
+  "docs/adr/0004-untrusted-content-serving.md": {
+    "mtime": 1792161390.6195614,
+    "seen": 1792174676.5440395,
+    "ast_hash": "322274ffb6002e7c6abd9fd56ec9dab5",
+    "semantic_hash": ""
+  },
+  "docs/adr/0005-trusted-proxy-and-request-identity.md": {
+    "mtime": 1789369301.170589,
+    "seen": 1792174676.54404,
+    "ast_hash": "6af10231930bf6ff76b0f1c56751a574",
+    "semantic_hash": ""
+  },
+  "docs/adr/0006-security-audit-retention-and-access.md": {
+    "mtime": 1789369301.170589,
+    "seen": 1792174676.5440404,
+    "ast_hash": "aa4417ef4e4837ce0b74bed58a507204",
+    "semantic_hash": ""
+  },
+  "docs/api/course-management.md": {
+    "mtime": 1792174637.7623637,
+    "seen": 1792174676.5440412,
+    "ast_hash": "3d1682200f9fa388eb1b91c8c4fe808f",
+    "semantic_hash": ""
+  },
+  "docs/backend/runtime-course-management.yml": {
+    "mtime": 1792172273.8993683,
+    "seen": 1792174676.5440416,
+    "ast_hash": "ebd89c8c08f48c0bc09e386ee80b6d7a",
+    "semantic_hash": ""
+  },
+  "docs/backend/runtime-editor-e2e.yml": {
+    "mtime": 1792174772.3495994,
+    "seen": 1792174925.8393216,
+    "ast_hash": "6c0184ab2bacf960223193a7ed9705a9",
+    "semantic_hash": ""
+  },
+  "docs/backend/runtime-user-admin.yml": {
+    "mtime": 1792176736.3118045,
+    "seen": 1792176756.2167556,
+    "ast_hash": "d94ae0919cf11ce1514fdaebe15d8dc1",
+    "semantic_hash": ""
+  },
+  "docs/ci-development.md": {
+    "mtime": 1792161390.6195614,
+    "seen": 1792174676.5440435,
+    "ast_hash": "a7489cd634194983a99d7744c59a1587",
+    "semantic_hash": ""
+  },
+  "docs/frontend/markdown-editor.md": {
+    "mtime": 1792146922.9071639,
+    "seen": 1792174676.544044,
+    "ast_hash": "699dd55227e071b8ba86e6733c834a87",
+    "semantic_hash": ""
+  },
+  "docs/frontend/runtime-compose-sprint2.yml": {
+    "mtime": 1792169925.06009,
+    "seen": 1792174676.5440447,
+    "ast_hash": "d46a5e4c38f0221fea13ae6d966c2786",
+    "semantic_hash": ""
+  },
+  "docs/frontend/runtime-compose-sprint3.yml": {
+    "mtime": 1792172273.8993683,
+    "seen": 1792174676.5440452,
+    "ast_hash": "b048e69c5ec2fb15f2a63aa0b92c563b",
+    "semantic_hash": ""
+  },
+  "docs/frontend/runtime-compose.yml": {
+    "mtime": 1792169925.06009,
+    "seen": 1792174676.544046,
+    "ast_hash": "356de059a3b176dde34cc9a637947b8f",
+    "semantic_hash": ""
+  },
+  "docs/frontend/sprint-1.md": {
+    "mtime": 1792157318.5234644,
+    "seen": 1792174676.5440464,
+    "ast_hash": "bd9b983aace9de5901b185b8e0a0122d",
+    "semantic_hash": ""
+  },
+  "docs/frontend/sprint-2.md": {
+    "mtime": 1791984462.3319657,
+    "seen": 1792174676.544047,
+    "ast_hash": "6aaee9f7c0b918b1ca165c9772bdf06d",
+    "semantic_hash": ""
+  },
+  "docs/frontend/sprint-3.md": {
+    "mtime": 1792161390.6195614,
+    "seen": 1792174676.5440476,
+    "ast_hash": "64449cb2264a779151824aea478f32b4",
+    "semantic_hash": ""
+  },
+  "docs/frontend/user-admin.md": {
+    "mtime": 1792161390.6195614,
+    "seen": 1792174676.544048,
+    "ast_hash": "35e0e93b2e9be015349d213d35970e34",
+    "semantic_hash": ""
+  },
+  "docs/meeting-service.md": {
+    "mtime": 1787643019.1909804,
+    "seen": 1792174676.5440485,
+    "ast_hash": "fa1f3a3461a0e76d4e6f48e791365c79",
+    "semantic_hash": ""
+  },
+  "docs/operations/production.md": {
+    "mtime": 1792174637.7623637,
+    "seen": 1792174676.5440493,
+    "ast_hash": "59d8f080a591c84725366a3f7cec486f",
+    "semantic_hash": ""
+  },
+  "docs/plans/security-hardening-milestone.md": {
+    "mtime": 1792161390.6195614,
+    "seen": 1792174676.54405,
+    "ast_hash": "5e4e8bbe70843fb383b44ed943ba2cd9",
+    "semantic_hash": ""
+  },
+  "docs/plans/video-conferencing-production-plan.md": {
+    "mtime": 1787643019.1909804,
+    "seen": 1792174676.5440505,
+    "ast_hash": "26c2915b13767fa89473a7be4a602fdb",
+    "semantic_hash": ""
+  },
+  "docs/reviews/architecture-pm-readiness-2026-10-16.md": {
+    "mtime": 1792161390.6195614,
+    "seen": 1792174676.544051,
+    "ast_hash": "0b1cd29d7d3073814f3fdb136f8483a3",
+    "semantic_hash": ""
+  },
+  "docs/security/README.md": {
+    "mtime": 1789369301.170589,
+    "seen": 1792174676.5440516,
+    "ast_hash": "46ff6e48674275b32b0019ba0bfea16e",
+    "semantic_hash": ""
+  },
+  "docs/security/api-pentest-2026-10-16.md": {
+    "mtime": 1792172273.9003682,
+    "seen": 1792174676.5440521,
+    "ast_hash": "edbe224427fb672d1bd42583df2955d9",
+    "semantic_hash": ""
+  },
+  "docs/security/authorization-matrix.md": {
+    "mtime": 1792161390.6195614,
+    "seen": 1792174676.5440528,
+    "ast_hash": "2f3de4514afff693c4ebb8b31a9efd9e",
+    "semantic_hash": ""
+  },
+  "docs/security/production-security-defaults.md": {
+    "mtime": 1792172273.9013684,
+    "seen": 1792174676.5440536,
+    "ast_hash": "0c9c653c65193d043a517e1f51985cd5",
+    "semantic_hash": ""
+  },
+  "docs/security/risk-register.md": {
+    "mtime": 1792174772.3495994,
+    "seen": 1792174925.8396406,
+    "ast_hash": "188466bc757c08d1fc7f8222e7897080",
+    "semantic_hash": ""
+  },
+  "docs/security/threat-model.md": {
+    "mtime": 1789369301.170589,
+    "seen": 1792174676.5440545,
+    "ast_hash": "6e3baea384e86f03c58951627ff6bba7",
+    "semantic_hash": ""
+  },
+  "docs/video-conferencing-production-roadmap.md": {
+    "mtime": 1787643019.1909804,
+    "seen": 1792174676.544055,
+    "ast_hash": "6a3a0f01bfe052471ec11bb5cbe82d81",
+    "semantic_hash": ""
+  },
+  "docs/video-conferencing.md": {
+    "mtime": 1787643019.1919804,
+    "seen": 1792174676.5440555,
+    "ast_hash": "8c8eb6f61c17be43b2fb46075cad330b",
+    "semantic_hash": ""
+  },
+  "frontend/README.md": {
+    "mtime": 1792146922.9071639,
+    "seen": 1792174676.5440564,
+    "ast_hash": "66bd6276b1d6cd119a970d6a677bfc64",
+    "semantic_hash": ""
+  },
+  "frontend/design-reference/DESIGN_MANAGEMENT_SPEC.md": {
+    "mtime": 1792138478.624085,
+    "seen": 1792174676.544057,
+    "ast_hash": "00ce20d7cfcc634693d053fa1a98c9c2",
+    "semantic_hash": ""
+  },
+  "frontend/design-reference/DESIGN_SPEC (1).md": {
+    "mtime": 1791984462.3319657,
+    "seen": 1792174676.5440574,
+    "ast_hash": "5a3d6e6d4570fe2ffa7fe2e5facb0e78",
+    "semantic_hash": ""
+  },
+  "frontend/design-reference/E-learning platform __ Behance.html": {
+    "mtime": 1791984462.3399658,
+    "seen": 1792174676.5440578,
+    "ast_hash": "956cd925ac1cb3c361f8ee5f86a49be5",
+    "semantic_hash": ""
+  },
+  "frontend/design-reference/THEME_SPEC.md": {
+    "mtime": 1792138478.624085,
+    "seen": 1792174676.5440586,
+    "ast_hash": "458cbb7f0bafca3f09aaac9540e211b2",
+    "semantic_hash": ""
+  },
+  "frontend/design-reference/USER_ADMIN_DESIGN_SPEC.md": {
+    "mtime": 1792161390.6325617,
+    "seen": 1792174676.544059,
+    "ast_hash": "3251c984820795bc14bbcc4d6aec65d7",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/resources/application-production.yml": {
+    "mtime": 1792161390.6345618,
+    "seen": 1792174676.5440598,
+    "ast_hash": "9622a8242997d2de56ae9ab93f1e0117",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/resources/application.yml": {
+    "mtime": 1792161390.6345618,
+    "seen": 1792174676.5440605,
+    "ast_hash": "c9821a08d45065139849c4f9a6beb507",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/resources/static/index.html": {
+    "mtime": 1787643019.1939805,
+    "seen": 1792174676.544061,
+    "ast_hash": "ec0d041d29bc7633218ffb6ea07b2004",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/main/resources/static/vendor/mediapipe/VENDOR-NOTICE.md": {
+    "mtime": 1787643019.1949804,
+    "seen": 1792174676.5440614,
+    "ast_hash": "29df120cc31b57f2a345b8ecd5f75a0f",
+    "semantic_hash": ""
+  },
+  "meeting-service/src/test/resources/application.yml": {
+    "mtime": 1791984462.4279666,
+    "seen": 1792174676.5440621,
+    "ast_hash": "e8624fbf8870d90faa8f1528fbd13caa",
+    "semantic_hash": ""
+  },
+  "user-service/IMPLEMENTATION_SUMMARY.md": {
+    "mtime": 1780466795.6694615,
+    "seen": 1792174676.5440626,
+    "ast_hash": "d1163a3762f2382e689118a61fc94853",
+    "semantic_hash": ""
+  },
+  "user-service/README.md": {
+    "mtime": 1791929380.4517837,
+    "seen": 1792174676.5440633,
+    "ast_hash": "799db9bf1c1c0e1c8b5e89f8be46d8b2",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/resources/application-docker.yml": {
+    "mtime": 1786091903.514982,
+    "seen": 1792174676.5440638,
+    "ast_hash": "f04c73a5d0c178b289b294c35ea91944",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/resources/application-local.yml": {
+    "mtime": 1791929380.4527836,
+    "seen": 1792174676.5440645,
+    "ast_hash": "b451b9629991f33ec00d09cbec149f0d",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/resources/application-production.yml": {
+    "mtime": 1792161390.6365619,
+    "seen": 1792174676.544065,
+    "ast_hash": "b35e8828e0f510a0127d9d4aadbbfcf5",
+    "semantic_hash": ""
+  },
+  "user-service/src/main/resources/application.yml": {
+    "mtime": 1792161390.6365619,
+    "seen": 1792174676.5440655,
+    "ast_hash": "369843beaa6707a785167c64f5dba425",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/resources/application-camunda-process-test.yml": {
+    "mtime": 1789369301.172589,
+    "seen": 1792174676.5440662,
+    "ast_hash": "d4a15d58a2aa30a861d2744425cc4767",
+    "semantic_hash": ""
+  },
+  "user-service/src/test/resources/application-test.yml": {
+    "mtime": 1792161390.6365619,
+    "seen": 1792174676.544067,
+    "ast_hash": "03b9fa26fa8f823094d5247e26d68e3b",
+    "semantic_hash": ""
+  },
+  "frontend/design-reference/\u0418\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u0437\u0430\u0433\u043e\u043b\u043e\u0432\u043a\u0430 Java \u043d\u0430 \u044d\u043a\u0440\u0430\u043d\u0435.png": {
+    "mtime": 1791984462.348966,
+    "seen": 1792174676.544068,
+    "ast_hash": "38356eba8f71406c31de225a67954de0",
+    "semantic_hash": ""
+  },
+  "frontend/design-reference/\u0418\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u043d\u044b\u0439-\u043b\u0438\u0441\u0442-\u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441\u0430-Advent-Academy.png": {
+    "mtime": 1791984462.356966,
+    "seen": 1792174676.5440688,
+    "ast_hash": "1594351b4ce198ef44d9aa6daf16847b",
+    "semantic_hash": ""
+  },
+  "frontend/design-reference/\u041a\u0443\u0440\u0441 Java_ \u043c\u043e\u0434\u0443\u043b\u0438 \u0438 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441-2.png": {
+    "mtime": 1791984462.364966,
+    "seen": 1792174676.5440695,
+    "ast_hash": "4bea7184744f7224e665cdca29ec615d",
+    "semantic_hash": ""
+  },
+  "frontend/design-reference/\u041b\u043e\u043a\u0430\u043b\u044c\u043d\u044b\u0435 \u043f\u0440\u0430\u0432\u043a\u0438 \u043f\u0430\u043d\u0435\u043b\u0438 \u0443\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u044f \u043a\u0443\u0440\u0441\u0430\u043c\u0438.png": {
+    "mtime": 1792138478.633085,
+    "seen": 1792174676.5440705,
+    "ast_hash": "972f22b2abb7de3d874c5e29571cd0c2",
+    "semantic_hash": ""
+  },
+  "frontend/design-reference/\u041c\u043e\u0431\u0438\u043b\u044c\u043d\u0430\u044f-\u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430-\u043a\u0443\u0440\u0441\u0430.png": {
+    "mtime": 1791984462.3719661,
+    "seen": 1792174676.544071,
+    "ast_hash": "cb6363eb487aa08a5a1d61cc2f1dad6f",
+    "semantic_hash": ""
+  },
+  "frontend/design-reference/\u041c\u043e\u0431\u0438\u043b\u044c\u043d\u044b\u0439 \u0443\u0440\u043e\u043a \u0441 \u0438\u0441\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u043d\u043e\u0439 \u0448\u043a\u0430\u043b\u043e\u0439 \u0432\u0438\u0434\u0435\u043e.png": {
+    "mtime": 1791984462.379966,
+    "seen": 1792174676.5440717,
+    "ast_hash": "deb7a5b90e402a704c6d63d8fbb062fd",
+    "semantic_hash": ""
+  },
+  "frontend/design-reference/\u041c\u043e\u0438 \u043a\u0443\u0440\u0441\u044b_ Java, Git \u0438 SQL-1.png": {
+    "mtime": 1791984462.3879662,
+    "seen": 1792174676.5440722,
+    "ast_hash": "88ddae9c218a22536f3f89f1ce068aaf",
+    "semantic_hash": ""
+  },
+  "frontend/design-reference/\u041e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0435 \u0442\u0435\u043a\u0441\u0442\u0430 \u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0438 \u043f\u0443\u0431\u043b\u0438\u043a\u0430\u0446\u0438\u0438.png": {
+    "mtime": 1792138478.642085,
+    "seen": 1792174676.5440729,
+    "ast_hash": "8d23e8aa308e94b73d4cbb366437891e",
+    "semantic_hash": ""
+  },
+  "frontend/design-reference/\u041f\u0440\u0435\u0434\u0443\u043f\u0440\u0435\u0436\u0434\u0435\u043d\u0438\u0435 \u043e \u043d\u0435\u043e\u043f\u0443\u0431\u043b\u0438\u043a\u043e\u0432\u0430\u043d\u043d\u043e\u043c \u0443\u0440\u043e\u043a\u0435-1.png": {
+    "mtime": 1792138478.6500852,
+    "seen": 1792174676.5440738,
+    "ast_hash": "3ee8eb9ff53e4cf598eb7c855d2c8cb7",
+    "semantic_hash": ""
+  },
+  "frontend/design-reference/\u0421\u043e\u0441\u0442\u043e\u044f\u043d\u0438\u044f \u0438\u043d\u0442\u0435\u0440\u0444\u0435\u0439\u0441\u0430 Advent Academy-7.png": {
+    "mtime": 1791984462.3949664,
+    "seen": 1792174676.5440745,
+    "ast_hash": "93e1fdd4ea3d05f9eca45dd8361184a3",
+    "semantic_hash": ""
+  },
+  "frontend/design-reference/\u0421\u043e\u0441\u0442\u043e\u044f\u043d\u0438\u044f \u043e\u0442\u043f\u0440\u0430\u0432\u043a\u0438 \u0437\u0430\u0434\u0430\u043d\u0438\u044f \u0432 Advent Academy-8.png": {
+    "mtime": 1791984462.4029663,
+    "seen": 1792174676.544075,
+    "ast_hash": "37409deb39ec0de19e05068f0c56170c",
+    "semantic_hash": ""
+  },
+  "frontend/design-reference/\u0422\u0451\u043c\u043d\u044b\u0439 \u043a\u0430\u0431\u0438\u043d\u0435\u0442 \u0443\u0447\u0435\u043d\u0438\u043a\u0430 Advent Academy.png": {
+    "mtime": 1791984462.4099665,
+    "seen": 1792174676.5440757,
+    "ast_hash": "5a6405ea8449e9f84a1b6f119950b4ff",
+    "semantic_hash": ""
+  },
+  "frontend/design-reference/\u0423\u0440\u043e\u043a Java_ \u0443\u0441\u043b\u043e\u0432\u043d\u044b\u0435 \u043e\u043f\u0435\u0440\u0430\u0442\u043e\u0440\u044b-3.png": {
+    "mtime": 1791984462.4179664,
+    "seen": 1792174676.5440762,
+    "ast_hash": "ab4592f2028b230e484cfc2f4a714b38",
+    "semantic_hash": ""
+  },
+  "frontend/design-reference/\u0423\u0440\u043e\u043a Java_ \u0443\u0441\u043b\u043e\u0432\u043d\u044b\u0435 \u043e\u043f\u0435\u0440\u0430\u0442\u043e\u0440\u044b-5.png": {
+    "mtime": 1791984462.4249666,
+    "seen": 1792174676.5440772,
+    "ast_hash": "5efeb8105e8cd282852ce52f8ca703b4",
+    "semantic_hash": ""
+  },
+  "frontend/design-reference/\u0427\u0435\u0440\u043d\u043e\u0432\u0438\u043a \u043a\u0443\u0440\u0441\u0430_ \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u0438 \u0443\u0447\u0435\u043d\u0438\u043a\u0438-2.png": {
+    "mtime": 1792138478.6580853,
+    "seen": 1792174676.5440779,
+    "ast_hash": "2cc19baafa8c95d99bb94169ce100b64",
+    "semantic_hash": ""
+  },
+  "docs/security/audit-fixes-2026-10-16.md": {
+    "mtime": 1792174910.6448681,
+    "seen": 1792174925.8396044,
+    "ast_hash": "63a77a06f1cfd590bdbe3933ced26be7",
+    "semantic_hash": ""
+  }
+}
