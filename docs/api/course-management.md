@@ -141,3 +141,18 @@ user-service, проверяет отсутствие записи назнач�
 
 Frontend кабинета и BFF реализованы; запуск и браузерные проверки описаны в
 `frontend/README.md`.
+
+## Pagination and assignment configuration
+
+`GET /api/courses?managed=true&page=0&size=20&status=ALL` returns
+`{items,total,page,size}` using a metadata-only SQL projection. `size` is 1..100;
+`status` is ALL/DRAFT/PUBLISHED/ARCHIVED. Optional `id` filters an exact managed course.
+The legacy array response without `page` remains compatible; new clients use pagination.
+Meeting authorization uses `GET /api/learning/courses?summary=true` and its course-specific
+variant; these return only id/title after enrollment/publication checks.
+
+`GET` and `PUT /api/lessons/{lessonId}/assignment/configuration` provide owned authoring.
+The PUT body is `{required,title,description,version}`. Saving a mandatory flag and its
+condition is atomic; stale versions return 409 and invalid conditions leave the previous
+configuration untouched. Structure freezes at component publication. The course-management
+UI exposes this under each lesson's “Домашнее задание”. Existing submission/review APIs remain.

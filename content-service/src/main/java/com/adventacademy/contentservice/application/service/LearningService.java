@@ -51,10 +51,28 @@ public class LearningService {
     public record TeachingCourse(UUID id, String title) { }
 
     @Transactional(readOnly = true)
+    public List<TeachingCourse> accessCourses() {
+        return jdbc.query("SELECT c.id,c.title FROM content.courses c JOIN content.learning_enrollments e ON e.course_id=c.id "
+                + "WHERE e.user_id=? AND c.status='PUBLISHED' ORDER BY c.id", (r,n) ->
+                new TeachingCourse(r.getObject(1,UUID.class),r.getString(2)), currentUser.requireCurrentUserId());
+    }
+
+    @Transactional(readOnly = true)
+    public TeachingCourse accessCourse(UUID courseId) {
+        var rows = jdbc.query("SELECT c.id,c.title FROM content.courses c JOIN content.learning_enrollments e ON e.course_id=c.id "
+                + "WHERE e.user_id=? AND c.id=? AND c.status='PUBLISHED'", (r,n) ->
+                new TeachingCourse(r.getObject(1,UUID.class),r.getString(2)), currentUser.requireCurrentUserId(), courseId);
+        if (rows.isEmpty()) { throw new AccessDeniedException("Course is not assigned or published"); }
+        return rows.getFirst();
+    }
+
+    @Transactional(readOnly = true)
     public List<TeachingCourse> teachingCourses() {
-        return courses.findAll().stream().filter(course -> course.getStatus() == PublicationStatus.PUBLISHED)
-                .filter(course -> guard.mayCurate(course.getOwnerId()))
-                .map(course -> new TeachingCourse(course.getId(), course.getTitle())).toList();
+        boolean curator = guard.isCurator();
+        return jdbc.query("SELECT id,title FROM content.courses WHERE status='PUBLISHED' "
+                + (curator ? "" : "AND owner_id=? ") + "ORDER BY id", (r,n) ->
+                new TeachingCourse(r.getObject(1,UUID.class),r.getString(2)),
+                curator ? new Object[0] : new Object[]{currentUser.requireCurrentUserId()});
     }
 
     @Transactional(readOnly = true)
@@ -75,6 +93,10 @@ public class LearningService {
         return jdbc.queryForList("SELECT user_id FROM content.learning_enrollments WHERE course_id=? ORDER BY user_id", UUID.class, courseId);
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private EnrollmentWriter enrollmentWriter;
+
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
     public void assign(UUID courseId, UUID studentId, String authorization) {
         var course = courses.findById(courseId).orElseThrow(() -> new NotFoundException("Course not found"));
         guard.requireCurator("COURSE_ACCESS", "Course", courseId, course.getOwnerId(), "ASSIGN_COURSE");
@@ -82,17 +104,36 @@ public class LearningService {
             throw new IllegalStateException("Course is not published");
         }
         enrollmentUsers.requireActiveUser(courseId, studentId, authorization);
-        jdbc.update("INSERT INTO content.learning_enrollments(user_id, course_id) VALUES (?, ?) "
-                + "ON CONFLICT (user_id, course_id) DO NOTHING", studentId, courseId);
+        enrollmentWriter.assign(courseId, studentId);
     }
 
     @Transactional(readOnly = true)
     public List<CourseView> list() {
         UUID userId = currentUser.requireCurrentUserId();
-        return jdbc.queryForList("SELECT e.course_id FROM content.learning_enrollments e "
-                        + "JOIN content.courses c ON c.id=e.course_id WHERE e.user_id=? AND c.status='PUBLISHED' "
-                        + "ORDER BY e.assigned_at, e.course_id", UUID.class, userId)
-                .stream().map(this::course).toList();
+        var result = new java.util.LinkedHashMap<UUID, CourseProgress>();
+        jdbc.query("""
+                SELECT c.id AS course_id,c.title AS course_title,c.description,e.started_at,
+                       m.id AS module_id,m.title AS module_title,m.status AS module_status,
+                       l.id AS lesson_id,l.title AS lesson_title,l.position,l.required_assignment,
+                       done.lesson_id AS completed_lesson
+                FROM content.learning_enrollments e JOIN content.courses c ON c.id=e.course_id
+                LEFT JOIN content.course_components cc ON cc.course_id=c.id
+                LEFT JOIN content.components m ON m.id=cc.component_id
+                LEFT JOIN content.lessons l ON l.component_id=m.id
+                LEFT JOIN content.learning_completions done ON done.user_id=e.user_id
+                     AND done.course_id=c.id AND done.lesson_id=l.id
+                WHERE e.user_id=? AND c.status='PUBLISHED'
+                ORDER BY e.assigned_at,e.course_id,cc.position,l.position
+                """, (org.springframework.jdbc.core.RowCallbackHandler) row -> {
+                    UUID id = row.getObject("course_id",UUID.class);
+                    CourseProgress progress = result.get(id);
+                    if (progress == null) {
+                        progress = new CourseProgress(id,row.getString("course_title"),row.getString("description"),row.getObject("started_at") != null);
+                        result.put(id,progress);
+                    }
+                    progress.add(row);
+                }, userId);
+        return result.values().stream().map(CourseProgress::view).toList();
     }
 
     @Transactional(readOnly = true)
@@ -106,8 +147,8 @@ public class LearningService {
         if (course.getStatus() != PublicationStatus.PUBLISHED) {
             throw new AccessDeniedException("Course is not published");
         }
-        List<UUID> completed = jdbc.queryForList("SELECT lesson_id FROM content.learning_completions "
-                + "WHERE user_id=? AND course_id=?", UUID.class, studentId, courseId);
+        java.util.Set<UUID> completed = new java.util.HashSet<>(jdbc.queryForList("SELECT lesson_id FROM content.learning_completions "
+                + "WHERE user_id=? AND course_id=?", UUID.class, studentId, courseId));
         List<LessonRow> rows = jdbc.query("SELECT l.id, l.title, l.position, l.required_assignment, "
                         + "c.id AS module_id, c.title AS module_title, c.status AS module_status "
                         + "FROM content.course_components cc JOIN content.components c ON c.id=cc.component_id "
@@ -195,7 +236,7 @@ public class LearningService {
         if (component.getStatus() != PublicationStatus.DRAFT) {
             throw new IllegalStateException("Requirements can only be edited before component publication");
         }
-        jdbc.update("UPDATE content.lessons SET required_assignment=? WHERE id=?", required, lessonId);
+        jdbc.update("UPDATE content.lessons SET required_assignment=?,assignment_revision=assignment_revision+1 WHERE id=?", required, lessonId);
     }
 
     private void requireEnrollment(UUID courseId, boolean lock) {
@@ -216,6 +257,40 @@ public class LearningService {
 
     private void requireAvailable(LessonNode lesson) {
         if (!lesson.available()) { throw new IllegalStateException("Complete the previous lesson first"); }
+    }
+
+    private static final class CourseProgress {
+        private final UUID id;
+        private final String title;
+        private final String description;
+        private final boolean started;
+        private final java.util.Map<UUID,java.util.ArrayList<LessonNode>> modules = new java.util.LinkedHashMap<>();
+        private final java.util.Map<UUID,String> titles = new java.util.HashMap<>();
+        private boolean previousDone = true;
+        private UUID current;
+        private int total;
+        private int completed;
+        CourseProgress(UUID id,String title,String description,boolean started) {
+            this.id=id;this.title=title;this.description=description;this.started=started;
+        }
+        void add(java.sql.ResultSet row) throws java.sql.SQLException {
+            UUID lesson=row.getObject("lesson_id",UUID.class);
+            if (lesson == null) { return; }
+            if (!"PUBLISHED".equals(row.getString("module_status"))) { throw new IllegalStateException("Course contains an unpublished component"); }
+            UUID module=row.getObject("module_id",UUID.class);
+            boolean done=row.getObject("completed_lesson") != null;
+            if (!done && current == null) { current=lesson; }
+            modules.computeIfAbsent(module,key -> new java.util.ArrayList<>()).add(new LessonNode(lesson,
+                    row.getString("lesson_title"),row.getInt("position"),row.getBoolean("required_assignment"),done,previousDone));
+            titles.put(module,row.getString("module_title"));
+            previousDone=previousDone && done;
+            total++;if(done) { completed++; }
+        }
+        CourseView view() {
+            String status=total>0 && completed==total ? "complete" : started ? "active" : "new";
+            return new CourseView(id,title,description,status,total,completed,current,
+                    modules.entrySet().stream().map(entry -> new ModuleNode(entry.getKey(),titles.get(entry.getKey()),List.copyOf(entry.getValue()))).toList());
+        }
     }
 
     private record LessonRow(UUID id, String title, int position, boolean assignment, UUID moduleId,

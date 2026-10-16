@@ -32,7 +32,7 @@ public class CourseMeetingAccess {
     public record Course(UUID id, String title) { }
 
     public List<Course> courses(String authorization, boolean teacher) {
-        final JsonNode response = read(coursePath(teacher), authorization);
+        final JsonNode response = read(coursePath(teacher) + "?summary=true", authorization);
         final List<Course> result = new ArrayList<>();
         for (JsonNode node : response) {
             result.add(new Course(UUID.fromString(node.path("id").asText()), node.path("title").asText()));
@@ -41,7 +41,7 @@ public class CourseMeetingAccess {
     }
 
     public Course course(UUID courseId, String authorization, boolean teacher) {
-        final JsonNode response = read(coursePath(teacher) + "/" + courseId, authorization);
+        final JsonNode response = read(coursePath(teacher) + "/" + courseId + "?summary=true", authorization);
         return new Course(UUID.fromString(response.path("id").asText()), response.path("title").asText());
     }
 

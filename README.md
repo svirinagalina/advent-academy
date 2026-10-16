@@ -20,7 +20,8 @@ demonstrating proper architecture, clean code principles, and scalable system de
 
 ## 🧱 Architecture
 
-The project follows **Clean Architecture** principles.
+The course constructor follows **Clean Architecture** principles. The wider LMS uses layered
+services; learner/admin application services currently also contain Spring/JDBC read models.
 
 ### Application layers:
 com.adventacademy
@@ -36,7 +37,8 @@ com.adventacademy
 ### Key rules:
 
 - `domain` does not depend on any framework
-- `application` depends only on the domain
+- Constructor application logic uses domain models and ports; learner/admin JDBC use cases
+  remain coupled to Spring/PostgreSQL and are tracked as maintainability debt
 - `adapters` and `infrastructure` depend on outer layers
 - Business logic is isolated from technical concerns
 
@@ -47,8 +49,8 @@ com.adventacademy
 - **Java 21**
 - **Spring Boot**
 - **Gradle**
-- **JUnit / Testcontainers** (planned)
-- **PostgreSQL / Kafka / Redis** (planned)
+- **JUnit / Testcontainers / Playwright**
+- **PostgreSQL**, with optional local Kafka infrastructure
 
 The technology stack may evolve as the project grows.
 
@@ -126,6 +128,21 @@ The Next.js frontend lives in `frontend/` and requires Node.js 24 LTS.
 Run `npm ci` and `npm run dev` from that directory, then open http://localhost:3000.
 Place HTML design references and their assets in `frontend/design-reference/`.
 See [frontend/README.md](frontend/README.md) for Docker and validation commands.
+
+### Production and architecture verification
+
+The root Compose is for development. Production profiles, TLS edge, mounted RSA/public keys,
+separate database identities, initial administrator setup and backup/restore are documented in
+[the operations guide](docs/operations/production.md). Run the isolated checks locally:
+
+```sh
+python3 scripts/production-readiness-smoke.py
+python3 scripts/user-admin-e2e.py
+```
+
+The architecture remediation tasks are tracked in
+[architecture-readiness.json](docs/plans/architecture-readiness.json).
+Kafka/ZooKeeper are optional (`docker compose --profile messaging up -d`).
 
 ### Backend
 

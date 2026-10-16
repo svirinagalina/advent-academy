@@ -53,10 +53,26 @@ await withSmokeBrowser('editor', async browser => {
     await page.getByRole('button', { name: 'Редактировать содержимое', exact: true }).click();
     assert.equal(await sourceText(page), first);
     await editor(page).getByRole('tab', { name: 'Предпросмотр', exact: true }).click();
-    await editor(page).locator('.editor-preview h1').waitFor();
+    await editor(page).frameLocator('.editor-preview iframe').locator('h1').waitFor();
     assert.equal(await source(page).isVisible(), false);
     assert.equal(await editor(page).locator('.editor-preview .lesson-material').isVisible(), true);
-    assert.equal(await editor(page).locator('.editor-preview script').count(), 0);
+    assert.equal(await editor(page).frameLocator('.editor-preview iframe').locator('script').count(), 0);
+    // Simulate a sanitizer regression at the real BFF response boundary: the browser still refuses script/event execution.
+    await editor(page).getByRole('tab', { name: 'Markdown', exact: true }).click();
+    await page.route('**/api/backend/lessons/*/content/draft/preview', async route => {
+        const response = await route.fetch(); const payload = await response.json();
+        payload.html = '<h1>Containment check</h1><script>parent.document.documentElement.dataset.unsafeContent="script"</script><img src="/missing-test-image" onerror="parent.document.documentElement.dataset.unsafeContent=\'event\'">';
+        await route.fulfill({response,json:payload});
+    });
+    await source(page).fill('# Containment check');
+    await editor(page).getByRole('tab', { name: 'Предпросмотр', exact: true }).click();
+    await editor(page).frameLocator('.editor-preview iframe').locator('h1').filter({hasText:'Containment check'}).waitFor();
+    assert.equal(await page.evaluate(() => document.documentElement.dataset.unsafeContent),undefined);
+    const permissions = await editor(page).locator('.editor-preview iframe').getAttribute('sandbox');
+    assert.ok(!permissions.includes('allow-scripts') && !permissions.includes('allow-forms'));
+    await page.unroute('**/api/backend/lessons/*/content/draft/preview');
+    await editor(page).getByRole('tab', { name: 'Markdown', exact: true }).click();
+    await source(page).fill(first);
     const preview = await api(owner, 'POST', `${path}/preview`, { markdown: first });
     await editor(page).getByRole('tab', { name: 'HTML', exact: true }).click();
     await editor(page).getByLabel('Сгенерированный HTML').waitFor();
@@ -87,8 +103,8 @@ await withSmokeBrowser('editor', async browser => {
     await page.getByRole('button', { name: 'Редактировать содержимое', exact: true }).click();
     assert.equal(await sourceText(page), imageText);
     await editor(page).getByRole('checkbox', { name: 'Markdown и предпросмотр рядом' }).check();
-    await editor(page).locator('.editor-preview img').waitFor();
-    await page.waitForFunction(() => { const image = document.querySelector('.editor-preview img'); return image?.complete && image.naturalWidth > 0; });
+    await editor(page).frameLocator('.editor-preview iframe').locator('img').waitFor();
+    await page.waitForFunction(() => { const image = document.querySelector('.editor-preview iframe')?.contentDocument?.querySelector('img'); return image?.complete && image.naturalWidth > 0; });
     await editor(page).getByRole('button', { name: 'Опубликовать', exact: true }).click();
     await editor(page).getByText('Материал опубликован. Модуль и курс публикуются отдельно.', { exact: true }).waitFor();
     assert.match((await api(learner, 'GET', learnerPath)).html, /<img/);
@@ -123,11 +139,11 @@ await withSmokeBrowser('editor', async browser => {
     });
     await source(page).fill('# Slow preview'); await slowArrived;
     await source(page).fill('# Fresh preview');
-    await editor(page).locator('.editor-preview h1').filter({ hasText: 'Fresh preview' }).waitFor();
+    await editor(page).frameLocator('.editor-preview iframe').locator('h1').filter({ hasText: 'Fresh preview' }).waitFor();
     releaseSlow();
     await slowCompleted;
     await page.unroute(`**/api/backend/${path}/preview`);
-    assert.equal(await editor(page).locator('.editor-preview h1').innerText(), 'Fresh preview');
+    assert.equal(await editor(page).frameLocator('.editor-preview iframe').locator('h1').innerText(), 'Fresh preview');
     await source(page).fill('# Unsaved after failure');
     // Import confirmation, cursor toolbar and Undo all act on the existing CodeMirror state.
     page.once('dialog', dialog => dialog.dismiss());
@@ -176,7 +192,7 @@ await withSmokeBrowser('editor', async browser => {
     await source(page).waitFor(); await editor(page).getByRole('button', { name: 'Закрыть редактор' }).click();
     await page.getByLabel('Markdown или ZIP с Markdown и вложениями').setInputFiles({ name: 'lesson.zip', mimeType: 'application/zip', buffer: Buffer.from('UEsDBBQAAAAAAFZPUF2JRvb4DAAAAAwAAAAJAAAAbGVzc29uLm1kIyBaSVAgaW1wb3J0UEsBAhQDFAAAAAAAVk9QXYlG9vgMAAAADAAAAAkAAAAAAAAAAAAAAIABAAAAAGxlc3Nvbi5tZFBLBQYAAAAAAQABADcAAAAzAAAAAAA=', 'base64') });
     await page.getByRole('button', { name: 'Загрузить материал', exact: true }).click();
-    await page.locator('.management-preview h1').filter({ hasText: 'ZIP import' }).waitFor();
+    await page.frameLocator('.management-preview iframe').locator('h1').filter({ hasText: 'ZIP import' }).waitFor();
     await page.getByRole('button', { name: 'Редактировать содержимое', exact: true }).click();
     assert.equal(await sourceText(page), '# ZIP import');
     assert.equal((await api(owner, 'GET', `lessons/${zipLesson}/content/draft`)).markdown, '# ZIP import');

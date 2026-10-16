@@ -1,11 +1,15 @@
 import "server-only";
+import { readFileSync } from "node:fs";
+import { isIP } from "node:net";
 import {
 	createCipheriv,
 	createDecipheriv,
 	createHash,
+	createHmac,
 	randomBytes,
+	timingSafeEqual,
 } from "node:crypto";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import type { NextRequest } from "next/server";
 
 const cookieName = "advent_session";
@@ -25,8 +29,18 @@ export class ApiError extends Error {
 		super(message);
 	}
 }
+const loadedSecrets = new Map<string, string>();
+function secret(name: string) {
+    const file = process.env[`${name}_FILE`];
+    if (!file) return process.env[name] || "";
+    if (!loadedSecrets.has(name)) loadedSecrets.set(name, readFileSync(file, "utf8").trim());
+    return loadedSecrets.get(name) || "";
+}
 export function sessionKey() {
-	const value = process.env.SESSION_ENCRYPTION_KEY;
+    if (process.env.REQUIRE_TRUSTED_EDGE === "true" &&
+        (secret("TRUSTED_EDGE_SECRET").length < 32 || secret("BFF_REQUEST_KEY").length < 32))
+        throw new ApiError(503, "Кабинет временно недоступен");
+	const value = secret("SESSION_ENCRYPTION_KEY");
 	if (!value || Buffer.from(value, "base64").length !== 32)
 		throw new ApiError(503, "Кабинет временно недоступен");
 	return Buffer.from(value, "base64");
@@ -82,18 +96,37 @@ export function requireOrigin(request: NextRequest) {
 	if (request.headers.get("origin") !== new URL(expected).origin)
 		throw new ApiError(403, "Недопустимый источник запроса");
 }
+async function clientAssertion(path: string): Promise<Record<string, string>> {
+    const incoming = await headers();
+    const edgeSecret = secret("TRUSTED_EDGE_SECRET");
+    const supplied = incoming.get("x-advent-edge-key") || "";
+    const trusted = edgeSecret.length >= 32 && Buffer.byteLength(supplied) === Buffer.byteLength(edgeSecret) &&
+        timingSafeEqual(Buffer.from(supplied), Buffer.from(edgeSecret));
+    const address = trusted ? incoming.get("x-advent-client-ip") || "" : "";
+    if (process.env.REQUIRE_TRUSTED_EDGE === "true" && (!trusted || !isIP(address)) && path.startsWith("/api/auth/"))
+        throw new ApiError(503, "Вход временно недоступен");
+    if (!trusted || !isIP(address)) return {};
+    const key = secret("BFF_REQUEST_KEY");
+    if (key.length < 32) throw new ApiError(503, "Вход временно недоступен");
+    const bucket = createHmac("sha256", key).update(address).digest("hex");
+    const seconds = Math.floor(Date.now() / 1000).toString();
+    const proof = createHmac("sha256", key).update(`client\n${path}:${bucket}\n${seconds}`).digest("hex");
+    return {"X-Advent-Client": bucket, "X-Advent-Client-Proof": `${seconds}.${proof}`};
+}
 export async function upstream(path: string, init: RequestInit = {}) {
 	try {
 		return await fetch(
 			`${process.env.API_GATEWAY_URL || "http://localhost:8090"}${path}`,
 			{
 				...init,
+                headers: {...init.headers, ...await clientAssertion(path)},
 				cache: "no-store",
 				redirect: "error",
 				signal: AbortSignal.timeout(15000),
 			},
 		);
-	} catch {
+	} catch (error) {
+        if (error instanceof ApiError) throw error;
 		throw new ApiError(502, "Сервис временно недоступен. Попробуйте ещё раз.");
 	}
 }
@@ -127,8 +160,8 @@ export async function login(body: unknown) {
 	await save(fromAuth(auth));
 	return { mfaRequired: false };
 }
-// One standalone frontend instance: concurrent calls share a single rotation, including requests
-// carrying the previous cookie for a short overlap. Multi-replica deployments need a shared store.
+// A local optimization only: user-service owns durable idempotency across frontend instances.
+// Every replica derives the same request key from the shared session encryption key.
 const rotations = new Map<string, Promise<Session>>();
 async function rotate(session: Session) {
 	const digest = createHash("sha256")
@@ -139,7 +172,10 @@ async function rotate(session: Session) {
 		pending = (async () => {
 			const response = await upstream("/api/auth/refresh", {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
+				headers: {
+                    "Content-Type": "application/json",
+                    "X-Refresh-Request": createHmac("sha256", sessionKey()).update(session.refreshToken).digest("hex"),
+                },
 				body: JSON.stringify({ refreshToken: session.refreshToken }),
 			});
 			await ensureOk(response);
@@ -183,13 +219,12 @@ export async function logout() {
 		const digest = createHash("sha256")
 			.update(session.refreshToken)
 			.digest("hex");
-		const current = rotations.has(digest)
-			? await rotations.get(digest)
-			: session;
+        if (rotations.has(digest)) await rotations.get(digest);
 		const response = await upstream("/api/auth/logout", {
 			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ refreshToken: current?.refreshToken }),
+			headers: { "Content-Type": "application/json",
+                "X-Refresh-Request": createHmac("sha256", sessionKey()).update(session.refreshToken).digest("hex") },
+			body: JSON.stringify({ refreshToken: session.refreshToken }),
 		});
 		await ensureOk(response);
 		rotations.delete(digest);

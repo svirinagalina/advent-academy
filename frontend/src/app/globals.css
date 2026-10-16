@@ -2497,3 +2497,13 @@ dialog.management-dialog,dialog.modal,dialog.lesson-editor {position:fixed;inset
 }
 .editor-toolbar { border: 0; padding: 0; display: flex; gap: .5rem; }
 .editor-toolbar legend { font-size: .875rem; color: var(--muted); margin-bottom: .5rem; }
+
+.management-lesson > details {
+  flex-basis: 100%;
+  min-width: 0;
+  width: 100%;
+}
+.management-lesson > details > summary {
+  cursor: pointer;
+  padding: .5rem 0;
+}

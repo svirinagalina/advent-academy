@@ -84,6 +84,15 @@ tasks.register('securityContract', Test) {
     testClassesDirs = sourceSets.test.output.classesDirs
     classpath = sourceSets.test.runtimeClasspath
 
+    // This suite reads contracts and service sources from disk, outside the root source set.
+    // A changed route or policy must invalidate an otherwise cached successful test run.
+    inputs.files(fileTree(rootDir) {
+        include 'docs/security/**', 'docs/adr/**', 'docs/plans/security-hardening-milestone.md'
+        include 'config/security/**', '*/src/main/java/**/*Controller.java'
+        include '*/src/main/resources/application*.yml', '*/Dockerfile*', 'deploy/production/**'
+        exclude '**/build/**', '**/__pycache__/**'
+    })
+
     useJUnitPlatform {
         includeTags 'security-contract'
     }

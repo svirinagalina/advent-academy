@@ -153,6 +153,7 @@ public class CourseAssemblyServiceTest {
         Course own = Course.create("Mine", "Draft of the caller", OWNER_ID, CLOCK);
         Course foreign = Course.create("Theirs", "Draft of somebody else", OTHER_USER_ID, CLOCK);
         when(courseRepository.findAll()).thenReturn(List.of(own, foreign));
+        when(courseRepository.findManagedByOwnerId(OWNER_ID)).thenReturn(List.of(own));
 
         List<Course> visible = service.findAll();
 
@@ -176,6 +177,7 @@ public class CourseAssemblyServiceTest {
         when(coursePublicationPolicy.findUnpublishedComponents(List.of(componentId))).thenReturn(Set.of());
         foreign.publish(coursePublicationPolicy, CLOCK);
         when(courseRepository.findAll()).thenReturn(List.of(own, foreign));
+        when(courseRepository.findManagedByOwnerId(OWNER_ID)).thenReturn(List.of(own));
         assertThat(service.findManaged()).containsExactly(own);
         foreign.archive(CLOCK);
         assertThat(service.findManaged()).containsExactly(own);

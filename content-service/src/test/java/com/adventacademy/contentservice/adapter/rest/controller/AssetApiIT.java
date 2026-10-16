@@ -33,9 +33,20 @@ class AssetApiIT {
     private MockMvc mockMvc;
 
     @Test
+    void activeFormatsAndSpoofedImageSignaturesAreRejected() throws Exception {
+        UUID lesson=createLesson();
+        byte[] active="<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>".getBytes(StandardCharsets.UTF_8);
+        for (String type : java.util.List.of("image/svg+xml","image/png")) {
+            mockMvc.perform(multipart("/api/lessons/{id}/assets",lesson)
+                    .file(new MockMultipartFile("file",type.equals("image/png") ? "x.png" : "x.svg",type,active)))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Test
     void uploadAssetAndReturns201() throws Exception {
         UUID lessonId = createLesson();
-        byte[] fileContent = "PDF file content".getBytes(StandardCharsets.UTF_8);
+        byte[] fileContent = "%PDF-1.7 file content".getBytes(StandardCharsets.UTF_8);
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "test.pdf",
@@ -58,7 +69,7 @@ class AssetApiIT {
     @Test
     void uploadImageAsset() throws Exception {
         UUID lessonId = createLesson();
-        byte[] imageContent = "fake image content".getBytes(StandardCharsets.UTF_8);
+        byte[] imageContent = java.util.Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=");
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "image.png",
@@ -74,7 +85,7 @@ class AssetApiIT {
     @Test
     void downloadAssetReturnsFileWithCorrectHeaders() throws Exception {
         UUID lessonId = createLesson();
-        byte[] fileContent = "PDF file content".getBytes(StandardCharsets.UTF_8);
+        byte[] fileContent = "%PDF-1.7 file content".getBytes(StandardCharsets.UTF_8);
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "document.pdf",
@@ -90,7 +101,7 @@ class AssetApiIT {
 
         mockMvc.perform(get("/api/assets/{id}", assetId))
                 .andExpect(status().isOk())
-                .andExpect(content().contentType("application/pdf"))
+                .andExpect(content().contentType("application/octet-stream"))
                 .andExpect(header().string("Content-Disposition", "attachment; filename=\"document.pdf\""))
                 .andExpect(content().bytes(fileContent));
     }
@@ -98,7 +109,7 @@ class AssetApiIT {
     @Test
     void downloadImageAssetWithInlineDisposition() throws Exception {
         UUID lessonId = createLesson();
-        byte[] imageContent = "fake image".getBytes(StandardCharsets.UTF_8);
+        byte[] imageContent = java.util.Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=");
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "image.png",
@@ -125,7 +136,7 @@ class AssetApiIT {
                 "file",
                 "test.pdf",
                 "application/pdf",
-                "content".getBytes()
+                "%PDF-1.7 content".getBytes()
         );
 
         mockMvc.perform(multipart("/api/lessons/{lessonId}/assets", UUID.randomUUID()).file(file))
@@ -145,7 +156,7 @@ class AssetApiIT {
                 "file",
                 "test.exe",
                 "application/x-msdownload",
-                "content".getBytes()
+                "%PDF-1.7 content".getBytes()
         );
 
         mockMvc.perform(multipart("/api/lessons/{lessonId}/assets", lessonId).file(file))
@@ -191,14 +202,14 @@ class AssetApiIT {
                 "file",
                 "file1.pdf",
                 "application/pdf",
-                "content1".getBytes()
+                "%PDF-1.7 content1".getBytes()
         );
 
         MockMultipartFile file2 = new MockMultipartFile(
                 "file",
                 "file2.png",
                 "image/png",
-                "content2".getBytes()
+                java.util.Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=")
         );
 
         mockMvc.perform(multipart("/api/lessons/{lessonId}/assets", lessonId).file(file1))

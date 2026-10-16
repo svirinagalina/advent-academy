@@ -40,6 +40,11 @@ public class CourseRepositoryAdapter implements CourseRepository {
     }
 
     @Override
+    public List<Course> findManagedByOwnerId(UUID ownerId) {
+        return jpaRepository.findByOwnerId(ownerId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public List<Course> findAll() {
         return jpaRepository.findAll().stream().map(mapper::toDomain).toList();
     }

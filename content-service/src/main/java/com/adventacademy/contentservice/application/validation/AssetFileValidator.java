@@ -24,6 +24,9 @@ public class AssetFileValidator {
             throw new InvalidAssetFileException("filename must not be blank");
         }
 
+        if (filename.length() > 255 || filename.chars().anyMatch(Character::isISOControl)) {
+            throw new InvalidAssetFileException("filename must be at most 255 characters without control characters");
+        }
         String contentType = command.contentType();
         if (contentType == null || contentType.isBlank()) {
             throw new InvalidAssetFileException("content type must not be blank");
@@ -38,6 +41,9 @@ public class AssetFileValidator {
         if (command.sizeBytes() > maxFileSizeBytes) {
             throw new InvalidAssetFileException(
                     "file size " + command.sizeBytes() + " exceeds limit " + maxFileSizeBytes);
+        }
+        if (!AssetTypePolicy.matches(filename, contentType, command.content())) {
+            throw new InvalidAssetFileException("file signature, extension and content type must match; active formats are forbidden");
         }
     }
 }

@@ -4,6 +4,10 @@ spring:
   cloud:
     gateway:
       routes:
+        - id: identity-public-keys
+          uri: ${USER_SERVICE_URL}
+          predicates:
+            - Path=/.well-known/jwks.json
         # user-service — its own /api/** resource paths, forwarded unchanged.
         - id: user-service-api
           uri: ${USER_SERVICE_URL}

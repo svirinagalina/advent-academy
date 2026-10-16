@@ -366,7 +366,7 @@ public class SecurityIT extends AbstractPostgresIT {
     }
 
     private static MockMultipartFile assetFile() {
-        return new MockMultipartFile("file", "diagram.png", "image/png", "fake-png-bytes".getBytes(StandardCharsets.UTF_8));
+        return new MockMultipartFile("file", "diagram.png", "image/png", java.util.Base64.getDecoder().decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII="));
     }
 
     private static MockMultipartFile markdownFile() {

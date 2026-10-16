@@ -1,4 +1,5 @@
 "use client";
+import { SafeHtml } from "@/components/safe-html";
 
 import NextLink from "next/link";
 import { ThemeToggle } from "@/components/theme";
@@ -1345,16 +1346,10 @@ export default function Academy({
 															<track kind="captions" />
 														</video>
 													))}
-												<section
-													className="lesson-material"
-													// biome-ignore lint/security/noDangerouslySetInnerHtml: content-service sanitizes HTML with OWASP before persistence.
-													dangerouslySetInnerHTML={{
-														__html: live.lesson.html.replaceAll(
+												<SafeHtml className="lesson-material" html={live.lesson.html.replaceAll(
 															"/api/assets/",
 															"/api/backend/assets/",
-														),
-													}}
-												/>
+														)} />
 												{live.lesson.assets
 													.filter(
 														(asset) => !asset.contentType.startsWith("video/"),

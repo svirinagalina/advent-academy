@@ -156,3 +156,10 @@ Camunda на тестовом стенде отключён. Один meeting-se
 Подтверждены локальные сценарии на синтетических данных. Подключение через
 внешний TURN, нагрузка восьми устройств, production и несколько экземпляров
 BFF/meeting-service не проверялись; условия запуска приведены выше.
+
+## Architecture readiness update 2026-10-16
+
+Production uses shared PostgreSQL refresh receipts across BFF processes; the earlier single-BFF
+restriction is superseded. Meeting transport remains a deliberate singleton and a PostgreSQL
+lease rejects accidental additional instances. Mesh/device/TURN capacity remains a release gate.
+Use `docs/operations/production.md` and the current risk register for deployment readiness.

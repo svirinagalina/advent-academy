@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted as the target security architecture. Implementation is tracked by SEC-102 and SEC-104.
+Implemented for production profiles in `fix/architecture-readiness`; HMAC remains development-only.
 
 ## Context
 
@@ -15,10 +15,11 @@ which makes claim and algorithm policy easier to drift.
 - Only user-service owns access-token private signing keys.
 - Access tokens use an approved asymmetric algorithm and carry a `kid`.
 - User-service publishes public verification keys as JWKS.
-- Resource services use one shared resource-server component and validate signature, explicit
+- Resource services use the shared `security-common` verification component and validate signature, explicit
   algorithm allowlist, issuer, audience, `token_type=access`, expiry, subject shape, and `kid`.
-- JWKS caches are bounded and support an overlap window for rotation. Unknown keys and unavailable
-  stale caches fail closed.
+- Verifiers load immutable mounted public keys with active/previous key IDs. The issuer publishes
+  JWKS for inspection; verification has no request-time network dependency. Unknown IDs and
+  unapproved algorithms fail closed. Rotation distributes the overlap bundle before old keys retire.
 - The gateway may validate for edge decisions later, but its validation never replaces service-side
   authentication or object authorization.
 - Private keys come from production secret storage and never enter resource services, images,
@@ -27,5 +28,5 @@ which makes claim and algorithm policy easier to drift.
 ## Consequences
 
 Compromise of a resource-service verifier no longer grants signing capability. Rotation requires an
-explicit old/new overlap and rollback procedure. Until SEC-104 lands, the shared HMAC secret remains
-an open critical risk and must not be represented as the target architecture.
+explicit old/new overlap and rollback procedure. Development may explicitly use a shared HMAC key; production guards reject that configuration.
+See `docs/operations/production.md` for mounted-key rollout and emergency revocation.

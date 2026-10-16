@@ -79,6 +79,99 @@ class UserAdminIT {
         verify(mail, times(1)).sendInvitation(anyString(), anyString());
     }
 
+    @Test
+    void independentRefreshRequestsShareOneDurableResultAndLogoutRevokesOverlap() throws Exception {
+        String old = jwt.generateRefreshToken(admin);
+        String key = "a".repeat(64);
+        var pool = Executors.newFixedThreadPool(2);
+        var start = new CountDownLatch(1);
+        Callable<String> rotate = () -> {
+            start.await();
+            var response = mvc.perform(post("/api/auth/refresh").header("X-Refresh-Request", key)
+                    .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("refreshToken",old))))
+                    .andReturn().getResponse();
+            assertThat(response.getStatus()).isEqualTo(200);
+            return response.getContentAsString();
+        };
+        String replacement;
+        try {
+            var first = pool.submit(rotate); var second = pool.submit(rotate); start.countDown();
+            String result = first.get(15,TimeUnit.SECONDS);
+            assertThat(second.get(15,TimeUnit.SECONDS)).isEqualTo(result);
+            replacement = json.readTree(result).path("refreshToken").asText();
+        } finally { pool.shutdownNow(); }
+        assertThat(jwt.validateRefreshToken(old)).isFalse();
+        var replay = mvc.perform(post("/api/auth/refresh").header("X-Refresh-Request","b".repeat(64))
+                .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("refreshToken",old))))
+                .andReturn().getResponse();
+        assertThat(replay.getStatus()).isEqualTo(401);
+        mvc.perform(post("/api/auth/logout").header("X-Refresh-Request",key).contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsBytes(Map.of("refreshToken",old))))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isNoContent());
+        assertThat(jwt.validateRefreshToken(replacement)).isFalse();
+    }
+
+    @Test
+    void logoutOfPreviousCookieSerializesWithAnotherReplicaRotatingTheReplacement() throws Exception {
+        String old=jwt.generateRefreshToken(admin),key="d".repeat(64);
+        var first=mvc.perform(post("/api/auth/refresh").header("X-Refresh-Request",key).contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsBytes(Map.of("refreshToken",old)))).andReturn().getResponse();
+        assertThat(first.getStatus()).isEqualTo(200);
+        String replacement=json.readTree(first.getContentAsString()).path("refreshToken").asText();
+        var pool=Executors.newFixedThreadPool(2);var start=new CountDownLatch(1);
+        try {
+            var rotated=pool.submit(()->{
+                start.await();return mvc.perform(post("/api/auth/refresh").header("X-Refresh-Request","e".repeat(64))
+                        .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("refreshToken",replacement))))
+                        .andReturn().getResponse();
+            });
+            var logout=pool.submit(()->{
+                start.await();return mvc.perform(post("/api/auth/logout").header("X-Refresh-Request",key)
+                        .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsBytes(Map.of("refreshToken",old))))
+                        .andReturn().getResponse();
+            });start.countDown();
+            var result=rotated.get(15,TimeUnit.SECONDS);
+            assertThat(result.getStatus()).isIn(200,401);
+            assertThat(logout.get(15,TimeUnit.SECONDS).getStatus()).isEqualTo(204);
+            assertThat(jwt.validateRefreshToken(replacement)).isFalse();
+            if(result.getStatus()==200) {
+                assertThat(jwt.validateRefreshToken(json.readTree(result.getContentAsString()).path("refreshToken").asText())).isFalse();
+            }
+        } finally {pool.shutdownNow();}
+    }
+
+    @Test
+    void blockedAccountCannotReplayAnOverlappingRotationReceipt() throws Exception {
+        String old = jwt.generateRefreshToken(admin), key = "c".repeat(64);
+        mvc.perform(post("/api/auth/refresh").header("X-Refresh-Request",key).contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsBytes(Map.of("refreshToken",old))))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
+        jdbc.update("UPDATE users SET status='BLOCKED' WHERE id=?",admin);
+        mvc.perform(post("/api/auth/refresh").header("X-Refresh-Request",key).contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsBytes(Map.of("refreshToken",old))))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isUnauthorized());
+    }
+
+    @Autowired com.adventacademy.userservice.application.service.role.WorkflowStartLease workflowLease;
+    @Test
+    void committedWorkflowQueueHasExclusiveClaimAndExactlyOneCanonicalInstance() throws Exception {
+        UUID request = UUID.randomUUID();
+        UUID role = jdbc.queryForObject("SELECT id FROM roles WHERE name='INSTRUCTOR'",UUID.class);
+        jdbc.update("INSERT INTO role_requests(id,user_id,requested_role_id,status,created_at,updated_at) VALUES(?,?,?,'PENDING',now(),now())",
+                request,admin,role);
+        assertThat(workflowLease.claim(request)).isTrue();
+        assertThat(workflowLease.claim(request)).isFalse();
+        var pool = Executors.newFixedThreadPool(2);
+        try {
+            var first=pool.submit(() -> workflowLease.bind(request,111));
+            var second=pool.submit(() -> workflowLease.bind(request,222));
+            assertThat(first.get(10,TimeUnit.SECONDS) ^ second.get(10,TimeUnit.SECONDS)).isTrue();
+            long canonical=jdbc.queryForObject("SELECT process_instance_key FROM role_requests WHERE id=?",Long.class,request);
+            assertThat(workflowLease.bind(request,canonical)).isTrue();
+            assertThat(workflowLease.bind(request,canonical+1)).isFalse();
+        } finally {pool.shutdownNow();}
+    }
+
     @BeforeEach
     void prepare() {
         jdbc.update("DELETE FROM user_invitation_requests");

@@ -83,9 +83,8 @@ public class CourseAssemblyService {
     /** Courses the caller can manage, including drafts and archived courses. */
     @Transactional(readOnly = true)
     public List<Course> findManaged() {
-        return courseRepository.findAll().stream()
-                .filter(course -> currentUserProvider.hasAnyRole(CURATOR_ROLES) || isOwnedByCurrentUser(course))
-                .toList();
+        return currentUserProvider.hasAnyRole(CURATOR_ROLES) ? courseRepository.findAll()
+                : courseRepository.findManagedByOwnerId(currentUserProvider.requireCurrentUserId());
     }
 
     /**

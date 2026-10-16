@@ -6,12 +6,9 @@ import com.adventacademy.userservice.application.service.auth.OpaqueTokens;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -26,7 +23,7 @@ public class JjwtProvider implements JwtProvider {
     private static final String ACCESS_TOKEN = "access";
     private static final String REFRESH_TOKEN = "refresh";
 
-    private final SecretKey signingKey;
+    private com.adventacademy.security.JwtKeys keys;
     private final String issuer;
     private final String audience;
     private final Duration accessTokenLifetime;
@@ -36,7 +33,7 @@ public class JjwtProvider implements JwtProvider {
     private final RefreshTokenStore refreshTokens;
 
     public JjwtProvider(
-            @Value("${security.jwt.secret}") String secret,
+            @Value("#{environment.getProperty('security.jwt.secret','').isEmpty() ? 'construction-only-placeholder-key-32-bytes' : environment.getProperty('security.jwt.secret')}") String secret,
             @Value("${security.jwt.issuer:advent-academy-user-service}") String issuer,
             @Value("${security.jwt.audience:advent-academy-services}") String audience,
             @Value("${security.jwt.access-token-expiration-minutes:15}") long accessTokenMinutes,
@@ -44,10 +41,7 @@ public class JjwtProvider implements JwtProvider {
             @Value("${security.jwt.clock-skew-seconds:30}") long clockSkewSeconds,
             Clock clock,
             RefreshTokenStore refreshTokens) {
-        if (secret == null || secret.getBytes(StandardCharsets.UTF_8).length < 32) {
-            throw new IllegalArgumentException("security.jwt.secret must contain at least 32 UTF-8 bytes");
-        }
-        this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.keys = new com.adventacademy.security.JwtKeys(secret, "", "", "", "", "");
         this.issuer = issuer;
         this.audience = audience;
         this.accessTokenLifetime = Duration.ofMinutes(accessTokenMinutes);
@@ -56,6 +50,24 @@ public class JjwtProvider implements JwtProvider {
         this.clock = clock;
         this.refreshTokens = refreshTokens;
     }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public void configureKeys(
+            @Value("${security.jwt.secret:}") String secret,
+            @Value("${security.jwt.private-key-file:}") String privateFile,
+            @Value("${security.jwt.public-key-file:}") String publicFile,
+            @Value("${security.jwt.key-id:}") String kid,
+            @Value("${security.jwt.previous-public-key-file:}") String previousFile,
+            @Value("${security.jwt.previous-key-id:}") String previousKid,
+            org.springframework.core.env.Environment environment) {
+        keys = new com.adventacademy.security.JwtKeys(secret, privateFile, publicFile, kid, previousFile, previousKid);
+        if (keys.asymmetric() && !keys.canSign()) { throw new IllegalStateException("Identity service requires its private signing key"); }
+        if (environment.acceptsProfiles(org.springframework.core.env.Profiles.of("production")) && !keys.asymmetric()) {
+            throw new IllegalStateException("Production requires asymmetric JWT keys");
+        }
+    }
+
+    public java.util.Map<String, Object> jwks() { return keys.jwks(); }
 
     @Override
     public String generateAccessToken(UUID userId, String email, Set<String> roles) {
@@ -138,7 +150,7 @@ public class JjwtProvider implements JwtProvider {
         if (email != null) {
             builder.claim("email", email);
         }
-        return builder.signWith(signingKey).compact();
+        return keys.sign(builder);
     }
 
     private boolean hasType(String token, String expectedType) {
@@ -150,17 +162,7 @@ public class JjwtProvider implements JwtProvider {
     }
 
     private Claims parseClaims(String token) {
-        final Claims claims = Jwts.parser()
-                .verifyWith(signingKey)
-                .requireIssuer(issuer)
-                .clockSkewSeconds(clockSkewSeconds)
-                .clock(() -> Date.from(clock.instant()))
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-        if (!claims.getAudience().contains(audience)) {
-            throw new JwtException("Invalid token audience");
-        }
+        final Claims claims = keys.parse(token, issuer, audience, clockSkewSeconds, clock);
         return claims;
     }
 

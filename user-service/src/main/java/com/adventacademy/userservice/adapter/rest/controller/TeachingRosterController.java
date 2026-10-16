@@ -34,7 +34,8 @@ public class TeachingRosterController {
     @GetMapping("/{courseId}/candidates/{userId}")
     @PreAuthorize("hasAnyRole('ADMIN','CONTENT_EDITOR','INSTRUCTOR')")
     public TeachingRosterService.Student candidate(@PathVariable UUID courseId, @PathVariable UUID userId,
-            @RequestHeader("Authorization") String authorization) {
-        return roster.candidate(courseId, userId, authorization);
+            @RequestHeader("Authorization") String authorization,
+            @RequestHeader(value = "X-Enrollment-Check", defaultValue = "") String assertion) {
+        return roster.candidate(courseId, userId, authorization, assertion);
     }
 }

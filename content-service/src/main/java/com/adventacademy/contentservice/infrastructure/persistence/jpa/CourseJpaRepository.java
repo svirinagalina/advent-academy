@@ -10,6 +10,8 @@ import java.util.UUID;
 
 public interface CourseJpaRepository extends JpaRepository<CourseEntity, UUID> {
 
+    List<CourseEntity> findByOwnerId(UUID ownerId);
+
     @Query("select count(c) > 0 from CourseEntity c join c.components r where r.componentId = :componentId")
     boolean existsByComponentId(@Param("componentId") UUID componentId);
 

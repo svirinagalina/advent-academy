@@ -372,6 +372,7 @@ function Login({ onSuccess }: { onSuccess: () => Promise<void> }) {
 						{busy ? "Входим…" : "Войти"}
 					</button>
 				</form>
+                <Link className="text-link" href="/auth/forgot-password">Забыли пароль?</Link>
 				<Link className="text-link" href="/demo">
 					Посмотреть демоверсию
 				</Link>

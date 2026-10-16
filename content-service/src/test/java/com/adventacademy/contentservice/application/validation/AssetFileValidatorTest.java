@@ -31,7 +31,7 @@ class AssetFileValidatorTest {
                 UUID.randomUUID(),
                 "test.pdf",
                 "application/pdf",
-                "content".getBytes()
+                "%PDF-1.7 content".getBytes()
         );
 
         assertThatCode(() -> validator.validate(command))
@@ -65,7 +65,7 @@ class AssetFileValidatorTest {
                 UUID.randomUUID(),
                 null,
                 "application/pdf",
-                "content".getBytes()
+                "%PDF-1.7 content".getBytes()
         );
 
         assertThatThrownBy(() -> validator.validate(command))
@@ -79,7 +79,7 @@ class AssetFileValidatorTest {
                 UUID.randomUUID(),
                 "  ",
                 "application/pdf",
-                "content".getBytes()
+                "%PDF-1.7 content".getBytes()
         );
 
         assertThatThrownBy(() -> validator.validate(command))
@@ -93,7 +93,7 @@ class AssetFileValidatorTest {
                 UUID.randomUUID(),
                 "test.pdf",
                 null,
-                "content".getBytes()
+                "%PDF-1.7 content".getBytes()
         );
 
         assertThatThrownBy(() -> validator.validate(command))
@@ -107,7 +107,7 @@ class AssetFileValidatorTest {
                 UUID.randomUUID(),
                 "test.pdf",
                 "  ",
-                "content".getBytes()
+                "%PDF-1.7 content".getBytes()
         );
 
         assertThatThrownBy(() -> validator.validate(command))
@@ -121,7 +121,7 @@ class AssetFileValidatorTest {
                 UUID.randomUUID(),
                 "test.exe",
                 "application/x-msdownload",
-                "content".getBytes()
+                "%PDF-1.7 content".getBytes()
         );
 
         assertThatThrownBy(() -> validator.validate(command))
@@ -148,6 +148,7 @@ class AssetFileValidatorTest {
     @Test
     void acceptsFileAtMaxSize() {
         byte[] content = new byte[(int) MAX_SIZE];
+        System.arraycopy("%PDF-1.7".getBytes(), 0, content, 0, 8);
         UploadAssetCommand command = new UploadAssetCommand(
                 UUID.randomUUID(),
                 "max.pdf",

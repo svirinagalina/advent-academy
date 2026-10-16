@@ -14,6 +14,12 @@ public class LearningController {
 
     public LearningController(LearningService learning) { this.learning = learning; }
 
+    @GetMapping(value = "/courses", params = "summary=true")
+    public List<LearningService.TeachingCourse> accessCourses() { return learning.accessCourses(); }
+
+    @GetMapping(value = "/courses/{courseId}", params = "summary=true")
+    public LearningService.TeachingCourse accessCourse(@PathVariable UUID courseId) { return learning.accessCourse(courseId); }
+
     @GetMapping("/courses")
     public List<LearningService.CourseView> list() { return learning.list(); }
 

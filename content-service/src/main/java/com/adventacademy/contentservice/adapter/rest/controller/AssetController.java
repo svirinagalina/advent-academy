@@ -18,21 +18,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Set;
 import java.util.UUID;
 
 @RestController
 @Tag(name = "Assets", description = "Uploading and downloading assets for lessons")
 public class AssetController {
-
-    private static final Set<String> IMAGE_MIME_TYPES = Set.of(
-            "image/png",
-            "image/jpeg",
-            "image/jpg",
-            "image/gif",
-            "image/svg+xml",
-            "image/webp"
-    );
 
     private final UploadAssetService uploadAssetService;
     private final DownloadAssetService downloadAssetService;
@@ -86,12 +76,19 @@ public class AssetController {
         StoredAsset asset = downloadAssetService.getAssetById(id);
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(asset.getContentType()));
+        boolean inline = com.adventacademy.contentservice.application.validation.AssetTypePolicy.safeInline(
+                asset.getFilename(), asset.getContentType(), asset.getFileData());
+        headers.setContentType(inline ? MediaType.parseMediaType(asset.getContentType()) : MediaType.APPLICATION_OCTET_STREAM);
+        headers.set("Content-Security-Policy", "sandbox; default-src 'none'");
+        headers.set("X-Content-Type-Options", "nosniff");
+        headers.set("Referrer-Policy", "no-referrer");
+        headers.setCacheControl("private, no-store");
         headers.setContentLength(asset.getFileSize());
 
-        ContentDisposition contentDisposition = IMAGE_MIME_TYPES.contains(asset.getContentType())
-                ? ContentDisposition.inline().filename(asset.getFilename()).build()
-                : ContentDisposition.attachment().filename(asset.getFilename()).build();
+        String downloadName = asset.getFilename().replaceAll("[\\p{Cntrl}]", "_");
+        ContentDisposition contentDisposition = inline
+                ? ContentDisposition.inline().filename(downloadName).build()
+                : ContentDisposition.attachment().filename(downloadName).build();
         headers.setContentDisposition(contentDisposition);
 
         return ResponseEntity.ok()

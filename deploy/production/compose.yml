@@ -1,0 +1,146 @@
+# Explicit single meeting node; frontend replicas share durable rotation receipts in user-service.
+name: ${DEPLOYMENT_NAME:-advent-production}
+x-runtime: &runtime
+  restart: unless-stopped
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  tmpfs: ["/tmp:size=64m,mode=1777"]
+  mem_limit: 768m
+  stop_grace_period: 30s
+  networks: [application]
+services:
+  postgres:
+    image: postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: academy
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/db-init/admin-password
+    volumes:
+      - database:/var/lib/postgresql/data
+      - ${SECRETS_DIR:?}/db-init:/run/db-init:ro
+      - ./init-db.sh:/docker-entrypoint-initdb.d/10-academy.sh:ro
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U postgres -d academy"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks: [application]
+  user-service:
+    <<: *runtime
+    build: {context: ../.., dockerfile: deploy/production/Dockerfile, args: {SERVICE: user-service}}
+    depends_on: {postgres: {condition: service_healthy}}
+    volumes: ["${SECRETS_DIR:?}/user:/run/secrets:ro"]
+    environment:
+      SPRING_PROFILES_ACTIVE: production
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: academy
+      JWT_PRIVATE_KEY_FILE: /run/secrets/jwt-private.pem
+      JWT_PUBLIC_KEY_FILE: /run/secrets/jwt-public.pem
+      JWT_KEY_ID: ${JWT_KEY_ID:?}
+      JWT_PREVIOUS_KEY_ID: ${JWT_PREVIOUS_KEY_ID:-}
+      JWT_PREVIOUS_PUBLIC_KEY_FILE: ${JWT_PREVIOUS_PUBLIC_KEY_FILE:-}
+      BOOTSTRAP_ENABLED: ${BOOTSTRAP_ENABLED:-false}
+      BOOTSTRAP_EMAIL: ${BOOTSTRAP_EMAIL:-}
+      BOOTSTRAP_PASSWORD_FILE: /run/secrets/bootstrap-password
+      SMTP_HOST: ${SMTP_HOST:?}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:?}
+      EMAIL_FROM: ${EMAIL_FROM:?}
+      APP_BASE_URL: ${PUBLIC_ORIGIN:?}
+      CONTENT_SERVICE_URL: http://content-service:8081
+    healthcheck:
+      test: [CMD, wget, -q, -O, -, "http://localhost:8080/actuator/health/readiness"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  content-service:
+    <<: *runtime
+    build: {context: ../.., dockerfile: deploy/production/Dockerfile, args: {SERVICE: content-service}}
+    depends_on: {postgres: {condition: service_healthy}}
+    volumes: ["${SECRETS_DIR:?}/content:/run/secrets:ro"]
+    environment:
+      SPRING_PROFILES_ACTIVE: production
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: academy
+      JWT_PUBLIC_KEY_FILE: /run/secrets/jwt-public.pem
+      JWT_KEY_ID: ${JWT_KEY_ID:?}
+      JWT_PREVIOUS_KEY_ID: ${JWT_PREVIOUS_KEY_ID:-}
+      JWT_PREVIOUS_PUBLIC_KEY_FILE: ${JWT_PREVIOUS_PUBLIC_KEY_FILE:-}
+      USER_SERVICE_URL: http://user-service:8080
+      CORS_ALLOWED_ORIGINS: ${PUBLIC_ORIGIN:?}
+    healthcheck:
+      test: [CMD, wget, -q, -O, -, "http://localhost:8081/actuator/health/readiness"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  meeting-service:
+    <<: *runtime
+    build: {context: ../.., dockerfile: deploy/production/Dockerfile, args: {SERVICE: meeting-service}}
+    depends_on: {postgres: {condition: service_healthy}}
+    volumes: ["${SECRETS_DIR:?}/meeting:/run/secrets:ro"]
+    environment:
+      SPRING_PROFILES_ACTIVE: production
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: academy
+      JWT_PUBLIC_KEY_FILE: /run/secrets/jwt-public.pem
+      JWT_KEY_ID: ${JWT_KEY_ID:?}
+      JWT_PREVIOUS_KEY_ID: ${JWT_PREVIOUS_KEY_ID:-}
+      JWT_PREVIOUS_PUBLIC_KEY_FILE: ${JWT_PREVIOUS_PUBLIC_KEY_FILE:-}
+      CONTENT_SERVICE_URL: http://content-service:8081
+      MEETING_ALLOWED_ORIGINS: ${PUBLIC_ORIGIN:?}
+      MEETING_ICE_SERVERS_0_URLS: ${TURN_URL:?}
+      MEETING_ICE_SERVERS_0_USERNAME: ${TURN_USERNAME:?}
+    healthcheck:
+      test: [CMD, wget, -q, -O, -, "http://localhost:8084/actuator/health/readiness"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  api-gateway:
+    <<: *runtime
+    build: {context: ../.., dockerfile: deploy/production/Dockerfile, args: {SERVICE: api-gateway}}
+    environment:
+      SPRING_PROFILES_ACTIVE: production
+      USER_SERVICE_URL: http://user-service:8080
+      CONTENT_SERVICE_URL: http://content-service:8081
+      MEETING_SERVICE_URL: http://meeting-service:8084
+      MEETING_SERVICE_WS_URL: ws://meeting-service:8084
+    healthcheck:
+      test: [CMD, wget, -q, -O, -, "http://localhost:8090/actuator/health/readiness"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  frontend:
+    <<: *runtime
+    build: {context: ../.., dockerfile: frontend/Dockerfile}
+    volumes: ["${SECRETS_DIR:?}/frontend:/run/secrets:ro"]
+    environment:
+      API_GATEWAY_URL: http://api-gateway:8090
+      FRONTEND_ORIGIN: ${PUBLIC_ORIGIN:?}
+      SESSION_ENCRYPTION_KEY_FILE: /run/secrets/session-key
+      BFF_REQUEST_KEY_FILE: /run/secrets/bff-key
+      TRUSTED_EDGE_SECRET_FILE: /run/secrets/edge-key
+      REQUIRE_TRUSTED_EDGE: "true"
+      MEETING_SIGNALING_URL: ${SIGNALING_URL:?}
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  edge:
+    image: nginx:1.28-alpine@sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236
+    restart: unless-stopped
+    depends_on: {frontend: {condition: service_healthy}}
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST:?}
+      NGINX_ENVSUBST_FILTER: "PUBLIC_HOST|TRUSTED_EDGE_SECRET"
+    command: [sh, -c, 'export TRUSTED_EDGE_SECRET="$$(cat /run/edge/edge-key)"; exec /docker-entrypoint.sh nginx -g "daemon off;"']
+    volumes:
+      - ./nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ${SECRETS_DIR:?}/edge:/run/edge:ro
+      - ${TLS_DIR:?}:/run/tls:ro
+    ports: ["${BIND_ADDRESS:-127.0.0.1}:${HTTPS_PORT:-443}:8443"]
+    networks: [application]
+volumes: {database: {}}
+networks: {application: {}}

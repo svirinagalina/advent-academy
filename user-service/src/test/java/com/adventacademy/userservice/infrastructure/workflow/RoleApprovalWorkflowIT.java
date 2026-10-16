@@ -38,8 +38,18 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @ZeebeSpringTest
 @ActiveProfiles({"test", "camunda-process-test"})
-@SpringBootTest
+@SpringBootTest(properties = {"spring.flyway.enabled=true", "spring.jpa.hibernate.ddl-auto=validate", "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect"})
 class RoleApprovalWorkflowIT {
+    static final org.testcontainers.postgresql.PostgreSQLContainer POSTGRES = new org.testcontainers.postgresql.PostgreSQLContainer("postgres:16-alpine");
+    static { POSTGRES.start(); }
+    @org.springframework.test.context.DynamicPropertySource
+    static void database(org.springframework.test.context.DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url",POSTGRES::getJdbcUrl);
+        registry.add("spring.datasource.username",POSTGRES::getUsername);
+        registry.add("spring.datasource.password",POSTGRES::getPassword);
+        registry.add("spring.datasource.driver-class-name",() -> "org.postgresql.Driver");
+    }
+
 
     @Autowired private RoleRequestService roleRequestService;
     @Autowired private UserJpaRepository userJpaRepository;
