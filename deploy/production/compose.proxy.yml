@@ -1,0 +1,38 @@
+# Overlay for a shared host whose existing reverse proxy terminates public TLS:
+#   docker compose --env-file <deployment.env> -f compose.yml -f compose.proxy.yml pull
+#   docker compose --env-file <deployment.env> -f compose.yml -f compose.proxy.yml up -d --no-build --wait
+# Services run prebuilt images (CI publishes them) instead of building on the host. The edge joins
+# the proxy's Docker network as `${EDGE_ALIAS}` and publishes no host port.
+x-image: &image
+  pull_policy: always
+services:
+  user-service:
+    <<: *image
+    image: ${IMAGE_REGISTRY:?}/user-service:${IMAGE_TAG:-latest}
+  content-service:
+    <<: *image
+    image: ${IMAGE_REGISTRY:?}/content-service:${IMAGE_TAG:-latest}
+  meeting-service:
+    <<: *image
+    image: ${IMAGE_REGISTRY:?}/meeting-service:${IMAGE_TAG:-latest}
+  api-gateway:
+    <<: *image
+    image: ${IMAGE_REGISTRY:?}/api-gateway:${IMAGE_TAG:-latest}
+  frontend:
+    <<: *image
+    image: ${IMAGE_REGISTRY:?}/frontend:${IMAGE_TAG:-latest}
+  edge:
+    ports: !reset []
+    environment:
+      TRUSTED_PROXY_CIDR: ${TRUSTED_PROXY_CIDR:?}
+      NGINX_ENVSUBST_FILTER: "PUBLIC_HOST|TRUSTED_EDGE_SECRET|TRUSTED_PROXY_CIDR"
+    volumes:
+      - ./nginx.proxy.conf.template:/etc/nginx/templates/default.conf.template:ro
+    networks:
+      application: {}
+      proxy:
+        aliases: ["${EDGE_ALIAS:?}"]
+networks:
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:?}

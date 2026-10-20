@@ -62,6 +62,25 @@ roles are assigned directly through the administrator UI. Workflow submissions f
 a pending request when the production workflow is disabled. To operate Camunda, provision and
 secure that dependency separately and explicitly enable the client.
 
+## Behind an existing reverse proxy
+
+On a shared host whose own proxy (for example Caddy) already owns ports 80/443, add
+`compose.proxy.yml`. Services then run the images CI publishes from `main` to the private
+`ghcr.io/<owner>/<repo>/<service>` registry (log the host in once with a `read:packages` token),
+and the edge publishes no host port: it joins `PROXY_NETWORK` under `EDGE_ALIAS`. Extra settings:
+`IMAGE_REGISTRY`, optional `IMAGE_TAG` (a commit SHA pins a release; default `latest`),
+`PROXY_NETWORK`, `EDGE_ALIAS` and `TRUSTED_PROXY_CIDR` (the proxy network's subnet).
+
+The proxy must forward to `https://<EDGE_ALIAS>:8443` with the public `Host` and overwrite
+`X-Forwarded-For` with the single resolved client address; the edge trusts that header only from
+`TRUSTED_PROXY_CIDR`, so per-client quotas keep working. The edge certificate in `TLS_DIR` can be
+self-signed because only the proxy connects to it.
+
+```sh
+docker compose --env-file /secure/academy/deployment.env -f deploy/production/compose.yml -f deploy/production/compose.proxy.yml pull
+docker compose --env-file /secure/academy/deployment.env -f deploy/production/compose.yml -f deploy/production/compose.proxy.yml up -d --no-build --wait
+```
+
 ## Client identity and sessions
 
 Only the edge reaches BFF. It replaces incoming address/edge headers, supplies the resolved socket
